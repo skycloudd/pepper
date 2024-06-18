@@ -1,0 +1,20 @@
+[package]
+name = "pepper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+camino = "1.1.7"
+chumsky = "=1.0.0-alpha.7"
+clap = { version = "4.5.7", features = ["derive"] }
+ordered-float = "4.2.0"
+salsa = { git = "https://github.com/salsa-rs/salsa.git", package = "salsa-2022", rev = "56eb9c2" }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+alloc_instead_of_core = "warn"
+std_instead_of_core = "warn"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+used_underscore_binding = "allow"
