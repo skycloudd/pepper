@@ -1,5 +1,5 @@
 use crate::{
-    diagnostics::{error::Error, Diagnostics},
+    diagnostics::{error::convert, Diagnostics},
     lexer::{
         self,
         tokens::{Kw, Punc, Simple, Span, TokenKind},
@@ -27,11 +27,11 @@ pub fn parse(db: &dyn crate::Db, source_program: SourceProgram) -> Option<Progra
 
         let (program, errors) = parser(db).parse(tokens.spanned(eoi)).into_output_errors();
 
-        for err in errors {
-            Diagnostics::push(
-                db,
-                Error::from(err.clone().map_token(|token| token.to_string())),
-            );
+        for err in errors
+            .into_iter()
+            .flat_map(|err| convert(&err.map_token(|token| token.to_string())))
+        {
+            Diagnostics::push(db, err);
         }
 
         program

@@ -7,6 +7,7 @@ edition = "2021"
 camino = "1.1.7"
 chumsky = "1.0.0-alpha.7"
 clap = { version = "4.5.7", features = ["derive"] }
+codespan-reporting = "0.11.1"
 ordered-float = "4.2.0"
 owo-colors = "4.0.0"
 salsa = { git = "https://github.com/salsa-rs/salsa.git", rev = "f706aa2" }

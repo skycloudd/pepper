@@ -1,5 +1,5 @@
 use crate::{
-    diagnostics::{error::Error, Diagnostics},
+    diagnostics::{error::convert, Diagnostics},
     SourceProgram,
 };
 use chumsky::{input::WithContext, prelude::*};
@@ -14,11 +14,11 @@ pub fn lex(db: &dyn crate::Db, source: SourceProgram) -> Option<Tokens<'_>> {
         .parse(source.text(db).with_context(source.file_id(db)))
         .into_output_errors();
 
-    for err in errors {
-        Diagnostics::push(
-            db,
-            Error::from(err.clone().map_token(|token| token.to_string())),
-        );
+    for err in errors
+        .into_iter()
+        .flat_map(|err| convert(&err.map_token(|token| token.to_string())))
+    {
+        Diagnostics::push(db, err);
     }
 
     tokens.map(|tokens| Tokens::new(db, tokens, source.file_id(db)))

@@ -1,9 +1,15 @@
 use camino::Utf8PathBuf;
 use clap::Parser;
-use owo_colors::OwoColorize as _;
+use codespan_reporting::{
+    files::SimpleFiles,
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+    },
+};
 use pepper::{
     compile,
-    diagnostics::{error::Error, Diagnostics},
+    diagnostics::{report::report, Diagnostics},
     lexer::tokens::FileId,
     SourceProgram,
 };
@@ -18,18 +24,23 @@ fn main() {
 
     let db = pepper::db::Database::default();
 
-    let diagnostics = run_compiler(&db, args.filename);
+    let writer = StandardStream::stderr(ColorChoice::Auto);
+    let config = term::Config::default();
 
-    for diagnostic in diagnostics {
-        eprintln!("Error: {:?}", diagnostic.red());
+    let mut files = SimpleFiles::new();
+
+    let text = std::fs::read_to_string(&args.filename).unwrap();
+
+    let id = files.add(args.filename, text.clone());
+    let file_id = FileId::new(&db, id);
+
+    let source_program = SourceProgram::new(&db, text, file_id);
+
+    let diagnostics = compile::accumulated::<Diagnostics>(&db, source_program);
+
+    for error in diagnostics {
+        let diag = report(&db, &error);
+
+        term::emit(&mut writer.lock(), &config, &files, &diag).unwrap();
     }
-}
-
-fn run_compiler(db: &dyn pepper::Db, filename: Utf8PathBuf) -> Vec<Error> {
-    let text = std::fs::read_to_string(&filename).unwrap();
-
-    let filename = FileId::new(db, filename);
-    let source_program = SourceProgram::new(db, text, filename);
-
-    compile::accumulated::<Diagnostics>(db, source_program)
 }

@@ -1,12 +1,10 @@
 #![allow(clippy::unused_unit)]
 
-use camino::Utf8PathBuf;
 use ordered_float::OrderedFloat;
 
 #[salsa::input]
 pub struct FileId {
-    #[return_ref]
-    pub path: Utf8PathBuf,
+    pub id: usize,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
