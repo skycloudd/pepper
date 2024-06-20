@@ -45,15 +45,21 @@ pub struct Expression<'db> {
 
 #[derive(Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
 pub enum ExpressionData<'db> {
-    Op(Op, Box<Expression<'db>>, Box<Expression<'db>>),
     Integer(i32),
     Float(OrderedFloat<f32>),
     Variable(VariableId<'db>),
     Call(FunctionId<'db>, Vec<Expression<'db>>),
+    UnaryOp(UnaryOp, Box<Expression<'db>>),
+    BinaryOp(BinaryOp, Box<Expression<'db>>, Box<Expression<'db>>),
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum Op {
+pub enum UnaryOp {
+    Negate,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub enum BinaryOp {
     Add,
     Subtract,
     Multiply,

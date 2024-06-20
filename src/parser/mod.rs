@@ -6,7 +6,9 @@ use crate::{
     },
     SourceProgram,
 };
-use ast::{Expression, ExpressionData, Function, FunctionId, Op, Program, VariableId};
+use ast::{
+    BinaryOp, Expression, ExpressionData, Function, FunctionId, Program, UnaryOp, VariableId,
+};
 use chumsky::{input::SpannedInput, prelude::*};
 
 pub mod ast;
@@ -110,11 +112,36 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
         let atom = choice((variable, integer, float, parenthesised_expr, function_call)).boxed();
 
-        let factor = binary_op!(atom, (Punc::Star => Op::Multiply), (Punc::Slash => Op::Divide));
+        let unary = unary_op!(atom, (Punc::Minus => UnaryOp::Negate));
 
-        binary_op!(factor, (Punc::Plus => Op::Add), (Punc::Minus => Op::Subtract))
+        let factor = binary_op!(unary, (Punc::Star => BinaryOp::Multiply), (Punc::Slash => BinaryOp::Divide));
+
+        binary_op!(factor, (Punc::Plus => BinaryOp::Add), (Punc::Minus => BinaryOp::Subtract))
     })
 }
+
+macro_rules! unary_op {
+    ($base:expr, $(($punc:expr => $to:expr)),*) => {{
+        let ops = choice((
+            $(
+                just(TokenKind::Simple(Simple::Punc($punc))).to($to),
+            )*
+        ))
+        .map_with(|op, e| (op, e.span()));
+
+        ops
+            .repeated()
+            .foldr($base, |op, expr| {
+                let span = op.1.union(expr.span.clone());
+
+                Expression {
+                    span,
+                    data: ExpressionData::UnaryOp(op.0, Box::new(expr)),
+                }
+            })
+    }};
+}
+use unary_op;
 
 macro_rules! binary_op {
     ($base:expr, $(($punc:expr => $to:expr)),*) => {{
@@ -131,7 +158,7 @@ macro_rules! binary_op {
 
                 Expression {
                     span,
-                    data: ExpressionData::Op(op, Box::new(lhs), Box::new(rhs)),
+                    data: ExpressionData::BinaryOp(op, Box::new(lhs), Box::new(rhs)),
                 }
             })
             .boxed()
