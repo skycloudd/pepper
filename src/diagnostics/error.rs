@@ -1,7 +1,7 @@
-use crate::ir::FileId;
+use crate::lexer::tokens::Span;
 use chumsky::{
     error::{Rich, RichReason},
-    span::SimpleSpan,
+    span::Span as _,
 };
 use core::ops::Range;
 
@@ -39,14 +39,14 @@ fn convert_inner(reason: &RichReason<String, &str>, span: Range<usize>) -> Error
     }
 }
 
-impl From<Rich<'_, String, SimpleSpan<usize, FileId<'_>>, &str>> for Error {
-    fn from(error: Rich<String, SimpleSpan<usize, FileId<'_>>, &str>) -> Self {
-        convert_inner(error.reason(), error.span().start..error.span().end)
+impl From<Rich<'_, String, Span, &str>> for Error {
+    fn from(error: Rich<String, Span, &str>) -> Self {
+        convert_inner(error.reason(), error.span().start()..error.span().end())
     }
 }
 
-impl From<&Rich<'_, String, SimpleSpan<usize, FileId<'_>>, &str>> for Error {
-    fn from(error: &Rich<String, SimpleSpan<usize, FileId<'_>>, &str>) -> Self {
-        convert_inner(error.reason(), error.span().start..error.span().end)
+impl From<&Rich<'_, String, Span, &str>> for Error {
+    fn from(error: &Rich<String, Span, &str>) -> Self {
+        convert_inner(error.reason(), error.span().start()..error.span().end())
     }
 }

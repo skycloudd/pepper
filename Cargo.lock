@@ -364,6 +364,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "owo-colors"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caff54706df99d2a78a5a4e3455ff45448d81ef1bb63c22cd14052ca0e993a3f"
+
+[[package]]
 name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -394,7 +400,8 @@ dependencies = [
  "chumsky",
  "clap",
  "ordered-float",
- "salsa-2022",
+ "owo-colors",
+ "salsa",
 ]
 
 [[package]]
@@ -457,9 +464,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
-name = "salsa-2022"
-version = "0.1.0"
-source = "git+https://github.com/salsa-rs/salsa.git?rev=56eb9c2#56eb9c21e113534e052cf2f77cf7ae270780163c"
+name = "salsa"
+version = "0.18.0"
+source = "git+https://github.com/salsa-rs/salsa.git?rev=f706aa2#f706aa2d32d473ee633a77c1af01d180c85da308"
 dependencies = [
  "arc-swap",
  "crossbeam",
@@ -470,14 +477,14 @@ dependencies = [
  "log",
  "parking_lot",
  "rustc-hash",
- "salsa-2022-macros",
+ "salsa-macros",
  "smallvec",
 ]
 
 [[package]]
-name = "salsa-2022-macros"
-version = "0.1.0"
-source = "git+https://github.com/salsa-rs/salsa.git?rev=56eb9c2#56eb9c21e113534e052cf2f77cf7ae270780163c"
+name = "salsa-macros"
+version = "0.18.0"
+source = "git+https://github.com/salsa-rs/salsa.git?rev=f706aa2#f706aa2d32d473ee633a77c1af01d180c85da308"
 dependencies = [
  "eyre",
  "heck 0.4.1",

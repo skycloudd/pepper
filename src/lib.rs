@@ -1,24 +1,26 @@
-use ir::{FileId, SourceProgram};
+use lexer::tokens::FileId;
+use owo_colors::OwoColorize as _;
+use parser::ast;
+use salsa::DebugWithDb;
 
-mod db;
-mod error;
-pub mod ir;
-mod lexer;
-mod tokens;
-
-pub use db::Database;
+pub mod db;
+pub mod diagnostics;
+pub mod lexer;
+pub mod parser;
 
 #[salsa::jar(db = Db)]
 pub struct Jar(
-    ir::Diagnostics,
-    ir::SourceProgram,
-    // ir::Program<'_>,
-    // ir::Function<'_>,
-    // ir::VariableId<'_>,
-    // ir::FunctionId<'_>,
-    ir::FileId<'_>,
-    lexer::lex,
+    diagnostics::Diagnostics,
+    SourceProgram,
     compile,
+    lexer::lex,
+    lexer::tokens::FileId,
+    lexer::tokens::Tokens<'_>,
+    ast::Program<'_>,
+    ast::Function<'_>,
+    ast::FunctionId<'_>,
+    ast::VariableId<'_>,
+    parser::parse,
 );
 
 pub trait Db: salsa::DbWithJar<Jar> {}
@@ -26,8 +28,16 @@ pub trait Db: salsa::DbWithJar<Jar> {}
 impl<DB> Db for DB where DB: ?Sized + salsa::DbWithJar<Jar> {}
 
 #[salsa::tracked]
-pub fn compile<'db>(db: &'db dyn crate::Db, source_program: SourceProgram, filename: FileId<'db>) {
-    let tokens = lexer::lex(db, source_program, filename);
+pub fn compile(db: &dyn crate::Db, source_program: SourceProgram) {
+    let program = parser::parse(db, source_program);
 
-    println!("Tokens: {tokens:?}");
+    println!("Program: {:?}", program.debug(db).green());
+}
+
+#[salsa::input]
+pub struct SourceProgram {
+    #[return_ref]
+    pub text: String,
+
+    pub file_id: FileId,
 }

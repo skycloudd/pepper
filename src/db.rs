@@ -1,3 +1,4 @@
+use owo_colors::OwoColorize as _;
 use salsa::DebugWithDb as _;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +12,7 @@ pub struct Database {
 
 impl salsa::Database for Database {
     fn salsa_event(&self, event: salsa::Event) {
-        eprintln!("Event: {event:?}");
+        eprintln!("Event: {:?}", event.dimmed());
 
         if let Some(logs) = &self.logs {
             if let salsa::EventKind::WillExecute { .. } = event.kind {

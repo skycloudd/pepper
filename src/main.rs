@@ -1,8 +1,11 @@
 use camino::Utf8PathBuf;
 use clap::Parser;
+use owo_colors::OwoColorize as _;
 use pepper::{
     compile,
-    ir::{Diagnostics, FileId, SourceProgram},
+    diagnostics::{error::Error, Diagnostics},
+    lexer::tokens::FileId,
+    SourceProgram,
 };
 
 #[derive(Parser)]
@@ -13,16 +16,20 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let text = std::fs::read_to_string(&args.filename).unwrap();
+    let db = pepper::db::Database::default();
 
-    let db = pepper::Database::default();
-
-    let source_program = SourceProgram::new(&db, text);
-    let filename = FileId::new(&db, args.filename);
-
-    let diagnostics = compile::accumulated::<Diagnostics>(&db, source_program, filename);
+    let diagnostics = run_compiler(&db, args.filename);
 
     for diagnostic in diagnostics {
-        eprintln!("Error: {diagnostic:?}");
+        eprintln!("Error: {:?}", diagnostic.red());
     }
+}
+
+fn run_compiler(db: &dyn pepper::Db, filename: Utf8PathBuf) -> Vec<Error> {
+    let text = std::fs::read_to_string(&filename).unwrap();
+
+    let filename = FileId::new(db, filename);
+    let source_program = SourceProgram::new(db, text, filename);
+
+    compile::accumulated::<Diagnostics>(db, source_program)
 }

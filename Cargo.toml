@@ -8,7 +8,8 @@ camino = "1.1.7"
 chumsky = "=1.0.0-alpha.7"
 clap = { version = "4.5.7", features = ["derive"] }
 ordered-float = "4.2.0"
-salsa = { git = "https://github.com/salsa-rs/salsa.git", package = "salsa-2022", rev = "56eb9c2" }
+owo-colors = "4.0.0"
+salsa = { git = "https://github.com/salsa-rs/salsa.git", rev = "f706aa2" }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

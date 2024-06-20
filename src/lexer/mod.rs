@@ -1,32 +1,34 @@
 use crate::{
-    ir::{Diagnostics, FileId, SourceProgram},
-    tokens::{Kw, Punc, Simple, Span, Token, TokenKind, Tokens},
+    diagnostics::{error::Error, Diagnostics},
+    SourceProgram,
 };
 use chumsky::{input::WithContext, prelude::*};
 use ordered_float::OrderedFloat;
+use tokens::{Kw, Punc, Simple, Span, TokenKind, Tokens};
+
+pub mod tokens;
 
 #[salsa::tracked]
-pub fn lex<'db>(
-    db: &'db dyn crate::Db,
-    source: SourceProgram,
-    filename: FileId<'db>,
-) -> Option<Tokens<'db>> {
+pub fn lex(db: &dyn crate::Db, source: SourceProgram) -> Option<Tokens<'_>> {
     let (tokens, errors) = lexer()
-        .parse(source.text(db).with_context(filename))
+        .parse(source.text(db).with_context(source.file_id(db)))
         .into_output_errors();
 
     for err in errors {
-        Diagnostics::push(db, err.clone().map_token(|t| t.to_string()).into());
+        Diagnostics::push(
+            db,
+            Error::from(err.clone().map_token(|token| token.to_string())),
+        );
     }
 
-    tokens
+    tokens.map(|tokens| Tokens::new(db, tokens, source.file_id(db)))
 }
 
-fn lexer<'src, 'db: 'src>() -> impl Parser<
+fn lexer<'src>() -> impl Parser<
     'src,
-    WithContext<Span<'db>, &'src str>,
-    Tokens<'src>,
-    extra::Err<Rich<'src, char, Span<'db>, &'src str>>,
+    WithContext<Span, &'src str>,
+    Vec<(TokenKind, Span)>,
+    extra::Err<Rich<'src, char, Span, &'src str>>,
 > {
     recursive(|tokens| {
         let ident = text::ascii::ident()
@@ -74,6 +76,7 @@ fn lexer<'src, 'db: 'src>() -> impl Parser<
 
         let punctuation = choice((
             just("=").to(Simple::Punc(Punc::Equals)),
+            just(",").to(Simple::Punc(Punc::Comma)),
             just('+').to(Simple::Punc(Punc::Plus)),
             just('-').to(Simple::Punc(Punc::Minus)),
             just('*').to(Simple::Punc(Punc::Star)),
@@ -97,9 +100,8 @@ fn lexer<'src, 'db: 'src>() -> impl Parser<
                 '(',
                 ')',
                 [('{', '}')],
-                |span| vec![Token(TokenKind::Error, span)],
+                |span| vec![(TokenKind::Error, span)],
             )))
-            .map(Tokens)
             .map(TokenKind::Parentheses)
             .boxed();
 
@@ -109,14 +111,13 @@ fn lexer<'src, 'db: 'src>() -> impl Parser<
                 '{',
                 '}',
                 [('(', ')')],
-                |span| vec![Token(TokenKind::Error, span)],
+                |span| vec![(TokenKind::Error, span)],
             )))
-            .map(Tokens)
             .map(TokenKind::CurlyBraces)
             .boxed();
 
         let token = choice((simple, parenthesised, curly_braces))
-            .map_with(|kind, e| Token(kind, e.span()))
+            .map_with(|kind, e| (kind, e.span()))
             .padded_by(comment.clone().repeated())
             .padded()
             .boxed();
@@ -124,6 +125,5 @@ fn lexer<'src, 'db: 'src>() -> impl Parser<
         token.repeated().collect().padded().boxed()
     })
     .then_ignore(end())
-    .map(Tokens)
     .boxed()
 }
