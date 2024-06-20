@@ -6,7 +6,7 @@ use crate::{
     },
     SourceProgram,
 };
-use ast::{Expression, ExpressionData, Function, FunctionId, Program, VariableId};
+use ast::{Expression, ExpressionData, Function, FunctionId, Op, Program, VariableId};
 use chumsky::{input::SpannedInput, prelude::*};
 
 pub mod ast;
@@ -38,12 +38,12 @@ pub fn parse(db: &dyn crate::Db, source_program: SourceProgram) -> Option<Progra
 
 type ParserInput<'tok> = SpannedInput<TokenKind, Span, &'tok [(TokenKind, Span)]>;
 
-type ParserExtra<'db, 'src, 'tok> = extra::Err<Rich<'tok, TokenKind, Span, &'src str>>;
+type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, TokenKind, Span, &'src str>>;
 
 #[must_use]
 fn parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
-) -> impl Parser<'tok, ParserInput<'tok>, Program<'db>, ParserExtra<'db, 'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, Program<'db>, ParserExtra<'src, 'tok>> {
     function_parser(db)
         .repeated()
         .collect()
@@ -53,14 +53,10 @@ fn parser<'db: 'tok, 'src: 'tok, 'tok>(
 
 fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
-) -> impl Parser<'tok, ParserInput<'tok>, Function<'db>, ParserExtra<'db, 'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, Function<'db>, ParserExtra<'src, 'tok>> {
     let name = function_id_parser(db).map_with(|name, e| (name, e.span()));
 
-    let args = parenthesised(
-        variable_id_parser(db)
-            .separated_by(just(TokenKind::Simple(Simple::Punc(Punc::Comma))))
-            .collect(),
-    );
+    let args = parenthesised(comma_separated_list(variable_id_parser(db)));
 
     let body = expr_parser(db);
 
@@ -75,7 +71,7 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
 fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
-) -> impl Parser<'tok, ParserInput<'tok>, Expression<'db>, ParserExtra<'db, 'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, Expression<'db>, ParserExtra<'src, 'tok>> {
     recursive(|expr| {
         let variable = variable_id_parser(db)
             .map_with(|id, e| Expression {
@@ -102,25 +98,67 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
         })
         .boxed();
 
-        let parenthesised_expr = parenthesised(expr);
+        let parenthesised_expr = parenthesised(expr.clone());
 
-        let atom = choice((variable, integer, float, parenthesised_expr)).boxed();
+        let function_call = function_id_parser(db)
+            .then(parenthesised(comma_separated_list(expr)))
+            .map_with(|(name, args), e| Expression {
+                span: e.span(),
+                data: ExpressionData::Call(name, args),
+            })
+            .boxed();
 
-        atom
+        let atom = choice((variable, integer, float, parenthesised_expr, function_call)).boxed();
+
+        let factor = binary_op!(atom, (Punc::Star => Op::Multiply), (Punc::Slash => Op::Divide));
+
+        binary_op!(factor, (Punc::Plus => Op::Add), (Punc::Minus => Op::Subtract))
     })
 }
 
-fn parenthesised<'db: 'tok, 'src: 'tok, 'tok, T>(
-    inner: impl Parser<'tok, ParserInput<'tok>, T, ParserExtra<'db, 'src, 'tok>>,
-) -> impl Parser<'tok, ParserInput<'tok>, T, ParserExtra<'db, 'src, 'tok>> {
+macro_rules! binary_op {
+    ($base:expr, $(($punc:expr => $to:expr)),*) => {{
+        let ops = choice((
+            $(
+                just(TokenKind::Simple(Simple::Punc($punc))).to($to),
+            )*
+        ));
+
+        $base
+            .clone()
+            .foldl(ops.then($base).repeated(), |lhs, (op, rhs)| {
+                let span = lhs.span.union(rhs.span.clone());
+
+                Expression {
+                    span,
+                    data: ExpressionData::Op(op, Box::new(lhs), Box::new(rhs)),
+                }
+            })
+            .boxed()
+    }};
+}
+use binary_op;
+
+fn parenthesised<'src: 'tok, 'tok, T>(
+    inner: impl Parser<'tok, ParserInput<'tok>, T, ParserExtra<'src, 'tok>>,
+) -> impl Parser<'tok, ParserInput<'tok>, T, ParserExtra<'src, 'tok>> {
     inner.nested_in(select_ref! {
         TokenKind::Parentheses(tokens) = e => tokens.as_slice().spanned(e.span()),
     })
 }
 
+fn comma_separated_list<'src: 'tok, 'tok, T>(
+    inner: impl Parser<'tok, ParserInput<'tok>, T, ParserExtra<'src, 'tok>>,
+) -> impl Parser<'tok, ParserInput<'tok>, Vec<T>, ParserExtra<'src, 'tok>> {
+    inner
+        .separated_by(just(TokenKind::Simple(Simple::Punc(Punc::Comma))))
+        .allow_trailing()
+        .collect()
+}
+
 fn function_id_parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
-) -> impl Parser<'tok, ParserInput<'tok>, FunctionId<'db>, ParserExtra<'db, 'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, FunctionId<'db>, ParserExtra<'src, 'tok>> {
     select! {
         TokenKind::Simple(Simple::Ident(ident)) => FunctionId::new(db, ident),
     }
@@ -129,7 +167,7 @@ fn function_id_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
 fn variable_id_parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
-) -> impl Parser<'tok, ParserInput<'tok>, VariableId<'db>, ParserExtra<'db, 'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, VariableId<'db>, ParserExtra<'src, 'tok>> {
     select! {
         TokenKind::Simple(Simple::Ident(ident)) => VariableId::new(db, ident),
     }
