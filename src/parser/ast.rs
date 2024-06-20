@@ -1,8 +1,7 @@
 #![allow(clippy::unused_unit)]
 
-use ordered_float::OrderedFloat;
-
 use crate::lexer::tokens::Span;
+use ordered_float::OrderedFloat;
 
 #[salsa::tracked]
 pub struct Program<'db> {
