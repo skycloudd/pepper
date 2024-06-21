@@ -7,7 +7,8 @@ use crate::{
     SourceProgram,
 };
 use ast::{
-    BinaryOp, Expression, ExpressionData, Function, FunctionId, Program, UnaryOp, VariableId,
+    BinaryOp, BinaryOpKind, Expression, ExpressionData, Function, FunctionId, Program, UnaryOp,
+    UnaryOpKind, VariableId,
 };
 use chumsky::{input::SpannedInput, prelude::*};
 
@@ -112,11 +113,11 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
         let atom = choice((variable, integer, float, parenthesised_expr, function_call)).boxed();
 
-        let unary = unary_op!(atom, (Punc::Minus => UnaryOp::Negate));
+        let unary = unary_op!(atom, (Punc::Minus => UnaryOpKind::Negate));
 
-        let factor = binary_op!(unary, (Punc::Star => BinaryOp::Multiply), (Punc::Slash => BinaryOp::Divide));
+        let factor = binary_op!(unary, (Punc::Star => BinaryOpKind::Multiply), (Punc::Slash => BinaryOpKind::Divide));
 
-        binary_op!(factor, (Punc::Plus => BinaryOp::Add), (Punc::Minus => BinaryOp::Subtract))
+        binary_op!(factor, (Punc::Plus => BinaryOpKind::Add), (Punc::Minus => BinaryOpKind::Subtract))
     })
 }
 
@@ -127,18 +128,25 @@ macro_rules! unary_op {
                 just(TokenKind::Simple(Simple::Punc($punc))).to($to),
             )*
         ))
-        .map_with(|op, e| (op, e.span()));
+        .map_with(|op, e| (op, e.span()))
+        .boxed();
 
         ops
             .repeated()
             .foldr($base, |op, expr| {
                 let span = op.1.union(expr.span.clone());
 
+                let op = UnaryOp {
+                    span: op.1,
+                    data: op.0,
+                };
+
                 Expression {
                     span,
-                    data: ExpressionData::UnaryOp(op.0, Box::new(expr)),
+                    data: ExpressionData::UnaryOp(op, Box::new(expr)),
                 }
             })
+            .boxed()
     }};
 }
 use unary_op;
@@ -149,12 +157,19 @@ macro_rules! binary_op {
             $(
                 just(TokenKind::Simple(Simple::Punc($punc))).to($to),
             )*
-        ));
+        ))
+        .map_with(|op, e| (op, e.span()))
+        .boxed();
 
         $base
             .clone()
             .foldl(ops.then($base).repeated(), |lhs, (op, rhs)| {
                 let span = lhs.span.union(rhs.span.clone());
+
+                let op = BinaryOp {
+                    span: op.1,
+                    data: op.0,
+                };
 
                 Expression {
                     span,

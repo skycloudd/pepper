@@ -7,7 +7,7 @@ pub struct FileId {
     pub id: usize,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

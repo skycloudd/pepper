@@ -35,14 +35,14 @@ pub struct VariableId<'db> {
     pub text: String,
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
 pub struct Expression<'db> {
     pub span: Span,
 
     pub data: ExpressionData<'db>,
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
 pub enum ExpressionData<'db> {
     Integer(i32),
     Float(OrderedFloat<f32>),
@@ -53,12 +53,26 @@ pub enum ExpressionData<'db> {
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum UnaryOp {
+pub struct UnaryOp {
+    pub span: Span,
+
+    pub data: UnaryOpKind,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub enum UnaryOpKind {
     Negate,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum BinaryOp {
+pub struct BinaryOp {
+    pub span: Span,
+
+    pub data: BinaryOpKind,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub enum BinaryOpKind {
     Add,
     Subtract,
     Multiply,

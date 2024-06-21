@@ -43,9 +43,9 @@ impl Diag for Error {
                     "Found {}",
                     found.as_deref().unwrap_or("end of file")
                 )),
-                span.clone(),
+                *span,
             )],
-            Self::Custom { message: _, span } => vec![ErrorSpan::Primary(None, span.clone())],
+            Self::Custom { message: _, span } => vec![ErrorSpan::Primary(None, *span)],
         }
     }
 
@@ -75,10 +75,10 @@ pub fn convert(error: &Rich<String, Span, &str>) -> Vec<Error> {
             }],
             RichReason::Many(reasons) => reasons
                 .iter()
-                .flat_map(|r| convert_inner(r, span.clone()))
+                .flat_map(|r| convert_inner(r, span))
                 .collect(),
         }
     }
 
-    convert_inner(error.reason(), error.span().clone())
+    convert_inner(error.reason(), *error.span())
 }
