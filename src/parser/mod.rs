@@ -16,27 +16,25 @@ pub mod ast;
 
 #[salsa::tracked]
 pub fn parse(db: &dyn crate::Db, source_program: SourceProgram) -> Option<Program<'_>> {
-    let tokens = lexer::lex(db, source_program);
+    let tokens = lexer::lex(db, source_program)?;
 
-    tokens.and_then(|tokens| {
-        let eoi = tokens
-            .tokens(db)
-            .last()
-            .map_or_else(|| Span::zero(tokens.file_id(db)), |t| t.1.to_end());
+    let eoi = tokens
+        .tokens(db)
+        .last()
+        .map_or_else(|| Span::zero(tokens.file_id(db)), |t| t.1.to_end());
 
-        let tokens = tokens.tokens(db);
+    let tokens = tokens.tokens(db);
 
-        let (program, errors) = parser(db).parse(tokens.spanned(eoi)).into_output_errors();
+    let (program, errors) = parser(db).parse(tokens.spanned(eoi)).into_output_errors();
 
-        for err in errors
-            .into_iter()
-            .flat_map(|err| convert(&err.map_token(|token| token.to_string())))
-        {
-            Diagnostics::push(db, err);
-        }
+    for err in errors
+        .into_iter()
+        .flat_map(|err| convert(&err.map_token(|token| token.to_string())))
+    {
+        Diagnostics::push(db, err);
+    }
 
-        program
-    })
+    program
 }
 
 type ParserInput<'tok> = SpannedInput<TokenKind, Span, &'tok [(TokenKind, Span)]>;
