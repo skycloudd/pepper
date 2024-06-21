@@ -14,6 +14,17 @@ pub struct Span {
     pub file_id: FileId,
 }
 
+impl Span {
+    #[must_use]
+    pub const fn zero(file_id: FileId) -> Self {
+        Self {
+            start: 0,
+            end: 0,
+            file_id,
+        }
+    }
+}
+
 impl chumsky::span::Span for Span {
     type Context = FileId;
 

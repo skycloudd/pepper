@@ -22,7 +22,7 @@ pub fn parse(db: &dyn crate::Db, source_program: SourceProgram) -> Option<Progra
         let eoi = tokens
             .tokens(db)
             .last()
-            .map_or_else(|| Span::new(tokens.file_id(db), 0..0), |t| t.1.to_end());
+            .map_or_else(|| Span::zero(tokens.file_id(db)), |t| t.1.to_end());
 
         let tokens = tokens.tokens(db);
 
