@@ -33,12 +33,14 @@ fn lexer<'src>() -> impl Parser<
     recursive(|tokens| {
         let ident = text::ascii::ident()
             .map(|name: &str| Simple::Ident(name.to_owned()))
+            .labelled("identifier")
             .boxed();
 
         let bool = choice((
             text::keyword("true").to(Simple::Boolean(true)),
             text::keyword("false").to(Simple::Boolean(false)),
         ))
+        .labelled("boolean")
         .boxed();
 
         let sign = choice((just('+'), just('-'))).or_not().boxed();
@@ -55,6 +57,7 @@ fn lexer<'src>() -> impl Parser<
                 }
             })
             .map(Simple::Integer)
+            .labelled("integer")
             .boxed();
 
         let float = sign
@@ -70,6 +73,7 @@ fn lexer<'src>() -> impl Parser<
                 }
             })
             .map(|value| Simple::Float(OrderedFloat(value)))
+            .labelled("float")
             .boxed();
 
         let keyword = choice((text::keyword("fn").to(Simple::Kw(Kw::Fn)),)).boxed();
@@ -89,6 +93,7 @@ fn lexer<'src>() -> impl Parser<
         let comment = just("#")
             .then(any().and_is(just('\n').not()).repeated())
             .padded()
+            .labelled("comment")
             .boxed();
 
         let simple = choice((keyword, bool, ident, float, integer, punctuation))
@@ -98,23 +103,11 @@ fn lexer<'src>() -> impl Parser<
         let parenthesised = tokens
             .clone()
             .delimited_by(just('('), just(')'))
-            .recover_with(via_parser(nested_delimiters(
-                '(',
-                ')',
-                [('{', '}')],
-                |span| vec![(TokenKind::Error, span)],
-            )))
             .map(TokenKind::Parentheses)
             .boxed();
 
         let curly_braces = tokens
             .delimited_by(just('{'), just('}'))
-            .recover_with(via_parser(nested_delimiters(
-                '{',
-                '}',
-                [('(', ')')],
-                |span| vec![(TokenKind::Error, span)],
-            )))
             .map(TokenKind::CurlyBraces)
             .boxed();
 
