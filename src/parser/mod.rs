@@ -46,6 +46,7 @@ fn parser<'db: 'tok, 'src: 'tok, 'tok>(
     db: &'db dyn crate::Db,
 ) -> impl Parser<'tok, ParserInput<'tok>, Program<'db>, ParserExtra<'src, 'tok>> {
     function_parser(db)
+        .labelled("function")
         .repeated()
         .collect()
         .map(|functions| Program::new(db, functions))
@@ -60,8 +61,13 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
     let args = parenthesised(comma_separated_list(
         variable_id_parser(db)
             .map_with(|name, e| (name, e.span()))
+            .labelled("parameter name")
             .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Colon))))
-            .then(type_parser().map_with(|type_, e| (type_, e.span())))
+            .then(
+                type_parser()
+                    .map_with(|type_, e| (type_, e.span()))
+                    .labelled("parameter type"),
+            )
             .map(
                 |((name, name_span), (type_, type_span))| FunctionParameter {
                     name,
@@ -69,18 +75,21 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
                     type_,
                     type_span,
                 },
-            ),
+            )
+            .labelled("function parameter"),
     ));
+
+    let return_type = type_parser().map_with(|return_type, e| (return_type, e.span()));
 
     let body = expr_parser(db);
 
     just(TokenKind::Simple(Simple::Kw(Kw::Fn)))
-        .ignore_then(name)
-        .then(args)
+        .ignore_then(name.labelled("function name"))
+        .then(args.labelled("function parameters"))
         .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Arrow))))
-        .then(type_parser().map_with(|return_type, e| (return_type, e.span())))
+        .then(return_type.labelled("return type"))
         .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Equals))))
-        .then(body)
+        .then(body.labelled("function body"))
         .map(
             |((((name, name_span), args), (return_type, return_type_span)), body)| {
                 Function::new(
@@ -106,6 +115,7 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
                 span: e.span(),
                 data: ExpressionData::Variable(id),
             })
+            .labelled("variable")
             .boxed();
 
         let integer = select! {
@@ -115,6 +125,7 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
             span: e.span(),
             data: ExpressionData::Integer(value),
         })
+        .labelled("integer")
         .boxed();
 
         let float = select! {
@@ -124,9 +135,10 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
             span: e.span(),
             data: ExpressionData::Float(value),
         })
+        .labelled("float")
         .boxed();
 
-        let parenthesised_expr = parenthesised(expr.clone());
+        let parenthesised_expr = parenthesised(expr.clone()).labelled("parenthesised expression");
 
         let function_call = function_id_parser(db)
             .then(parenthesised(comma_separated_list(expr)))
@@ -134,6 +146,7 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
                 span: e.span(),
                 data: ExpressionData::Call(name, args),
             })
+            .labelled("function call")
             .boxed();
 
         let atom = choice((function_call, variable, integer, float, parenthesised_expr)).boxed();
@@ -142,7 +155,9 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
         let factor = binary_op!(unary, (Punc::Star => BinaryOpKind::Multiply), (Punc::Slash => BinaryOpKind::Divide));
 
-        binary_op!(factor, (Punc::Plus => BinaryOpKind::Add), (Punc::Minus => BinaryOpKind::Subtract))
+        let sum = binary_op!(factor, (Punc::Plus => BinaryOpKind::Add), (Punc::Minus => BinaryOpKind::Subtract));
+
+        sum.labelled("expression")
     })
 }
 

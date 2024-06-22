@@ -51,7 +51,7 @@ impl chumsky::span::Span for Span {
 
 #[salsa::tracked]
 pub struct Tokens<'db> {
-    // #[return_ref]
+    #[return_ref]
     pub tokens: Vec<(TokenKind, Span)>,
 
     pub file_id: FileId,
