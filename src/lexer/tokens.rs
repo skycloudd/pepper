@@ -1,5 +1,3 @@
-#![allow(clippy::unused_unit)]
-
 use ordered_float::OrderedFloat;
 
 #[salsa::input]

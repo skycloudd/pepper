@@ -1,5 +1,3 @@
-#![allow(clippy::unused_unit)]
-
 use crate::lexer::tokens::Span;
 use ordered_float::OrderedFloat;
 

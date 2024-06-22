@@ -1,5 +1,3 @@
-#![allow(clippy::unused_unit)]
-
 use crate::{
     lexer::tokens::Span,
     parser::ast::{BinaryOp, FunctionId, Type, UnaryOp, VariableId},
