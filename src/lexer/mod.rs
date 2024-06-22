@@ -32,7 +32,7 @@ fn lexer<'src>() -> impl Parser<
 > {
     recursive(|tokens| {
         let ident = text::ascii::ident()
-            .map(|name: &str| Simple::Ident(name.to_string()))
+            .map(|name: &str| Simple::Ident(name.to_owned()))
             .boxed();
 
         let bool = choice((
@@ -75,7 +75,9 @@ fn lexer<'src>() -> impl Parser<
         let keyword = choice((text::keyword("fn").to(Simple::Kw(Kw::Fn)),)).boxed();
 
         let punctuation = choice((
+            just("->").to(Simple::Punc(Punc::Arrow)),
             just("=").to(Simple::Punc(Punc::Equals)),
+            just(":").to(Simple::Punc(Punc::Colon)),
             just(",").to(Simple::Punc(Punc::Comma)),
             just('+').to(Simple::Punc(Punc::Plus)),
             just('-').to(Simple::Punc(Punc::Minus)),

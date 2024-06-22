@@ -1,7 +1,6 @@
 use lexer::tokens::FileId;
-use owo_colors::OwoColorize as _;
+use owo_colors::OwoColorize;
 use parser::ast;
-use salsa::DebugWithDb as _;
 use typechecker::typed_ast;
 
 pub mod db;
@@ -25,6 +24,7 @@ pub struct Jar(
     parser::parse,
     typechecker::typecheck,
     typechecker::typecheck_function,
+    typechecker::find_function,
     typed_ast::TypedProgram<'_>,
     typed_ast::Function<'_>,
 );
@@ -37,7 +37,30 @@ impl<DB> Db for DB where DB: ?Sized + salsa::DbWithJar<Jar> {}
 pub fn compile(db: &dyn crate::Db, source_program: SourceProgram) {
     let program = typechecker::typecheck(db, source_program);
 
-    println!("Program: {:?}", program.debug(db).green());
+    if let Some(program) = program {
+        println!("{}", "typechecking succeeded".green());
+        println!(
+            "typechecked {} functions",
+            program.functions(db).len().yellow()
+        );
+        for function in program.functions(db) {
+            println!(
+                "    {} {}{}{}{} {} {}",
+                "fn".dimmed(),
+                function.name(db).text(db).blue(),
+                '('.dimmed(),
+                function
+                    .params(db)
+                    .iter()
+                    .map(|param| param.type_.yellow().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                ')'.dimmed(),
+                "->".dimmed(),
+                function.return_type(db).yellow(),
+            );
+        }
+    }
 }
 
 #[salsa::input]

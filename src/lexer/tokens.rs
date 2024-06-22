@@ -84,7 +84,9 @@ pub enum Kw {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
 pub enum Punc {
+    Arrow,
     Equals,
+    Colon,
     Comma,
     Plus,
     Minus,
@@ -143,7 +145,9 @@ impl core::fmt::Display for Kw {
 impl core::fmt::Display for Punc {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::Arrow => write!(f, "->"),
             Self::Equals => write!(f, "="),
+            Self::Colon => write!(f, ":"),
             Self::Comma => write!(f, ","),
             Self::Plus => write!(f, "+"),
             Self::Minus => write!(f, "-"),

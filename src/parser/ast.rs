@@ -13,11 +13,13 @@ pub struct Program<'db> {
 pub struct Function<'db> {
     #[id]
     pub name: FunctionId<'db>,
+    pub name_span: Span,
 
-    name_span: Span,
+    pub return_type: Type,
+    pub return_type_span: Span,
 
     #[return_ref]
-    pub args: Vec<VariableId<'db>>,
+    pub args: Vec<FunctionParameter<'db>>,
 
     #[return_ref]
     pub body: Expression<'db>,
@@ -33,6 +35,22 @@ pub struct FunctionId<'db> {
 pub struct VariableId<'db> {
     #[return_ref]
     pub text: String,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub struct FunctionParameter<'db> {
+    pub name: VariableId<'db>,
+    pub name_span: Span,
+
+    pub type_: Type,
+    pub type_span: Span,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub enum Type {
+    Error,
+    Integer,
+    Float,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
@@ -77,4 +95,33 @@ pub enum BinaryOpKind {
     Subtract,
     Multiply,
     Divide,
+}
+
+impl core::fmt::Display for UnaryOpKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Negate => write!(f, "-"),
+        }
+    }
+}
+
+impl core::fmt::Display for BinaryOpKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Add => write!(f, "+"),
+            Self::Subtract => write!(f, "-"),
+            Self::Multiply => write!(f, "*"),
+            Self::Divide => write!(f, "/"),
+        }
+    }
+}
+
+impl core::fmt::Display for Type {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Error => write!(f, "<error>"),
+            Self::Integer => write!(f, "int"),
+            Self::Float => write!(f, "float"),
+        }
+    }
 }

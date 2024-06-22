@@ -7,8 +7,8 @@ use crate::{
     SourceProgram,
 };
 use ast::{
-    BinaryOp, BinaryOpKind, Expression, ExpressionData, Function, FunctionId, Program, UnaryOp,
-    UnaryOpKind, VariableId,
+    BinaryOp, BinaryOpKind, Expression, ExpressionData, Function, FunctionId, FunctionParameter,
+    Program, UnaryOp, UnaryOpKind, VariableId,
 };
 use chumsky::{input::SpannedInput, prelude::*};
 
@@ -57,16 +57,43 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function<'db>, ParserExtra<'src, 'tok>> {
     let name = function_id_parser(db).map_with(|name, e| (name, e.span()));
 
-    let args = parenthesised(comma_separated_list(variable_id_parser(db)));
+    let args = parenthesised(comma_separated_list(
+        variable_id_parser(db)
+            .map_with(|name, e| (name, e.span()))
+            .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Colon))))
+            .then(type_parser().map_with(|type_, e| (type_, e.span())))
+            .map(
+                |((name, name_span), (type_, type_span))| FunctionParameter {
+                    name,
+                    name_span,
+                    type_,
+                    type_span,
+                },
+            ),
+    ));
 
     let body = expr_parser(db);
 
     just(TokenKind::Simple(Simple::Kw(Kw::Fn)))
         .ignore_then(name)
         .then(args)
+        .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Arrow))))
+        .then(type_parser().map_with(|return_type, e| (return_type, e.span())))
         .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Equals))))
         .then(body)
-        .map(|(((name, name_span), args), body)| Function::new(db, name, name_span, args, body))
+        .map(
+            |((((name, name_span), args), (return_type, return_type_span)), body)| {
+                Function::new(
+                    db,
+                    name,
+                    name_span,
+                    return_type,
+                    return_type_span,
+                    args,
+                    body,
+                )
+            },
+        )
         .boxed()
 }
 
@@ -109,7 +136,7 @@ fn expr_parser<'db: 'tok, 'src: 'tok, 'tok>(
             })
             .boxed();
 
-        let atom = choice((variable, integer, float, parenthesised_expr, function_call)).boxed();
+        let atom = choice((function_call, variable, integer, float, parenthesised_expr)).boxed();
 
         let unary = unary_op!(atom, (Punc::Minus => UnaryOpKind::Negate));
 
@@ -210,6 +237,15 @@ fn variable_id_parser<'db: 'tok, 'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, VariableId<'db>, ParserExtra<'src, 'tok>> {
     select! {
         TokenKind::Simple(Simple::Ident(ident)) => VariableId::new(db, ident),
+    }
+    .boxed()
+}
+
+fn type_parser<'db: 'tok, 'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, ast::Type, ParserExtra<'src, 'tok>> {
+    select! {
+        TokenKind::Simple(Simple::Ident(ident)) if ident == "int" => ast::Type::Integer,
+        TokenKind::Simple(Simple::Ident(ident)) if ident == "float" => ast::Type::Float,
     }
     .boxed()
 }

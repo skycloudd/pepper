@@ -2,7 +2,7 @@
 
 use crate::{
     lexer::tokens::Span,
-    parser::ast::{FunctionId, VariableId},
+    parser::ast::{BinaryOp, FunctionId, Type, UnaryOp, VariableId},
 };
 use ordered_float::OrderedFloat;
 
@@ -16,14 +16,25 @@ pub struct TypedProgram<'db> {
 pub struct Function<'db> {
     #[id]
     pub name: FunctionId<'db>,
+    pub name_span: Span,
 
-    name_span: Span,
+    pub return_type: Type,
+    pub return_type_span: Span,
 
     #[return_ref]
-    pub args: Vec<VariableId<'db>>,
+    pub params: Vec<FunctionParameter<'db>>,
 
     #[return_ref]
     pub body: TypedExpression<'db>,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
+pub struct FunctionParameter<'db> {
+    pub name: VariableId<'db>,
+    pub name_span: Span,
+
+    pub type_: Type,
+    pub type_span: Span,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
@@ -46,37 +57,4 @@ pub enum ExpressionData<'db> {
         Box<TypedExpression<'db>>,
         Box<TypedExpression<'db>>,
     ),
-}
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum Type {
-    Integer,
-    Float,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub struct UnaryOp {
-    pub span: Span,
-
-    pub data: UnaryOpKind,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum UnaryOpKind {
-    Negate,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub struct BinaryOp {
-    pub span: Span,
-
-    pub data: BinaryOpKind,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, salsa::DebugWithDb, salsa::Update)]
-pub enum BinaryOpKind {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
 }

@@ -1,1 +1,8 @@
-fn aa() = -(123 + 456) * 789
+fn main() -> int =
+    f(10) - df(2, 10)
+
+fn f(x: int) -> int =
+    x * x
+
+fn df(n: int, x: int) -> int =
+    n * x
