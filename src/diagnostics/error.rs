@@ -36,6 +36,26 @@ pub enum Error {
         found: Type,
         found_span: Span,
     },
+    ExpectedMainReturnType {
+        expected: Type,
+        expected_span: Span,
+        found: Type,
+        found_span: Span,
+    },
+    MainFunctionNotFound,
+    ExpectedMainNoParameters {
+        found: usize,
+        found_span: Span,
+    },
+    DuplicateFunction {
+        name: String,
+        new_span: Span,
+        first_span: Span,
+    },
+    UndefinedVariable {
+        name: String,
+        span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -82,6 +102,34 @@ impl Diag for Error {
                 expected.yellow(),
                 found.yellow()
             ),
+            Self::ExpectedMainReturnType {
+                expected,
+                expected_span: _,
+                found,
+                found_span: _,
+            } => format!(
+                "Expected the `main` function to return {}, but it returns {}",
+                expected.yellow(),
+                found.yellow()
+            ),
+            Self::MainFunctionNotFound => {
+                "No `main` function could be found in the program".to_string()
+            }
+            Self::ExpectedMainNoParameters {
+                found,
+                found_span: _,
+            } => format!(
+                "Expected the `main` function to have no parameters, but it has {} parameters",
+                found.yellow()
+            ),
+            Self::DuplicateFunction {
+                name,
+                new_span: _,
+                first_span: _,
+            } => format!("Function {} is already defined", name.yellow()),
+            Self::UndefinedVariable { name, span: _ } => {
+                format!("Variable {name} is not defined")
+            }
         }
     }
 
@@ -139,6 +187,32 @@ impl Diag for Error {
                 ErrorSpan::Primary(Some(format!("Expected {expected}")), *expected_span),
                 ErrorSpan::Primary(Some(format!("Found {found}")), *found_span),
             ],
+            Self::ExpectedMainReturnType {
+                expected,
+                expected_span,
+                found,
+                found_span,
+            } => vec![
+                ErrorSpan::Primary(Some(format!("Expected {expected}")), *expected_span),
+                ErrorSpan::Primary(Some(format!("But found {found}")), *found_span),
+            ],
+            Self::MainFunctionNotFound => vec![],
+            Self::ExpectedMainNoParameters {
+                found: _,
+                found_span,
+            } => vec![ErrorSpan::Primary(None, *found_span)],
+            Self::DuplicateFunction {
+                name,
+                new_span,
+                first_span,
+            } => vec![
+                ErrorSpan::Primary(Some(format!("`{name}` first defined here")), *first_span),
+                ErrorSpan::Primary(Some(format!("`{name}` redefined here")), *new_span),
+            ],
+            Self::UndefinedVariable { name, span } => vec![ErrorSpan::Primary(
+                Some(format!("`{name}` is not defined")),
+                *span,
+            )],
         }
     }
 
@@ -148,7 +222,21 @@ impl Diag for Error {
             | Self::Custom { .. }
             | Self::BinaryOpTypeMismatch { .. }
             | Self::UnaryOpTypeMismatch { .. }
-            | Self::ExpectedReturnType { .. } => vec![],
+            | Self::ExpectedReturnType { .. }
+            | Self::ExpectedMainNoParameters { .. }
+            | Self::DuplicateFunction { .. }
+            | Self::UndefinedVariable { .. } => vec![],
+            Self::ExpectedMainReturnType { expected, .. } => {
+                vec![format!(
+                    "The `main` function must return {}",
+                    expected.yellow()
+                )]
+            }
+            Self::MainFunctionNotFound => vec![
+                "The `main` function is the entry point of the program".to_string(),
+                "It must have the following signature:".to_string(),
+                "`fn main() -> int`".to_string(),
+            ],
         }
     }
 

@@ -17,7 +17,8 @@ pub struct Function<'db> {
     pub return_type_span: Span,
 
     #[return_ref]
-    pub args: Vec<FunctionParameter<'db>>,
+    pub params: Vec<FunctionParameter<'db>>,
+    pub params_span: Span,
 
     #[return_ref]
     pub body: Expression<'db>,

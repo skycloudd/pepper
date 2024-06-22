@@ -21,6 +21,7 @@ pub struct Function<'db> {
 
     #[return_ref]
     pub params: Vec<FunctionParameter<'db>>,
+    pub params_span: Span,
 
     #[return_ref]
     pub body: TypedExpression<'db>,

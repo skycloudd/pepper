@@ -58,7 +58,7 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function<'db>, ParserExtra<'src, 'tok>> {
     let name = function_id_parser(db).map_with(|name, e| (name, e.span()));
 
-    let args = parenthesised(comma_separated_list(
+    let params = parenthesised(comma_separated_list(
         variable_id_parser(db)
             .map_with(|name, e| (name, e.span()))
             .labelled("parameter name")
@@ -77,7 +77,8 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
                 },
             )
             .labelled("function parameter"),
-    ));
+    ))
+    .map_with(|params, e| (params, e.span()));
 
     let return_type = type_parser().map_with(|return_type, e| (return_type, e.span()));
 
@@ -85,20 +86,24 @@ fn function_parser<'db: 'tok, 'src: 'tok, 'tok>(
 
     just(TokenKind::Simple(Simple::Kw(Kw::Fn)))
         .ignore_then(name.labelled("function name"))
-        .then(args.labelled("function parameters"))
+        .then(params.labelled("function parameters"))
         .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Arrow))))
         .then(return_type.labelled("return type"))
         .then_ignore(just(TokenKind::Simple(Simple::Punc(Punc::Equals))))
         .then(body.labelled("function body"))
         .map(
-            |((((name, name_span), args), (return_type, return_type_span)), body)| {
+            |(
+                (((name, name_span), (params, params_span)), (return_type, return_type_span)),
+                body,
+            )| {
                 Function::new(
                     db,
                     name,
                     name_span,
                     return_type,
                     return_type_span,
-                    args,
+                    params,
+                    params_span,
                     body,
                 )
             },

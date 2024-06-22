@@ -10,6 +10,7 @@ use rustc_hash::FxHashMap;
 use typed_ast::{ExpressionData, Function, FunctionParameter, TypedExpression, TypedProgram};
 
 pub mod typed_ast;
+pub mod validation;
 
 #[salsa::tracked]
 pub fn typecheck(db: &dyn crate::Db, source_program: SourceProgram) -> Option<TypedProgram<'_>> {
@@ -21,7 +22,11 @@ pub fn typecheck(db: &dyn crate::Db, source_program: SourceProgram) -> Option<Ty
         .map(|function| typecheck_function(db, *function, program))
         .collect();
 
-    Some(TypedProgram::new(db, functions))
+    let typechecked = Some(TypedProgram::new(db, functions));
+
+    typechecked
+        .inspect(|program| validation::validate_main_function(db, *program))
+        .inspect(|program| validation::validate_unique_function_names(db, *program))
 }
 
 #[salsa::tracked]
@@ -31,7 +36,7 @@ pub fn typecheck_function<'db>(
     program: Program<'db>,
 ) -> Function<'db> {
     let names_in_scope = function
-        .args(db)
+        .params(db)
         .iter()
         .map(|arg| (arg.name, arg.type_))
         .collect();
@@ -52,8 +57,8 @@ pub fn typecheck_function<'db>(
         _ => {}
     }
 
-    let args = function
-        .args(db)
+    let params = function
+        .params(db)
         .iter()
         .map(|arg| FunctionParameter {
             name: arg.name,
@@ -69,17 +74,31 @@ pub fn typecheck_function<'db>(
         function.name_span(db),
         function.return_type(db),
         function.return_type_span(db),
-        args,
+        params,
+        function.params_span(db),
         body,
     )
 }
 
 #[salsa::tracked]
-pub fn find_function<'db>(
+pub fn find_function_untyped<'db>(
     db: &'db dyn crate::Db,
     program: Program<'db>,
     name: FunctionId<'db>,
 ) -> Option<ast::Function<'db>> {
+    program
+        .functions(db)
+        .iter()
+        .find(|function| function.name(db) == name)
+        .copied()
+}
+
+#[salsa::tracked]
+pub fn find_function_typed<'db>(
+    db: &'db dyn crate::Db,
+    program: TypedProgram<'db>,
+    name: FunctionId<'db>,
+) -> Option<Function<'db>> {
     program
         .functions(db)
         .iter()
@@ -119,11 +138,17 @@ impl<'db> CheckExpression<'db> {
                 data: ExpressionData::Float(*value),
             },
             ast::ExpressionData::Variable(name) => {
-                let ty = self
-                    .names_in_scope
-                    .get(name)
-                    .copied()
-                    .unwrap_or(Type::Error);
+                let ty = self.names_in_scope.get(name).copied().unwrap_or_else(|| {
+                    Diagnostics::push(
+                        self.db,
+                        Error::UndefinedVariable {
+                            name: name.text(self.db).to_owned(),
+                            span: expression.span,
+                        },
+                    );
+
+                    Type::Error
+                });
 
                 TypedExpression {
                     span: expression.span,
@@ -132,7 +157,7 @@ impl<'db> CheckExpression<'db> {
                 }
             }
             ast::ExpressionData::Call(function_id, call_args) => {
-                let callee = find_function(self.db, self.program, *function_id);
+                let callee = find_function_untyped(self.db, self.program, *function_id);
 
                 TypedExpression {
                     span: expression.span,

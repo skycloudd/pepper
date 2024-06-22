@@ -24,7 +24,10 @@ pub struct Jar(
     parser::parse,
     typechecker::typecheck,
     typechecker::typecheck_function,
-    typechecker::find_function,
+    typechecker::find_function_untyped,
+    typechecker::find_function_typed,
+    typechecker::validation::validate_main_function,
+    typechecker::validation::validate_unique_function_names,
     typed_ast::TypedProgram<'_>,
     typed_ast::Function<'_>,
 );
