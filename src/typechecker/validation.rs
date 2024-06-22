@@ -1,11 +1,10 @@
-use rustc_hash::FxHashSet;
-
 use super::typed_ast::TypedProgram;
 use crate::{
     diagnostics::{error::Error, Diagnostics},
     parser::ast::{FunctionId, Type},
-    typechecker::{find_function_typed, typed_ast::Function},
+    typechecker::find_function_typed,
 };
+use rustc_hash::FxHashSet;
 
 #[salsa::tracked]
 pub fn validate_main_function<'db>(db: &'db dyn crate::Db, program: TypedProgram<'db>) {
@@ -39,10 +38,13 @@ pub fn validate_main_function<'db>(db: &'db dyn crate::Db, program: TypedProgram
 
 #[salsa::tracked]
 pub fn validate_unique_function_names<'db>(db: &'db dyn crate::Db, program: TypedProgram<'db>) {
-    let mut seen: FxHashSet<Function> = FxHashSet::default();
+    let mut seen = FxHashSet::default();
 
     for new_function in program.functions(db) {
         match seen.get(new_function) {
+            None => {
+                seen.insert(*new_function);
+            }
             Some(seen_function) => {
                 Diagnostics::push(
                     db,
@@ -52,9 +54,6 @@ pub fn validate_unique_function_names<'db>(db: &'db dyn crate::Db, program: Type
                         first_span: seen_function.name_span(db),
                     },
                 );
-            }
-            None => {
-                seen.insert(*new_function);
             }
         }
     }
