@@ -19,7 +19,7 @@ struct Args {
     filename: Utf8PathBuf,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let db = pepper::db::Database::default();
@@ -29,7 +29,7 @@ fn main() {
 
     let mut files = SimpleFiles::new();
 
-    let text = std::fs::read_to_string(&args.filename).unwrap();
+    let text = std::fs::read_to_string(&args.filename)?;
 
     let id = files.add(args.filename, text.clone());
     let file_id = FileId::new(&db, id);
@@ -41,6 +41,8 @@ fn main() {
     for error in diagnostics {
         let diag = report(&db, &error);
 
-        term::emit(&mut writer.lock(), &config, &files, &diag).unwrap();
+        term::emit(&mut writer.lock(), &config, &files, &diag)?;
     }
+
+    Ok(())
 }
