@@ -5,7 +5,7 @@ use crate::{
 };
 use chumsky::error::{Rich, RichReason};
 use codespan_reporting::diagnostic::Severity;
-use owo_colors::OwoColorize;
+use owo_colors::OwoColorize as _;
 
 #[derive(Clone, Debug)]
 pub enum Error {
@@ -55,6 +55,12 @@ pub enum Error {
     UndefinedVariable {
         name: String,
         span: Span,
+    },
+    ArgumentTypeMismatch {
+        expected: Type,
+        expected_span: Span,
+        found: Type,
+        found_span: Span,
     },
 }
 
@@ -130,6 +136,16 @@ impl Diag for Error {
             Self::UndefinedVariable { name, span: _ } => {
                 format!("Variable {name} is not defined")
             }
+            Self::ArgumentTypeMismatch {
+                expected,
+                expected_span: _,
+                found,
+                found_span: _,
+            } => format!(
+                "Expected a function argument of type {}, but found an argument of type {}",
+                expected.yellow(),
+                found.yellow()
+            ),
         }
     }
 
@@ -213,6 +229,21 @@ impl Diag for Error {
                 Some(format!("`{name}` is not defined")),
                 *span,
             )],
+            Self::ArgumentTypeMismatch {
+                expected,
+                expected_span,
+                found,
+                found_span,
+            } => vec![
+                ErrorSpan::Primary(
+                    Some(format!("Expected `{expected}` because of this parameter")),
+                    *expected_span,
+                ),
+                ErrorSpan::Primary(
+                    Some(format!("Found an argument of type `{found}`")),
+                    *found_span,
+                ),
+            ],
         }
     }
 
@@ -225,7 +256,8 @@ impl Diag for Error {
             | Self::ExpectedReturnType { .. }
             | Self::ExpectedMainNoParameters { .. }
             | Self::DuplicateFunction { .. }
-            | Self::UndefinedVariable { .. } => vec![],
+            | Self::UndefinedVariable { .. }
+            | Self::ArgumentTypeMismatch { .. } => vec![],
             Self::ExpectedMainReturnType { expected, .. } => {
                 vec![format!(
                     "The `main` function must return {}",

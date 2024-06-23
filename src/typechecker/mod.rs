@@ -159,6 +159,25 @@ impl<'db> CheckExpression<'db> {
             ast::ExpressionData::Call(function_id, call_args) => {
                 let callee = find_function_untyped(self.db, self.program, *function_id);
 
+                for (arg, param) in call_args
+                    .iter()
+                    .zip(callee.iter().flat_map(|f| f.params(self.db)))
+                {
+                    let arg = self.check(arg);
+
+                    if arg.ty != param.type_ {
+                        Diagnostics::push(
+                            self.db,
+                            Error::ArgumentTypeMismatch {
+                                expected: param.type_,
+                                expected_span: param.type_span,
+                                found: arg.ty,
+                                found_span: arg.span,
+                            },
+                        );
+                    }
+                }
+
                 TypedExpression {
                     span: expression.span,
                     ty: callee.map_or(Type::Error, |callee| callee.return_type(self.db)),
