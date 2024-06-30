@@ -2,6 +2,7 @@ use super::{Diag, ErrorSpan};
 use crate::{
     lexer::tokens::Span,
     parser::ast::{BinaryOp, Type, UnaryOp},
+    typechecker::validation::MAIN_FUNCTION_NAME,
 };
 use chumsky::error::{Rich, RichReason};
 use codespan_reporting::diagnostic::Severity;
@@ -114,18 +115,23 @@ impl Diag for Error {
                 found,
                 found_span: _,
             } => format!(
-                "Expected the `main` function to return {}, but it returns {}",
+                "Expected the `{}` function to return {}, but it returns {}",
+                MAIN_FUNCTION_NAME.yellow(),
                 expected.yellow(),
                 found.yellow()
             ),
             Self::MainFunctionNotFound => {
-                "No `main` function could be found in the program".to_string()
+                format!(
+                    "No `{}` function could be found in the program",
+                    MAIN_FUNCTION_NAME.yellow()
+                )
             }
             Self::ExpectedMainNoParameters {
                 found,
                 found_span: _,
             } => format!(
-                "Expected the `main` function to have no parameters, but it has {} parameters",
+                "Expected the `{}` function to have no parameters, but it has {} parameters",
+                MAIN_FUNCTION_NAME.yellow(),
                 found.yellow()
             ),
             Self::DuplicateFunction {
@@ -260,14 +266,18 @@ impl Diag for Error {
             | Self::ArgumentTypeMismatch { .. } => vec![],
             Self::ExpectedMainReturnType { expected, .. } => {
                 vec![format!(
-                    "The `main` function must return {}",
+                    "The `{}` function must return {}",
+                    MAIN_FUNCTION_NAME.yellow(),
                     expected.yellow()
                 )]
             }
             Self::MainFunctionNotFound => vec![
-                "The `main` function is the entry point of the program".to_string(),
+                format!(
+                    "The `{}` function is the entry point of the program",
+                    MAIN_FUNCTION_NAME
+                ),
                 "It must have the following signature:".to_string(),
-                "`fn main() -> int`".to_string(),
+                format!("`fn {}() -> int`", MAIN_FUNCTION_NAME),
             ],
         }
     }

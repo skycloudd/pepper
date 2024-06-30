@@ -6,9 +6,15 @@ use crate::{
 };
 use rustc_hash::FxHashSet;
 
+pub const MAIN_FUNCTION_NAME: &str = "main";
+
 #[salsa::tracked]
 pub fn validate_main_function<'db>(db: &'db dyn crate::Db, program: TypedProgram<'db>) {
-    match find_function_typed(db, program, FunctionId::new(db, "main".to_string())) {
+    match find_function_typed(
+        db,
+        program,
+        FunctionId::new(db, MAIN_FUNCTION_NAME.to_string()),
+    ) {
         Some(main_function) => {
             if main_function.return_type(db) != Type::Integer {
                 Diagnostics::push(

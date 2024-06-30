@@ -8,10 +8,12 @@ camino = "1.1.7"
 chumsky = { version = "1.0.0-alpha.7", features = ["label"] }
 clap = { version = "4.5.7", features = ["derive"] }
 codespan-reporting = "0.11.1"
+cranelift = { version = "0.109.0", features = ["module", "native", "object"] }
 ordered-float = "4.2.0"
 owo-colors = "4.0.0"
 rustc-hash = "2.0.0"
-salsa = { git = "https://github.com/salsa-rs/salsa.git", rev = "f706aa2" }
+salsa = { git = "https://github.com/salsa-rs/salsa.git", rev = "a1bf3a6" }
+target-lexicon = "0.12.14"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
