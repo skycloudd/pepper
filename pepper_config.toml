@@ -1,0 +1,3 @@
+[target.aarch64-apple-darwin.linker]
+command = "ld64.lld"
+flags = ["-platform_version", "macos", "14.2", "14.5", "-arch", "arm64"]

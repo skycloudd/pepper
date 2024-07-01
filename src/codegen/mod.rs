@@ -102,10 +102,9 @@ impl<'a, 'db> Codegen<'a, 'db> {
 
         translator.builder.finalize();
 
-        let linkage = if function.name(self.db).text(self.db) == MAIN_FUNCTION_NAME {
-            Linkage::Export
-        } else {
-            Linkage::Local
+        let linkage = match function.name(self.db).text(self.db).as_str() {
+            MAIN_FUNCTION_NAME => Linkage::Export,
+            _ => Linkage::Local,
         };
 
         let id = self

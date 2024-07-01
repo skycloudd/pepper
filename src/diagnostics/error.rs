@@ -63,6 +63,10 @@ pub enum Error {
         found: Type,
         found_span: Span,
     },
+    ReservedFunctionName {
+        name: String,
+        span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -152,6 +156,12 @@ impl Diag for Error {
                 expected.yellow(),
                 found.yellow()
             ),
+            Self::ReservedFunctionName { name, span: _ } => {
+                format!(
+                    "Function name {} is reserved and cannot be used",
+                    name.yellow()
+                )
+            }
         }
     }
 
@@ -250,6 +260,10 @@ impl Diag for Error {
                     *found_span,
                 ),
             ],
+            Self::ReservedFunctionName { name, span } => vec![ErrorSpan::Primary(
+                Some(format!("`{name}` is a reserved function name")),
+                *span,
+            )],
         }
     }
 
@@ -263,7 +277,8 @@ impl Diag for Error {
             | Self::ExpectedMainNoParameters { .. }
             | Self::DuplicateFunction { .. }
             | Self::UndefinedVariable { .. }
-            | Self::ArgumentTypeMismatch { .. } => vec![],
+            | Self::ArgumentTypeMismatch { .. }
+            | Self::ReservedFunctionName { .. } => vec![],
             Self::ExpectedMainReturnType { expected, .. } => {
                 vec![format!(
                     "The `{}` function must return {}",

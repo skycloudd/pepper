@@ -7,7 +7,7 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use core::str::FromStr as _;
+use core::{fmt::Write as _, str::FromStr as _};
 use owo_colors::OwoColorize as _;
 use pepper::{
     compile,
@@ -15,6 +15,7 @@ use pepper::{
     lexer::tokens::FileId,
     SourceProgram,
 };
+use serde::Deserialize;
 use std::{io::Write as _, os::unix::process::ExitStatusExt as _};
 use target_lexicon::Triple;
 
@@ -27,10 +28,51 @@ struct Args {
 
     #[clap(short, long)]
     target: Option<String>,
+
+    #[clap(short, long)]
+    config: Option<Utf8PathBuf>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    target: Target,
+}
+
+#[derive(Debug, Deserialize)]
+struct Target {
+    #[serde(rename = "aarch64-apple-darwin")]
+    aarch64_apple_darwin: Aarch64AppleDarwin,
+}
+
+#[derive(Debug, Deserialize)]
+struct Aarch64AppleDarwin {
+    linker: Linker,
+}
+
+#[derive(Debug, Deserialize)]
+struct Linker {
+    command: String,
+    flags: Vec<String>,
+}
+
+trait TargetConfig {
+    fn linker(&self) -> &Linker;
+}
+
+impl TargetConfig for Aarch64AppleDarwin {
+    fn linker(&self) -> &Linker {
+        &self.linker
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
+
+    let pepper_config: Config = toml::from_str(&std::fs::read_to_string(
+        args.config
+            .as_deref()
+            .unwrap_or_else(|| "pepper_config.toml".into()),
+    )?)?;
 
     let target_triple = args
         .target
@@ -38,12 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_or_else(|| Ok(Triple::host()), Triple::from_str)
         .map_err(|err| format!("invalid target triple: {err}"))?;
 
-    println!("Target: {target_triple}");
-
     let db = pepper::db::Database::default();
-
-    let writer = StandardStream::stderr(ColorChoice::Auto);
-    let config = term::Config::default();
 
     let mut files = SimpleFiles::new();
 
@@ -57,14 +94,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let diagnostics =
         compile::accumulated::<Diagnostics>(&db, source_program, target_triple.clone());
 
+    let writer = StandardStream::stderr(ColorChoice::Auto);
+    let term_config = term::Config::default();
+
     for error in &diagnostics {
         let diag = report(&db, error);
 
-        term::emit(&mut writer.lock(), &config, &files, &diag)?;
+        term::emit(&mut writer.lock(), &term_config, &files, &diag)?;
     }
 
     if diagnostics.is_empty() {
-        let linker = "cc";
+        let target_config = match target_triple.to_string().as_str() {
+            "aarch64-apple-darwin" => {
+                &pepper_config.target.aarch64_apple_darwin as &dyn TargetConfig
+            }
+            _ => return Err(format!("unsupported target triple: {target_triple}").into()),
+        };
+
+        let linker_config = target_config.linker();
 
         let object_file = args.out.with_extension("o");
         let program_file = args.out;
@@ -77,23 +124,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         output_file.write_all(output)?;
 
         println!("Compilation successful");
-        println!("Output written to `{}`", object_file.green());
+
         println!(
-            "Running `{}` to link the object file",
-            format!("{linker} {object_file} -o {program_file}").yellow()
+            "Linking with: {}",
+            format!(
+                "{} {object_file} -o {program_file}{}",
+                linker_config.command,
+                linker_config
+                    .flags
+                    .iter()
+                    .fold(String::new(), |mut init, flag| {
+                        write!(init, " {flag}").unwrap();
+                        init
+                    }),
+            )
+            .green()
         );
 
-        let mut link_command = std::process::Command::new(linker)
+        let status = std::process::Command::new(&linker_config.command)
             .arg(object_file)
             .arg("-o")
             .arg(&program_file)
-            .spawn()?;
-
-        let status = link_command.wait()?;
+            .args(&linker_config.flags)
+            .status()?;
 
         if !status.success() {
             return Err(format!(
-                "{linker} exited with {}",
+                "{} exited with {}",
+                linker_config.command,
                 status.code().map_or_else(
                     || format!("signal {}", status.signal().unwrap()),
                     |code| format!("code {code}")
@@ -101,8 +159,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .into());
         }
-
-        println!("Linked object file to `{}`", program_file.green());
     }
 
     Ok(())
