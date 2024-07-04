@@ -16,7 +16,9 @@ use pepper::{
     SourceProgram,
 };
 use serde::Deserialize;
-use std::{io::Write as _, os::unix::process::ExitStatusExt as _};
+use std::io::Write as _;
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt as _;
 use target_lexicon::Triple;
 
 #[derive(Parser)]
@@ -153,7 +155,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "{} exited with {}",
                 linker_config.command,
                 status.code().map_or_else(
+                    #[cfg(unix)]
                     || format!("signal {}", status.signal().unwrap()),
+                    #[cfg(not(unix))]
+                    || "unknown exit code".to_string(),
                     |code| format!("code {code}")
                 )
             )
