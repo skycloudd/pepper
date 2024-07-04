@@ -26,7 +26,7 @@ struct Args {
     filename: Utf8PathBuf,
 
     #[clap(short, long)]
-    out: Utf8PathBuf,
+    out: Option<Utf8PathBuf>,
 
     #[clap(short, long)]
     target: Option<String>,
@@ -115,8 +115,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let linker_config = target_config.linker();
 
-        let object_file = args.out.with_extension("o");
-        let program_file = args.out;
+        let output_file = args.out.unwrap_or_else(|| "a.out".into());
+        let object_file = output_file.with_extension("o");
+        let program_file = output_file;
 
         let output = compile::get(&db, source_program, target_triple)
             .as_ref()
