@@ -8,7 +8,7 @@ use codespan_reporting::{
     },
 };
 use config::{Config, Linker, WithLinker};
-use core::{fmt::Write as _, str::FromStr as _};
+use core::fmt::Write as _;
 use owo_colors::OwoColorize as _;
 use pepper::{
     compile,
@@ -31,9 +31,6 @@ struct Args {
     out: Option<Utf8PathBuf>,
 
     #[clap(short, long)]
-    target: Option<String>,
-
-    #[clap(short, long)]
     config: Option<Utf8PathBuf>,
 }
 
@@ -46,11 +43,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_else(|| "pepper_config.toml".into()),
     )?)?;
 
-    let target_triple = args
-        .target
-        .as_deref()
-        .map_or_else(|| Ok(Triple::host()), Triple::from_str)
-        .map_err(|err| format!("invalid target triple: {err}"))?;
+    let target_triple = Triple::host();
+
+    println!("Compiling for {}", target_triple.green());
 
     let db = pepper::db::Database::default();
 
@@ -78,6 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if diagnostics.is_empty() {
         let target_config = match target_triple.to_string().as_str() {
             "aarch64-apple-darwin" => &pepper_config.target.aarch64_apple_darwin as &dyn WithLinker,
+            "x86_64-unknown-linux-gnu" => &pepper_config.target.x86_64_unknown_linux_gnu,
             _ => return Err(format!("unsupported target triple: {target_triple}").into()),
         };
 
