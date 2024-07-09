@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 camino = "1.1.7"
 chumsky = { version = "1.0.0-alpha.7", features = ["label"] }
-clap = { version = "4.5.8", features = ["derive"] }
+clap = { version = "4.5.9", features = ["derive"] }
 codespan-reporting = "0.11.1"
 cranelift = { version = "0.109.0", features = ["module", "object"] }
 ordered-float = "4.2.1"
