@@ -1,6 +1,7 @@
 use crate::{
     lexer::tokens::{Kw, Punc, SimpleToken, Token},
     span::{Span, Spanned},
+    RODEO,
 };
 use ast::{
     BinaryOp, Expression, Function, FunctionParam, Identifier, Item, Path, PrimitiveType, Program,
@@ -15,7 +16,7 @@ type ParserInput<'src, 'tok> = SpannedInput<Token<'src>, Span, &'tok [(Token<'sr
 type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src str>>;
 
 pub fn parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Program<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Program, ParserExtra<'src, 'tok>> {
     item_parser()
         .spanned()
         .repeated()
@@ -26,7 +27,7 @@ pub fn parser<'src: 'tok, 'tok>(
 }
 
 fn item_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Item<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Item, ParserExtra<'src, 'tok>> {
     choice((
         function_parser().spanned().map(Item::Function),
         struct_parser().spanned().map(Item::Struct),
@@ -35,7 +36,7 @@ fn item_parser<'src: 'tok, 'tok>(
 }
 
 fn function_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function, ParserExtra<'src, 'tok>> {
     let name = ident_parser().spanned();
 
     let params = function_param_parser()
@@ -73,7 +74,7 @@ fn function_parser<'src: 'tok, 'tok>(
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, FunctionParam<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, FunctionParam, ParserExtra<'src, 'tok>> {
     ident_parser()
         .spanned()
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Colon))))
@@ -83,7 +84,7 @@ fn function_param_parser<'src: 'tok, 'tok>(
 }
 
 fn statement_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Statement<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Statement, ParserExtra<'src, 'tok>> {
     recursive(|statement| {
         let expr = expression_parser()
             .spanned()
@@ -128,7 +129,7 @@ fn statement_parser<'src: 'tok, 'tok>(
 }
 
 fn expression_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> {
     macro_rules! unary_op {
         ($base:expr, $(($punc:expr => $to:expr)),*) => {{
             let ops = choice((
@@ -240,7 +241,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 }
 
 fn struct_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Struct<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Struct, ParserExtra<'src, 'tok>> {
     let name = ident_parser().spanned();
 
     let fields = struct_field_parser()
@@ -259,7 +260,7 @@ fn struct_parser<'src: 'tok, 'tok>(
 }
 
 fn struct_field_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, StructField<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, StructField, ParserExtra<'src, 'tok>> {
     ident_parser()
         .spanned()
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Colon))))
@@ -269,15 +270,15 @@ fn struct_field_parser<'src: 'tok, 'tok>(
 }
 
 fn ident_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
-        Token::Simple(SimpleToken::Identifier(ident)) = e => Identifier(Spanned::new(ident, e.span())),
+        Token::Simple(SimpleToken::Identifier(ident)) = e => Identifier(Spanned::new(RODEO.get_or_intern(ident), e.span())),
     }
     .boxed()
 }
 
 fn type_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type, ParserExtra<'src, 'tok>> {
     macro_rules! prim {
         ($ident:literal, $variant:ident) => {
             just(Token::Simple(SimpleToken::Identifier($ident))).to(PrimitiveType::$variant)
@@ -307,7 +308,7 @@ fn type_parser<'src: 'tok, 'tok>(
 }
 
 fn path_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Path<'src>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Path, ParserExtra<'src, 'tok>> {
     ident_parser()
         .spanned()
         .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::ColonColon))))

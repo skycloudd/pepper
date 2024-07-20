@@ -61,6 +61,7 @@ impl Diag for Error {
     }
 }
 
+#[must_use]
 pub fn convert(error: &Rich<impl Display, Span, &str>) -> Vec<Error> {
     fn convert_inner(reason: &RichReason<impl Display, &str>, span: Span) -> Vec<Error> {
         match reason {

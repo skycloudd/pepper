@@ -38,15 +38,12 @@ impl chumsky::span::Span for Span {
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct FileId(usize);
+pub struct FileId(pub usize);
 
 impl FileId {
+    #[must_use]
     pub const fn new(id: usize) -> Self {
         Self(id)
-    }
-
-    pub const fn id(self) -> usize {
-        self.0
     }
 }
 

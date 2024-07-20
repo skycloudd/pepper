@@ -9,13 +9,18 @@ use codespan_reporting::{
     },
 };
 use diagnostics::{error::convert, report::report};
+use lasso::ThreadedRodeo;
+use once_cell::sync::Lazy;
+use parser::ast::Program;
 use span::FileId;
 use std::fs::read_to_string;
 
-mod diagnostics;
-mod lexer;
-mod parser;
-mod span;
+pub mod diagnostics;
+pub mod lexer;
+pub mod parser;
+pub mod span;
+
+static RODEO: Lazy<ThreadedRodeo> = Lazy::new(ThreadedRodeo::new);
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -29,9 +34,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut files = SimpleFiles::new();
 
-    let source = read_to_string(&args.filename)?;
+    let mut errors = Vec::new();
 
-    let errors = parse_file(&args.filename, &source, &mut files);
+    {
+        let source = read_to_string(&args.filename)?;
+
+        let (ast, parse_errors) = parse_file(&args.filename, &source, &mut files);
+
+        errors.extend(parse_errors);
+
+        eprintln!("{ast:?}");
+    }
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();
@@ -46,14 +59,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 type Name<'path> = &'path Utf8Path;
-type Source<'src> = &'src str;
 
-fn parse_file<'path, 'src>(
+fn parse_file<'path>(
     name: Name<'path>,
-    source: Source<'src>,
-    files: &mut SimpleFiles<Name<'path>, Source<'src>>,
-) -> Vec<diagnostics::error::Error> {
-    let file_id = FileId::new(files.add(name, source));
+    source: &str,
+    files: &mut SimpleFiles<Name<'path>, String>,
+) -> (Option<Program>, Vec<diagnostics::error::Error>) {
+    let file_id = FileId::new(files.add(name, source.to_string()));
 
     let mut errors = Vec::new();
 
@@ -76,7 +88,5 @@ fn parse_file<'path, 'src>(
 
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
-    eprintln!("{ast:?}");
-
-    errors
+    (ast, errors)
 }

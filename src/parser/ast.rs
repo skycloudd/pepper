@@ -1,62 +1,64 @@
+use lasso::Spur;
+
 use crate::span::Spanned;
 
 #[derive(Clone, Debug)]
-pub struct Program<'src>(pub Spanned<Vec<Spanned<Item<'src>>>>);
+pub struct Program(pub Spanned<Vec<Spanned<Item>>>);
 
 #[derive(Clone, Debug)]
-pub enum Item<'src> {
-    Function(Spanned<Function<'src>>),
-    Struct(Spanned<Struct<'src>>),
+pub enum Item {
+    Function(Spanned<Function>),
+    Struct(Spanned<Struct>),
 }
 
 #[derive(Clone, Debug)]
-pub struct Function<'src> {
-    pub name: Spanned<Identifier<'src>>,
-    pub params: Spanned<Vec<Spanned<FunctionParam<'src>>>>,
-    pub return_ty: Spanned<Type<'src>>,
-    pub body: Spanned<Vec<Spanned<Statement<'src>>>>,
-    pub return_expr: Option<Spanned<Expression<'src>>>,
+pub struct Function {
+    pub name: Spanned<Identifier>,
+    pub params: Spanned<Vec<Spanned<FunctionParam>>>,
+    pub return_ty: Spanned<Type>,
+    pub body: Spanned<Vec<Spanned<Statement>>>,
+    pub return_expr: Option<Spanned<Expression>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct FunctionParam<'src> {
-    pub name: Spanned<Identifier<'src>>,
-    pub ty: Spanned<Type<'src>>,
+pub struct FunctionParam {
+    pub name: Spanned<Identifier>,
+    pub ty: Spanned<Type>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Statement<'src> {
-    Expression(Spanned<Expression<'src>>),
-    Block(Spanned<Vec<Spanned<Statement<'src>>>>),
+pub enum Statement {
+    Expression(Spanned<Expression>),
+    Block(Spanned<Vec<Spanned<Statement>>>),
     Let {
-        name: Spanned<Identifier<'src>>,
-        ty: Option<Spanned<Type<'src>>>,
-        value: Spanned<Expression<'src>>,
+        name: Spanned<Identifier>,
+        ty: Option<Spanned<Type>>,
+        value: Spanned<Expression>,
     },
     Assign {
-        name: Spanned<Identifier<'src>>,
-        value: Spanned<Expression<'src>>,
+        name: Spanned<Identifier>,
+        value: Spanned<Expression>,
     },
 }
 
 #[derive(Clone, Debug)]
-pub enum Expression<'src> {
+pub enum Expression {
     Integer(Spanned<u128>),
     Float(Spanned<f64>),
     Bool(Spanned<bool>),
-    Variable(Spanned<Identifier<'src>>),
+    Variable(Spanned<Identifier>),
     BinaryOp {
         op: Spanned<BinaryOp>,
-        lhs: Spanned<Box<Expression<'src>>>,
-        rhs: Spanned<Box<Expression<'src>>>,
+        lhs: Spanned<Box<Expression>>,
+        rhs: Spanned<Box<Expression>>,
     },
     UnaryOp {
         op: Spanned<UnaryOp>,
-        expr: Spanned<Box<Expression<'src>>>,
+        expr: Spanned<Box<Expression>>,
     },
     Call {
-        name: Spanned<Path<'src>>,
-        args: Spanned<Vec<Spanned<Expression<'src>>>>,
+        name: Spanned<Path>,
+        args: Spanned<Vec<Spanned<Expression>>>,
     },
 }
 
@@ -74,21 +76,21 @@ pub enum UnaryOp {
 }
 
 #[derive(Clone, Debug)]
-pub struct Struct<'src> {
-    pub name: Spanned<Identifier<'src>>,
-    pub fields: Spanned<Vec<Spanned<StructField<'src>>>>,
+pub struct Struct {
+    pub name: Spanned<Identifier>,
+    pub fields: Spanned<Vec<Spanned<StructField>>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct StructField<'src> {
-    pub name: Spanned<Identifier<'src>>,
-    pub ty: Spanned<Type<'src>>,
+pub struct StructField {
+    pub name: Spanned<Identifier>,
+    pub ty: Spanned<Type>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Type<'src> {
+pub enum Type {
     Primitive(Spanned<PrimitiveType>),
-    User(Spanned<Path<'src>>),
+    User(Spanned<Path>),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -107,7 +109,7 @@ pub enum PrimitiveType {
 }
 
 #[derive(Clone, Debug)]
-pub struct Path<'src>(pub Spanned<Vec<Spanned<Identifier<'src>>>>);
+pub struct Path(pub Spanned<Vec<Spanned<Identifier>>>);
 
 #[derive(Clone, Copy, Debug)]
-pub struct Identifier<'src>(pub Spanned<&'src str>);
+pub struct Identifier(pub Spanned<Spur>);

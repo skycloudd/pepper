@@ -3,7 +3,7 @@ use chumsky::span::Span as _;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 pub fn report(diagnostic: &impl Diag) -> Diagnostic<usize> {
-    codespan_reporting::diagnostic::Diagnostic::<usize>::new(diagnostic.kind())
+    Diagnostic::new(diagnostic.kind())
         .with_message(diagnostic.message())
         .with_labels(
             diagnostic
@@ -11,8 +11,7 @@ pub fn report(diagnostic: &impl Diag) -> Diagnostic<usize> {
                 .into_iter()
                 .map(|span| match span {
                     ErrorSpan::Primary(message, span) => {
-                        let mut label =
-                            Label::primary(span.context().id(), span.start()..span.end());
+                        let mut label = Label::primary(span.context().0, span.start()..span.end());
 
                         if let Some(message) = message {
                             label = label.with_message(message);
@@ -22,7 +21,7 @@ pub fn report(diagnostic: &impl Diag) -> Diagnostic<usize> {
                     }
                     ErrorSpan::Secondary(message, span) => {
                         let mut label =
-                            Label::secondary(span.context().id(), span.start()..span.end());
+                            Label::secondary(span.context().0, span.start()..span.end());
 
                         if let Some(message) = message {
                             label = label.with_message(message);

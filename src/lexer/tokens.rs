@@ -42,24 +42,58 @@ pub enum Punc {
 
 impl core::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        todo!()
+        match self {
+            Self::Simple(simple) => write!(f, "{simple}"),
+            Self::Parentheses(_tokens) => write!(f, "(...)"),
+            Self::CurlyBraces(_tokens) => write!(f, "{{...}}"),
+        }
     }
 }
 
 impl core::fmt::Display for SimpleToken<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        todo!()
+        match self {
+            Self::Identifier(ident) => write!(f, "{ident}"),
+            Self::Integer(int) => write!(f, "{int}"),
+            Self::Float(float) => write!(f, "{float}"),
+            Self::Boolean(bool) => write!(f, "{bool}"),
+            Self::Kw(kw) => write!(f, "{kw}"),
+            Self::Punc(punc) => write!(f, "{punc}"),
+        }
     }
 }
 
 impl core::fmt::Display for Kw {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        todo!()
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Func => "func",
+                Self::Struct => "struct",
+                Self::Let => "let",
+            }
+        )
     }
 }
 
 impl core::fmt::Display for Punc {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        todo!()
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Arrow => "->",
+                Self::ColonColon => "::",
+                Self::Plus => "+",
+                Self::Minus => "-",
+                Self::Star => "*",
+                Self::Slash => "/",
+                Self::Colon => ":",
+                Self::Comma => ",",
+                Self::Equals => "=",
+                Self::Semicolon => ";",
+            }
+        )
     }
 }

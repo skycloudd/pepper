@@ -4,6 +4,7 @@ use tokens::{Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
+#[must_use]
 pub fn lexer<'src>() -> impl Parser<
     'src,
     WithContext<Span, &'src str>,
