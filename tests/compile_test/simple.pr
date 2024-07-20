@@ -1,0 +1,8 @@
+struct MyStruct {
+    a: int32,
+    b: int64,
+    c: bool,
+    d: float32,
+}
+
+func main() -> int32 {}

@@ -1,6 +1,5 @@
-use crate::lexer::tokens::Span;
+use crate::span::Span;
 use codespan_reporting::diagnostic::Severity;
-use error::Error;
 
 pub mod error;
 pub mod report;
@@ -17,6 +16,3 @@ pub enum ErrorSpan {
     Primary(Option<String>, Span),
     Secondary(Option<String>, Span),
 }
-
-#[salsa::accumulator]
-pub struct Diagnostics(pub Error);

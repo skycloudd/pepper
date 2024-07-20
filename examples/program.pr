@@ -1,8 +1,0 @@
-fn main() -> int =
-    f(10) - df(2, 10) - 11
-
-fn f(x: int) -> int =
-    x * x
-
-fn df(n: int, x: int) -> int =
-    n * x
