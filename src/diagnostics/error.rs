@@ -41,14 +41,14 @@ impl Diag for Error {
                 expected: _,
                 found,
                 span,
-            } => vec![ErrorSpan::Primary(
+            } => vec![ErrorSpan::primary(
                 Some(format!(
                     "Found {}",
                     found.as_deref().unwrap_or("end of file")
                 )),
                 *span,
             )],
-            Self::Custom { message: _, span } => vec![ErrorSpan::Primary(None, *span)],
+            Self::Custom { message: _, span } => vec![ErrorSpan::primary(None, *span)],
         }
     }
 

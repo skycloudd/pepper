@@ -1,4 +1,4 @@
-use super::{Diag, ErrorSpan};
+use super::Diag;
 use chumsky::span::Span as _;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
@@ -9,19 +9,14 @@ pub fn report(diagnostic: &dyn Diag) -> Diagnostic<usize> {
             diagnostic
                 .spans()
                 .into_iter()
-                .map(|span| {
-                    let (mut label, message) = match span {
-                        ErrorSpan::Primary(message, span) => (
-                            Label::primary(span.context().0, span.start()..span.end()),
-                            message,
-                        ),
-                        ErrorSpan::Secondary(message, span) => (
-                            Label::secondary(span.context().0, span.start()..span.end()),
-                            message,
-                        ),
-                    };
+                .map(|error_span| {
+                    let mut label = Label::new(
+                        error_span.error_type.into(),
+                        error_span.span.context().0,
+                        error_span.span.range(),
+                    );
 
-                    if let Some(message) = message {
+                    if let Some(message) = error_span.message {
                         label = label.with_message(message);
                     }
 

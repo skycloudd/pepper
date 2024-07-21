@@ -315,6 +315,7 @@ fn path_parser<'src: 'tok, 'tok>(
     ident_parser()
         .with_span()
         .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::ColonColon))))
+        .at_least(1)
         .collect()
         .with_span()
         .map(Path)

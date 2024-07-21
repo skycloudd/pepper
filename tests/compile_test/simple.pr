@@ -1,8 +1,12 @@
 struct MyStruct {
     a: int32,
-    b: int64,
-    c: bool,
-    d: float32,
+    b: bool,
+    c: aa::OtherStruct,
+}
+
+struct OtherStruct {
+    a: uint16,
+    b: float32,
 }
 
 func main() {}

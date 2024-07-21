@@ -10,6 +10,11 @@ impl Span {
     pub fn zero(file_id: FileId) -> Self {
         chumsky::span::Span::new(file_id, 0..0)
     }
+
+    #[must_use]
+    pub const fn range(&self) -> core::ops::Range<usize> {
+        self.start..self.end
+    }
 }
 
 impl chumsky::span::Span for Span {
