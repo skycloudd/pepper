@@ -3,6 +3,7 @@ use crate::span::Span;
 use chumsky::error::{Rich, RichReason};
 use codespan_reporting::diagnostic::Severity;
 use core::fmt::Display;
+use std::borrow::Cow;
 
 #[derive(Clone, Debug)]
 pub enum Error {
@@ -18,7 +19,7 @@ pub enum Error {
 }
 
 impl Diag for Error {
-    fn message(&self) -> String {
+    fn message(&self) -> Cow<str> {
         match self {
             Self::ExpectedFound {
                 expected,
@@ -28,8 +29,9 @@ impl Diag for Error {
                 "Expected one of {}, but found {}",
                 expected.join(", "),
                 found.as_deref().unwrap_or("end of file")
-            ),
-            Self::Custom { message, span: _ } => message.clone(),
+            )
+            .into(),
+            Self::Custom { message, span: _ } => message.into(),
         }
     }
 

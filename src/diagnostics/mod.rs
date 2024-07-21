@@ -1,11 +1,12 @@
 use crate::span::Span;
 use codespan_reporting::diagnostic::Severity;
+use std::borrow::Cow;
 
 pub mod error;
 pub mod report;
 
 pub trait Diag {
-    fn message(&self) -> String;
+    fn message(&self) -> Cow<str>;
     fn spans(&self) -> Vec<ErrorSpan>;
     fn notes(&self) -> Vec<String>;
     fn kind(&self) -> Severity;

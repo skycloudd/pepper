@@ -1,5 +1,5 @@
 use camino::Utf8PathBuf;
-use chumsky::{input::Input as _, span::Span, Parser as _};
+use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
     files::SimpleFiles,
@@ -12,7 +12,7 @@ use diagnostics::{error::convert, report::report};
 use lasso::ThreadedRodeo;
 use once_cell::sync::Lazy;
 use parser::ast::Ast;
-use span::FileId;
+use span::{FileId, Span};
 use std::fs::read_to_string;
 
 pub mod diagnostics;
@@ -34,9 +34,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut errors = Vec::new();
 
-    let source = read_to_string(&args.filename).unwrap();
+    let source = read_to_string(&args.filename)?;
 
-    let file_id = FileId::new(files.add(&args.filename, source.to_string()));
+    let file_id = FileId::new(files.add(&args.filename, &source));
 
     let (ast, parse_errors) = parse_file(&source, file_id);
 
@@ -70,7 +70,9 @@ fn parse_file(source: &str, file_id: FileId) -> (Option<Ast>, Vec<diagnostics::e
     let (ast, parser_errors) = tokens.as_ref().map_or_else(
         || (None, vec![]),
         |tokens| {
-            let eoi = tokens.last().unwrap().1.to_end();
+            let eoi = tokens
+                .last()
+                .map_or_else(|| Span::zero(file_id), |(_, span)| span.to_end());
 
             parser::parser()
                 .parse(tokens.spanned(eoi))
