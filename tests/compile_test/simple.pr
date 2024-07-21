@@ -5,4 +5,4 @@ struct MyStruct {
     d: float32,
 }
 
-func main() -> int32 {}
+func main() {}

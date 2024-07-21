@@ -1,4 +1,4 @@
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
 use chumsky::{input::Input as _, span::Span, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
@@ -11,7 +11,7 @@ use codespan_reporting::{
 use diagnostics::{error::convert, report::report};
 use lasso::ThreadedRodeo;
 use once_cell::sync::Lazy;
-use parser::ast::Program;
+use parser::ast::Ast;
 use span::FileId;
 use std::fs::read_to_string;
 
@@ -30,19 +30,19 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    println!("{args:?}");
-
     let mut files = SimpleFiles::new();
 
     let mut errors = Vec::new();
 
-    {
-        let source = read_to_string(&args.filename)?;
+    let source = read_to_string(&args.filename).unwrap();
 
-        let (ast, parse_errors) = parse_file(&args.filename, &source, &mut files);
+    let file_id = FileId::new(files.add(&args.filename, source.to_string()));
 
-        errors.extend(parse_errors);
+    let (ast, parse_errors) = parse_file(&source, file_id);
 
+    errors.extend(parse_errors);
+
+    if let Some(ast) = ast {
         eprintln!("{ast:?}");
     }
 
@@ -58,15 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-type Name<'path> = &'path Utf8Path;
-
-fn parse_file<'path>(
-    name: Name<'path>,
-    source: &str,
-    files: &mut SimpleFiles<Name<'path>, String>,
-) -> (Option<Program>, Vec<diagnostics::error::Error>) {
-    let file_id = FileId::new(files.add(name, source.to_string()));
-
+fn parse_file(source: &str, file_id: FileId) -> (Option<Ast>, Vec<diagnostics::error::Error>) {
     let mut errors = Vec::new();
 
     let (tokens, lexer_errors) = lexer::lexer()

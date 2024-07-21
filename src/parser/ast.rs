@@ -1,9 +1,8 @@
+use crate::span::Spanned;
 use lasso::Spur;
 
-use crate::span::Spanned;
-
 #[derive(Clone, Debug)]
-pub struct Program(pub Spanned<Vec<Spanned<Item>>>);
+pub struct Ast(pub Spanned<Vec<Spanned<Item>>>);
 
 #[derive(Clone, Debug)]
 pub enum Item {
@@ -15,7 +14,7 @@ pub enum Item {
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Spanned<Type>,
+    pub return_ty: Option<Spanned<Type>>,
     pub body: Spanned<Vec<Spanned<Statement>>>,
     pub return_expr: Option<Spanned<Expression>>,
 }
