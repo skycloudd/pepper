@@ -1,0 +1,6 @@
+module empty;
+
+struct OtherStruct {
+    a: uint16,
+    b: float32,
+}

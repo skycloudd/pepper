@@ -34,6 +34,8 @@ pub fn lexer<'src>() -> impl Parser<
             text::keyword("func").to(Kw::Func),
             text::keyword("struct").to(Kw::Struct),
             text::keyword("let").to(Kw::Let),
+            text::keyword("use").to(Kw::Use),
+            text::keyword("module").to(Kw::Module),
         ))
         .map(SimpleToken::Kw)
         .boxed();

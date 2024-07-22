@@ -1,0 +1,11 @@
+use other::OtherStruct;
+
+module other;
+
+struct MyStruct {
+    a: int32,
+    b: bool,
+    c: OtherStruct,
+}
+
+func main() {}

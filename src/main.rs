@@ -1,5 +1,6 @@
+use std::process::ExitCode;
+
 use camino::Utf8PathBuf;
-use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
     files::SimpleFiles,
@@ -8,79 +9,49 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use diagnostics::{error::convert, report::report};
+use diagnostics::report::report;
 use lasso::ThreadedRodeo;
 use once_cell::sync::Lazy;
-use parser::ast::Ast;
-use span::{FileId, Span};
-use std::fs::read_to_string;
 
 pub mod diagnostics;
 pub mod lexer;
 pub mod parser;
+pub mod project;
 pub mod span;
 
 static RODEO: Lazy<ThreadedRodeo> = Lazy::new(ThreadedRodeo::new);
 
 #[derive(Debug, Parser)]
 struct Args {
-    filename: Utf8PathBuf,
+    project: Utf8PathBuf,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let args = Args::parse();
+
+    if !args.project.is_dir() {
+        eprintln!("'{}' is not a directory", args.project);
+        return Ok(ExitCode::FAILURE);
+    }
 
     let mut files = SimpleFiles::new();
 
-    let mut errors = Vec::new();
-
-    let source = read_to_string(&args.filename)?;
-
-    let file_id = FileId::new(files.add(&args.filename, &source));
-
-    let (ast, parse_errors) = parse_file(&source, file_id);
-
-    errors.extend(parse_errors);
-
-    if let Some(ast) = ast {
-        eprintln!("{ast:?}");
-    }
+    let (project, errors) = project::Project::new(args.project, &mut files).construct("main.pr")?;
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();
 
-    for error in errors {
-        let diagnostic = report(&error);
+    for error in &errors {
+        let diagnostic = report(error);
 
         term::emit(&mut writer.lock(), &term_config, &files, &diagnostic)?;
     }
 
-    Ok(())
-}
+    if errors.is_empty() {
+        println!("{project:#?}");
 
-fn parse_file(source: &str, file_id: FileId) -> (Option<Ast>, Vec<diagnostics::error::Error>) {
-    let mut errors = Vec::new();
-
-    let (tokens, lexer_errors) = lexer::lexer()
-        .parse(source.with_context(file_id))
-        .into_output_errors();
-
-    errors.extend(lexer_errors.iter().flat_map(|error| convert(error)));
-
-    let (ast, parser_errors) = tokens.as_ref().map_or_else(
-        || (None, vec![]),
-        |tokens| {
-            let eoi = tokens
-                .last()
-                .map_or_else(|| Span::zero(file_id), |(_, span)| span.to_end());
-
-            parser::parser()
-                .parse(tokens.spanned(eoi))
-                .into_output_errors()
-        },
-    );
-
-    errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
-
-    (ast, errors)
+        Ok(ExitCode::SUCCESS)
+    } else {
+        Ok(ExitCode::FAILURE)
+    }
 }

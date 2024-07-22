@@ -31,8 +31,26 @@ fn item_parser<'src: 'tok, 'tok>(
     choice((
         function_parser().with_span().map(Item::Function),
         struct_parser().with_span().map(Item::Struct),
+        use_parser().with_span().map(Item::Use),
+        module_parser().with_span().map(Item::Module),
     ))
     .boxed()
+}
+
+fn use_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Path, ParserExtra<'src, 'tok>> {
+    just(Token::Simple(SimpleToken::Kw(Kw::Use)))
+        .ignore_then(path_parser())
+        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
+        .boxed()
+}
+
+fn module_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
+    just(Token::Simple(SimpleToken::Kw(Kw::Module)))
+        .ignore_then(ident_parser())
+        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
+        .boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(

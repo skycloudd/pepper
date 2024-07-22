@@ -24,6 +24,8 @@ pub enum Kw {
     Func,
     Struct,
     Let,
+    Use,
+    Module,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,6 +74,8 @@ impl core::fmt::Display for Kw {
                 Self::Func => "func",
                 Self::Struct => "struct",
                 Self::Let => "let",
+                Self::Use => "use",
+                Self::Module => "module",
             }
         )
     }

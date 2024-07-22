@@ -8,6 +8,8 @@ pub struct Ast(pub Spanned<Vec<Spanned<Item>>>);
 pub enum Item {
     Function(Spanned<Function>),
     Struct(Spanned<Struct>),
+    Use(Spanned<Path>),
+    Module(Spanned<Identifier>),
 }
 
 #[derive(Clone, Debug)]
