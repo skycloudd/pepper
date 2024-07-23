@@ -2,15 +2,18 @@ use crate::span::Spanned;
 use lasso::Spur;
 
 #[derive(Clone, Debug)]
-pub struct Ast(pub Spanned<Vec<Spanned<Item>>>);
+pub struct Ast {
+    pub functions: Vec<Spanned<Function>>,
+    pub structs: Vec<Spanned<Struct>>,
+    pub use_stmts: Vec<Spanned<UseStatement>>,
+    pub module_stmts: Vec<Spanned<ModuleStatement>>,
+}
 
 #[derive(Clone, Debug)]
-pub enum Item {
-    Function(Spanned<Function>),
-    Struct(Spanned<Struct>),
-    Use(Spanned<Path>),
-    Module(Spanned<Identifier>),
-}
+pub struct UseStatement(pub Spanned<Path>);
+
+#[derive(Clone, Debug)]
+pub struct ModuleStatement(pub Spanned<Identifier>);
 
 #[derive(Clone, Debug)]
 pub struct Function {

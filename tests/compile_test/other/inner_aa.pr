@@ -1,0 +1,3 @@
+module inner_aa_inner;
+
+struct InnerAa {}

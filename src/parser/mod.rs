@@ -4,8 +4,8 @@ use crate::{
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, Item, Path, PrimitiveType,
-    Statement, Struct, StructField, Type, UnaryOp,
+    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, ModuleStatement, Path,
+    PrimitiveType, Statement, Struct, StructField, Type, UnaryOp, UseStatement,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -15,14 +15,35 @@ type ParserInput<'src, 'tok> = SpannedInput<Token<'src>, Span, &'tok [(Token<'sr
 
 type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src str>>;
 
+#[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast, ParserExtra<'src, 'tok>> {
     item_parser()
         .with_span()
         .repeated()
-        .collect()
-        .with_span()
-        .map(Ast)
+        .collect::<Vec<Spanned<Item>>>()
+        .map(|items| {
+            let mut functions = Vec::new();
+            let mut structs = Vec::new();
+            let mut use_stmts = Vec::new();
+            let mut module_stmts = Vec::new();
+
+            for item in items {
+                match item.0 {
+                    Item::Function(item) => functions.push(item),
+                    Item::Struct(item) => structs.push(item),
+                    Item::Use(item) => use_stmts.push(item),
+                    Item::Module(item) => module_stmts.push(item),
+                }
+            }
+
+            Ast {
+                functions,
+                structs,
+                use_stmts,
+                module_stmts,
+            }
+        })
         .boxed()
 }
 
@@ -37,19 +58,31 @@ fn item_parser<'src: 'tok, 'tok>(
     .boxed()
 }
 
+#[derive(Clone, Debug)]
+enum Item {
+    Function(Spanned<Function>),
+    Struct(Spanned<Struct>),
+    Use(Spanned<UseStatement>),
+    Module(Spanned<ModuleStatement>),
+}
+
 fn use_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Path, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, UseStatement, ParserExtra<'src, 'tok>> {
     just(Token::Simple(SimpleToken::Kw(Kw::Use)))
         .ignore_then(path_parser())
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
+        .with_span()
+        .map(UseStatement)
         .boxed()
 }
 
 fn module_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, ModuleStatement, ParserExtra<'src, 'tok>> {
     just(Token::Simple(SimpleToken::Kw(Kw::Module)))
         .ignore_then(ident_parser())
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
+        .with_span()
+        .map(ModuleStatement)
         .boxed()
 }
 
