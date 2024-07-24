@@ -1,11 +1,12 @@
-use other::OtherStruct;
+use other::inner_aa;
+use inner_aa::InnerAa;
 
 module other;
 
 struct MyStruct {
     a: int32,
     b: bool,
-    c: OtherStruct,
+    c: other::OtherStruct,
 }
 
 func main() {}

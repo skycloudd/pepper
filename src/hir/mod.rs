@@ -11,20 +11,36 @@ use codespan_reporting::files::SimpleFiles;
 use lasso::Spur;
 use std::fs::read_to_string;
 
-#[derive(Debug)]
-pub struct Module {
-    name: ModuleName,
-    ast: Ast,
-    children: Vec<Module>,
+#[derive(Clone)]
+pub struct Module<T> {
+    pub id: ModuleId,
+    pub name: ModuleName,
+    pub ast: T,
+    pub children: Vec<Module<T>>,
 }
 
-#[derive(Debug)]
-pub struct ModuleName(Spur);
+impl<T> core::fmt::Debug for Module<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Module")
+            .field("id", &self.id.0)
+            .field("name", &RODEO.resolve(&self.name.0))
+            .field("ast", &"<ast>")
+            .field("children", &self.children)
+            .finish()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ModuleId(usize);
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ModuleName(pub Spur);
 
 #[derive(Debug)]
 pub struct ModuleTree<'a> {
     files: &'a mut SimpleFiles<Utf8PathBuf, String>,
     errors: Errors,
+    next_module_id: ModuleId,
 }
 
 impl<'a> ModuleTree<'a> {
@@ -32,10 +48,11 @@ impl<'a> ModuleTree<'a> {
         Self {
             files,
             errors: Errors::default(),
+            next_module_id: ModuleId(1),
         }
     }
 
-    pub fn build(mut self, root_dir: impl AsRef<Utf8Path>) -> (Option<Module>, Errors) {
+    pub fn build(mut self, root_dir: impl AsRef<Utf8Path>) -> (Option<Module<Ast>>, Errors) {
         let main_file = root_dir.as_ref().join("main.pr");
 
         let module = self.build_module(main_file, ModuleName(RODEO.get_or_intern("main")));
@@ -47,7 +64,8 @@ impl<'a> ModuleTree<'a> {
         &mut self,
         main_file: impl AsRef<Utf8Path>,
         module_name: ModuleName,
-    ) -> Option<Module> {
+    ) -> Option<Module<Ast>> {
+        let module_id = self.next_module_id();
         let main_ast = self.build_file(main_file.as_ref());
 
         main_ast.map(|main_ast| {
@@ -58,24 +76,20 @@ impl<'a> ModuleTree<'a> {
             for module_stmt in &main_ast.module_stmts {
                 let child_module_name = ModuleName(module_stmt.0 .0 .0 .0 .0);
 
-                let mod_name = &child_module_name;
-
                 let (mod_file, mod_file_exists) =
-                    check_module(CheckModule::File, module_dir, mod_name);
+                    check_module(CheckModule::File, module_dir, child_module_name);
 
                 let (mod_dir_file, mod_dir_file_exists) =
-                    check_module(CheckModule::Dir, module_dir, mod_name);
+                    check_module(CheckModule::Dir, module_dir, child_module_name);
 
                 let child_mod_file = match (mod_file_exists, mod_dir_file_exists) {
                     (true, false) => mod_file,
                     (false, true) => mod_dir_file,
                     (true, true) => {
-                        eprintln!("error module found in both file and directory");
-                        continue;
+                        todo!("error: module found in both file and directory");
                     }
                     (false, false) => {
-                        eprintln!("error module not found");
-                        continue;
+                        todo!("error: module not found");
                     }
                 };
 
@@ -87,6 +101,7 @@ impl<'a> ModuleTree<'a> {
             }
 
             Module {
+                id: module_id,
                 name: module_name,
                 ast: main_ast,
                 children,
@@ -127,6 +142,12 @@ impl<'a> ModuleTree<'a> {
 
         ast
     }
+
+    fn next_module_id(&mut self) -> ModuleId {
+        let id = self.next_module_id;
+        self.next_module_id.0 += 1;
+        id
+    }
 }
 
 pub type Errors = Vec<crate::diagnostics::error::Error>;
@@ -140,7 +161,7 @@ enum CheckModule {
 fn check_module(
     check: CheckModule,
     module_dir: impl AsRef<Utf8Path>,
-    mod_name: &ModuleName,
+    mod_name: ModuleName,
 ) -> (Utf8PathBuf, bool) {
     let mod_name = RODEO.resolve(&mod_name.0);
 

@@ -69,9 +69,8 @@ enum Item {
 fn use_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, UseStatement, ParserExtra<'src, 'tok>> {
     just(Token::Simple(SimpleToken::Kw(Kw::Use)))
-        .ignore_then(path_parser())
+        .ignore_then(path_parser().with_span())
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
-        .with_span()
         .map(UseStatement)
         .boxed()
 }
@@ -79,9 +78,8 @@ fn use_parser<'src: 'tok, 'tok>(
 fn module_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, ModuleStatement, ParserExtra<'src, 'tok>> {
     just(Token::Simple(SimpleToken::Kw(Kw::Module)))
-        .ignore_then(ident_parser())
+        .ignore_then(ident_parser().with_span())
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
-        .with_span()
         .map(ModuleStatement)
         .boxed()
 }

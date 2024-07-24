@@ -1,3 +1,9 @@
 module inner_aa;
 module inner_bb;
 module inner_cc;
+
+use inner_aa::inner_aa_inner::InnerAaInner;
+
+struct OtherStruct {
+    a: int32,
+}

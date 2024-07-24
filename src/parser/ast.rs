@@ -1,5 +1,6 @@
-use crate::span::Spanned;
+use crate::{span::Spanned, RODEO};
 use lasso::Spur;
+use ordered_float::OrderedFloat;
 
 #[derive(Clone, Debug)]
 pub struct Ast {
@@ -15,7 +16,7 @@ pub struct UseStatement(pub Spanned<Path>);
 #[derive(Clone, Debug)]
 pub struct ModuleStatement(pub Spanned<Identifier>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
@@ -24,13 +25,13 @@ pub struct Function {
     pub return_expr: Option<Spanned<Expression>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FunctionParam {
     pub name: Spanned<Identifier>,
     pub ty: Spanned<Type>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Statement {
     Expression(Spanned<Expression>),
     Block(Spanned<Vec<Spanned<Statement>>>),
@@ -45,10 +46,10 @@ pub enum Statement {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Expression {
     Integer(Spanned<u128>),
-    Float(Spanned<f64>),
+    Float(Spanned<OrderedFloat<f64>>),
     Bool(Spanned<bool>),
     Variable(Spanned<Identifier>),
     BinaryOp {
@@ -66,7 +67,7 @@ pub enum Expression {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -74,30 +75,30 @@ pub enum BinaryOp {
     Div,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UnaryOp {
     Neg,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Struct {
     pub name: Spanned<Identifier>,
     pub fields: Spanned<Vec<Spanned<StructField>>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StructField {
     pub name: Spanned<Identifier>,
     pub ty: Spanned<Type>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Type {
     Primitive(Spanned<PrimitiveType>),
     User(Spanned<Path>),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PrimitiveType {
     Int8,
     Int16,
@@ -112,8 +113,29 @@ pub enum PrimitiveType {
     Bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Path(pub Spanned<Vec<Spanned<Identifier>>>);
 
-#[derive(Clone, Copy, Debug)]
+impl core::fmt::Display for Path {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut iter = self.0 .0.iter();
+        if let Some(first) = iter.next() {
+            write!(f, "{}", RODEO.resolve(&first.0 .0 .0))?;
+            for part in iter {
+                write!(f, "::{}", RODEO.resolve(&part.0 .0 .0))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identifier(pub Spanned<Spur>);
+
+impl core::fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Identifier")
+            .field(&RODEO.resolve(&self.0 .0))
+            .finish()
+    }
+}
