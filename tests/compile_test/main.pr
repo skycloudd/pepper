@@ -9,4 +9,15 @@ struct MyStruct {
     c: other::OtherStruct,
 }
 
-func main() {}
+func add(a: int32, b: int32) -> int32 {
+    a + b
+}
+
+func add_float(a: float32, b: float32) -> float32 {
+    a + b
+}
+
+func main() {
+    add(1, 2);
+    add_float(1.5, 2.);
+}

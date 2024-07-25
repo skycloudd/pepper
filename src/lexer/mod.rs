@@ -25,7 +25,7 @@ pub fn lexer<'src>() -> impl Parser<
 
         let float = text::int(10)
             .then_ignore(just('.'))
-            .then(text::digits(10))
+            .then(text::digits(10).or_not())
             .to_slice()
             .map(SimpleToken::Float)
             .boxed();
