@@ -90,7 +90,8 @@ fn function_parser<'src: 'tok, 'tok>(
 
     let params = function_param_parser()
         .with_span()
-        .repeated()
+        .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+        .allow_trailing()
         .collect()
         .parenthesized()
         .with_span();
