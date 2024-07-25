@@ -11,7 +11,7 @@ pub fn report(diagnostic: &dyn Diag) -> Diagnostic<usize> {
                 .into_iter()
                 .map(|error_span| {
                     let mut label = Label::new(
-                        error_span.error_type.into(),
+                        error_span.label_style,
                         error_span.span.context().0,
                         error_span.span.range(),
                     );

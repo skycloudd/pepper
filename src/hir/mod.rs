@@ -77,10 +77,10 @@ impl<'a> ModuleTree<'a> {
                 let child_module_name = ModuleName(module_stmt.0 .0 .0 .0 .0);
 
                 let (mod_file, mod_file_exists) =
-                    check_module(CheckModule::File, module_dir, child_module_name);
+                    check_module_files(CheckModule::File, module_dir, child_module_name);
 
                 let (mod_dir_file, mod_dir_file_exists) =
-                    check_module(CheckModule::Dir, module_dir, child_module_name);
+                    check_module_files(CheckModule::Dir, module_dir, child_module_name);
 
                 let child_mod_file = match (mod_file_exists, mod_dir_file_exists) {
                     (true, false) => mod_file,
@@ -158,7 +158,7 @@ enum CheckModule {
     Dir,
 }
 
-fn check_module(
+fn check_module_files(
     check: CheckModule,
     module_dir: impl AsRef<Utf8Path>,
     mod_name: ModuleName,

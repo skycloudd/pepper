@@ -16,7 +16,7 @@ pub trait Diag {
 pub struct ErrorSpan {
     pub message: Option<String>,
     pub span: Span,
-    pub error_type: ErrorType,
+    pub label_style: LabelStyle,
 }
 
 impl ErrorSpan {
@@ -25,7 +25,7 @@ impl ErrorSpan {
         Self {
             message,
             span,
-            error_type: ErrorType::Primary,
+            label_style: LabelStyle::Primary,
         }
     }
 
@@ -34,22 +34,7 @@ impl ErrorSpan {
         Self {
             message,
             span,
-            error_type: ErrorType::Secondary,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum ErrorType {
-    Primary,
-    Secondary,
-}
-
-impl From<ErrorType> for LabelStyle {
-    fn from(error_type: ErrorType) -> Self {
-        match error_type {
-            ErrorType::Primary => Self::Primary,
-            ErrorType::Secondary => Self::Secondary,
+            label_style: LabelStyle::Secondary,
         }
     }
 }

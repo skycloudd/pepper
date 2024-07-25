@@ -1,4 +1,4 @@
-use crate::{span::Spanned, RODEO};
+use crate::span::Spanned;
 use lasso::Spur;
 use ordered_float::OrderedFloat;
 
@@ -116,26 +116,5 @@ pub enum PrimitiveType {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Path(pub Spanned<Vec<Spanned<Identifier>>>);
 
-impl core::fmt::Display for Path {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let mut iter = self.0 .0.iter();
-        if let Some(first) = iter.next() {
-            write!(f, "{}", RODEO.resolve(&first.0 .0 .0))?;
-            for part in iter {
-                write!(f, "::{}", RODEO.resolve(&part.0 .0 .0))?;
-            }
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identifier(pub Spanned<Spur>);
-
-impl core::fmt::Debug for Identifier {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Identifier")
-            .field(&RODEO.resolve(&self.0 .0))
-            .finish()
-    }
-}

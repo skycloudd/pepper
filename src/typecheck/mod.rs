@@ -74,7 +74,7 @@ impl Typechecker {
         }
 
         for use_stmt in ast.use_stmts {
-            let thing = Self::traverse_path(&use_stmt.0 .0 .0, in_scope);
+            let thing = self.traverse_path(&use_stmt.0 .0 .0, in_scope);
 
             if let Some(thing) = thing {
                 match thing {
@@ -88,64 +88,34 @@ impl Typechecker {
                         in_scope.insert_module(module.name.0, module);
                     }
                 }
-            } else {
-                self.errors.push(diagnostics::error::Error::Custom {
-                    message: "item can't be found".to_string(),
-                    span: use_stmt.0 .0 .1,
-                });
             }
         }
     }
 
-    fn traverse_path(path: &Path, in_scope: &InScope) -> Option<InScopeItem> {
+    fn traverse_path(&mut self, path: &Path, in_scope: &InScope) -> Option<InScopeItem> {
         let mut current_item = None;
 
         #[allow(clippy::option_if_let_else, clippy::single_match_else)]
         for segment in &path.0 .0 {
+            let segment_name = segment.0 .0;
+
             current_item = match current_item {
-                Some(item) => match item {
-                    InScopeItem::Struct(_struct) => {
-                        todo!("error: cannot traverse path from struct");
-                    }
-                    InScopeItem::Function(_function) => {
-                        todo!("error: cannot traverse path from function");
-                    }
-                    InScopeItem::Module(module_) => (|| {
-                        if let Some(submodule) = module_
-                            .children
-                            .into_iter()
-                            .find(|module| module.name.0 == segment.0 .0 .0)
-                            .map(InScopeItem::Module)
-                        {
-                            return Some(submodule);
-                        }
-
-                        for struct_ in module_.ast.structs {
-                            if struct_.0.name.0 .0 .0 == segment.0 .0 .0 {
-                                return Some(InScopeItem::Struct(struct_));
-                            }
-                        }
-
-                        for function in module_.ast.functions {
-                            if function.0.name.0 .0 .0 == segment.0 .0 .0 {
-                                return Some(InScopeItem::Function(function));
-                            }
-                        }
-
-                        None
-                    })(),
-                },
-                None => {
-                    let name = segment.0 .0 .0;
-
+                Some(item) => self.get_name_in_item(item, segment_name),
+                None =>
+                {
                     #[allow(clippy::manual_map)]
-                    if let Some(type_) = in_scope.types.get(&name) {
+                    if let Some(type_) = in_scope.types.get(&segment_name.0) {
                         Some(InScopeItem::Struct(type_.clone()))
-                    } else if let Some(function) = in_scope.functions.get(&name) {
+                    } else if let Some(function) = in_scope.functions.get(&segment_name.0) {
                         Some(InScopeItem::Function(function.clone()))
-                    } else if let Some(module) = in_scope.modules.get(&name) {
+                    } else if let Some(module) = in_scope.modules.get(&segment_name.0) {
                         Some(InScopeItem::Module(module.clone()))
                     } else {
+                        self.errors.push(diagnostics::error::Error::Custom {
+                            message: "item can't be found".to_string(),
+                            span: segment_name.1,
+                        });
+
                         None
                     }
                 }
@@ -157,6 +127,50 @@ impl Typechecker {
         }
 
         current_item
+    }
+
+    fn get_name_in_item(
+        &mut self,
+        item: InScopeItem,
+        segment_name: Spanned<Spur>,
+    ) -> Option<InScopeItem> {
+        match item {
+            InScopeItem::Struct(_struct) => {
+                todo!("error: cannot traverse path from struct");
+            }
+            InScopeItem::Function(_function) => {
+                todo!("error: cannot traverse path from function");
+            }
+            InScopeItem::Module(module_) => {
+                if let Some(submodule) = module_
+                    .children
+                    .into_iter()
+                    .find(|module| module.name.0 == segment_name.0)
+                    .map(InScopeItem::Module)
+                {
+                    return Some(submodule);
+                }
+
+                for struct_ in module_.ast.structs {
+                    if struct_.0.name.0 .0 .0 == segment_name.0 {
+                        return Some(InScopeItem::Struct(struct_));
+                    }
+                }
+
+                for function in module_.ast.functions {
+                    if function.0.name.0 .0 .0 == segment_name.0 {
+                        return Some(InScopeItem::Function(function));
+                    }
+                }
+
+                self.errors.push(diagnostics::error::Error::Custom {
+                    message: "item can't be found in module".to_string(),
+                    span: segment_name.1,
+                });
+
+                None
+            }
+        }
     }
 }
 
