@@ -9,8 +9,7 @@ use codespan_reporting::{
 };
 use diagnostics::report::report;
 use lasso::ThreadedRodeo;
-use once_cell::sync::Lazy;
-use std::process::ExitCode;
+use std::{process::ExitCode, sync::LazyLock};
 
 pub mod diagnostics;
 pub mod hir;
@@ -20,7 +19,7 @@ pub mod scopes;
 pub mod span;
 pub mod typecheck;
 
-static RODEO: Lazy<ThreadedRodeo> = Lazy::new(ThreadedRodeo::new);
+static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[derive(Debug, Parser)]
 struct Args {

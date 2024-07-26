@@ -299,7 +299,6 @@ dependencies = [
  "clap",
  "codespan-reporting",
  "lasso",
- "once_cell",
  "ordered-float",
  "rustc-hash",
 ]
