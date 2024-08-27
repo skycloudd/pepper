@@ -114,7 +114,7 @@ version = "1.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7b80276986f86789dc56ca6542d53bba9cda3c66091ebbe7bd96fc1bdf20f1f"
 dependencies = [
- "hashbrown 0.14.5",
+ "hashbrown",
  "regex-automata",
  "serde",
  "stacker",
@@ -178,25 +178,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b6a852b24ab71dffc585bcb46eaf7959d175cb865a7152e35b348d1b2960422"
 
 [[package]]
-name = "dashmap"
-version = "5.5.3"
+name = "crossbeam-utils"
+version = "0.8.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
+checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
+
+[[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
 dependencies = [
  "cfg-if",
- "hashbrown 0.14.5",
+ "crossbeam-utils",
+ "hashbrown",
  "lock_api",
  "once_cell",
  "parking_lot_core",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
-dependencies = [
- "ahash",
 ]
 
 [[package]]
@@ -223,12 +221,12 @@ checksum = "f8478577c03552c21db0e2724ffb8986a5ce7af88107e6be5d2ee6e158c12800"
 
 [[package]]
 name = "lasso"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4644821e1c3d7a560fe13d842d13f587c07348a1a05d3a797152d41c90c56df2"
+checksum = "6e14eda50a3494b3bf7b9ce51c52434a761e383d7238ce1dd5dcec2fbc13e9fb"
 dependencies = [
  "dashmap",
- "hashbrown 0.13.2",
+ "hashbrown",
 ]
 
 [[package]]
