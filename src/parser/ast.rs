@@ -6,15 +6,7 @@ use ordered_float::OrderedFloat;
 pub struct Ast {
     pub functions: Vec<Spanned<Function>>,
     pub structs: Vec<Spanned<Struct>>,
-    pub use_stmts: Vec<Spanned<UseStatement>>,
-    pub module_stmts: Vec<Spanned<ModuleStatement>>,
 }
-
-#[derive(Clone, Debug)]
-pub struct UseStatement(pub Spanned<Path>);
-
-#[derive(Clone, Debug)]
-pub struct ModuleStatement(pub Spanned<Identifier>);
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Function {
@@ -25,7 +17,7 @@ pub struct Function {
     pub return_expr: Option<Spanned<Expression>>,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FunctionParam {
     pub name: Spanned<Identifier>,
     pub ty: Spanned<Type>,
@@ -62,7 +54,7 @@ pub enum Expression {
         expr: Spanned<Box<Expression>>,
     },
     Call {
-        name: Spanned<Path>,
+        name: Spanned<Identifier>,
         args: Spanned<Vec<Spanned<Expression>>>,
     },
 }
@@ -86,16 +78,16 @@ pub struct Struct {
     pub fields: Spanned<Vec<Spanned<StructField>>>,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StructField {
     pub name: Spanned<Identifier>,
     pub ty: Spanned<Type>,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Type {
     Primitive(Spanned<PrimitiveType>),
-    User(Spanned<Path>),
+    User(Spanned<Identifier>),
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -112,9 +104,6 @@ pub enum PrimitiveType {
     Float64,
     Bool,
 }
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Path(pub Spanned<Vec<Spanned<Identifier>>>);
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identifier(pub Spanned<Spur>);

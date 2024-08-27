@@ -1,4 +1,5 @@
 use camino::Utf8PathBuf;
+use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
     files::SimpleFiles,
@@ -7,48 +8,61 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use diagnostics::report::report;
+use diagnostics::{error::convert, report::report};
 use lasso::ThreadedRodeo;
-use std::{process::ExitCode, sync::LazyLock};
+use span::{FileId, Span};
+use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
 
 pub mod diagnostics;
-pub mod hir;
 pub mod lexer;
 pub mod parser;
 pub mod scopes;
 pub mod span;
-pub mod typecheck;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[derive(Debug, Parser)]
 struct Args {
-    project: Utf8PathBuf,
+    filename: Utf8PathBuf,
 }
 
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    if !args.project.is_dir() {
-        return Err(format!("'{}' is not a directory", args.project).into());
+    if !args.filename.is_file() {
+        return Err(format!("'{}' is not a file", args.filename).into());
     }
 
     let mut files = SimpleFiles::new();
 
-    let (module, mut errors) = hir::ModuleTree::new(&mut files).build(args.project);
+    let source = read_to_string(&args.filename).unwrap();
 
-    let (_typed_module, typecheck_errors) = module.map_or_else(
+    let file_id = FileId::new(files.add(&args.filename, source.to_string()));
+
+    let mut errors = vec![];
+
+    let (tokens, lexer_errors) = lexer::lexer()
+        .parse(source.with_context(file_id))
+        .into_output_errors();
+
+    errors.extend(lexer_errors.iter().flat_map(|error| convert(error)));
+
+    let (ast, parser_errors) = tokens.as_ref().map_or_else(
         || (None, vec![]),
-        |module| {
-            let (tc_module, tc_errors) = typecheck::Typechecker::new().typecheck(module);
+        |tokens| {
+            let eoi = tokens
+                .last()
+                .map_or_else(|| Span::zero(file_id), |(_, span)| span.to_end());
 
-            (Some(tc_module), tc_errors)
+            parser::parser()
+                .parse(tokens.spanned(eoi))
+                .into_output_errors()
         },
     );
 
-    errors.extend(typecheck_errors);
+    eprintln!("{ast:#?}");
 
-    // eprintln!("{typed_module:#?}");
+    errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();

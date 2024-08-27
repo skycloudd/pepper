@@ -1,9 +1,0 @@
-use inner_aa::inner_aa_inner::InnerAaInner;
-
-module inner_aa;
-module inner_bb;
-module inner_cc;
-
-struct OtherStruct {
-    a: int32,
-}

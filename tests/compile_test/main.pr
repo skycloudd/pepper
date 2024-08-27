@@ -1,15 +1,10 @@
-use other::inner_aa;
-use inner_aa::InnerAa;
-
-module other;
-
 struct MyStruct {
     a: int32,
     b: bool,
-    c: other::OtherStruct,
+    c: float32,
 }
 
-func add(a: int32, b: int32) -> int32 {
+func add(a: int32, b: int32, _my_struct: MyStruct) -> int32 {
     a + b
 }
 

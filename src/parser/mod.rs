@@ -4,8 +4,8 @@ use crate::{
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, ModuleStatement, Path,
-    PrimitiveType, Statement, Struct, StructField, Type, UnaryOp, UseStatement,
+    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, PrimitiveType, Statement,
+    Struct, StructField, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -25,24 +25,15 @@ pub fn parser<'src: 'tok, 'tok>(
         .map(|items| {
             let mut functions = Vec::new();
             let mut structs = Vec::new();
-            let mut use_stmts = Vec::new();
-            let mut module_stmts = Vec::new();
 
             for item in items {
                 match item.0 {
                     Item::Function(item) => functions.push(item),
                     Item::Struct(item) => structs.push(item),
-                    Item::Use(item) => use_stmts.push(item),
-                    Item::Module(item) => module_stmts.push(item),
                 }
             }
 
-            Ast {
-                functions,
-                structs,
-                use_stmts,
-                module_stmts,
-            }
+            Ast { functions, structs }
         })
         .boxed()
 }
@@ -52,8 +43,6 @@ fn item_parser<'src: 'tok, 'tok>(
     choice((
         function_parser().with_span().map(Item::Function),
         struct_parser().with_span().map(Item::Struct),
-        use_parser().with_span().map(Item::Use),
-        module_parser().with_span().map(Item::Module),
     ))
     .boxed()
 }
@@ -62,26 +51,6 @@ fn item_parser<'src: 'tok, 'tok>(
 enum Item {
     Function(Spanned<Function>),
     Struct(Spanned<Struct>),
-    Use(Spanned<UseStatement>),
-    Module(Spanned<ModuleStatement>),
-}
-
-fn use_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, UseStatement, ParserExtra<'src, 'tok>> {
-    just(Token::Simple(SimpleToken::Kw(Kw::Use)))
-        .ignore_then(path_parser().with_span())
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
-        .map(UseStatement)
-        .boxed()
-}
-
-fn module_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, ModuleStatement, ParserExtra<'src, 'tok>> {
-    just(Token::Simple(SimpleToken::Kw(Kw::Module)))
-        .ignore_then(ident_parser().with_span())
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
-        .map(ModuleStatement)
-        .boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -274,7 +243,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .with_span()
             .boxed();
 
-        let call = path_parser()
+        let call = ident_parser()
             .with_span()
             .then(call_args)
             .map(|(name, args)| Expression::Call { name, args })
@@ -355,21 +324,9 @@ fn type_parser<'src: 'tok, 'tok>(
     .map(Type::Primitive)
     .boxed();
 
-    let user = path_parser().with_span().map(Type::User).boxed();
+    let user = ident_parser().with_span().map(Type::User).boxed();
 
     choice((primitive, user)).boxed()
-}
-
-fn path_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Path, ParserExtra<'src, 'tok>> {
-    ident_parser()
-        .with_span()
-        .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::ColonColon))))
-        .at_least(1)
-        .collect()
-        .with_span()
-        .map(Path)
-        .boxed()
 }
 
 trait SpannedExt<'src: 'tok, 'tok, O> {
