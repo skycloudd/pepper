@@ -24,14 +24,11 @@ pub enum Kw {
     Func,
     Struct,
     Let,
-    Use,
-    Module,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Punc {
     Arrow,
-    ColonColon,
     Plus,
     Minus,
     Star,
@@ -74,8 +71,6 @@ impl core::fmt::Display for Kw {
                 Self::Func => "func",
                 Self::Struct => "struct",
                 Self::Let => "let",
-                Self::Use => "use",
-                Self::Module => "module",
             }
         )
     }
@@ -88,7 +83,6 @@ impl core::fmt::Display for Punc {
             "{}",
             match self {
                 Self::Arrow => "->",
-                Self::ColonColon => "::",
                 Self::Plus => "+",
                 Self::Minus => "-",
                 Self::Star => "*",
