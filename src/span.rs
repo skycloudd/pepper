@@ -64,4 +64,25 @@ impl<T> Spanned<T> {
     pub fn boxed(self) -> Spanned<Box<T>> {
         Spanned(Box::new(self.0), self.1)
     }
+
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
+        Spanned(f(self.0), self.1)
+    }
+
+    #[must_use]
+    pub fn map_span(self, f: impl FnOnce(Span) -> Span) -> Self {
+        Self(self.0, f(self.1))
+    }
+
+    pub const fn as_ref(&self) -> Spanned<&T> {
+        Spanned(&self.0, self.1)
+    }
+
+    pub fn as_mut(&mut self) -> Spanned<&mut T> {
+        Spanned(&mut self.0, self.1)
+    }
+
+    pub fn map_with<U>(&self, f: impl FnOnce(&T, Span) -> U) -> Spanned<U> {
+        Spanned(f(&self.0, self.1), self.1)
+    }
 }

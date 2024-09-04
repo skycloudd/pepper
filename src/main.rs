@@ -18,6 +18,7 @@ pub mod lexer;
 pub mod parser;
 pub mod scopes;
 pub mod span;
+pub mod typecheck;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
@@ -60,9 +61,13 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         },
     );
 
-    eprintln!("{ast:#?}");
-
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
+
+    let (typed_ast, typecheck_errors) = ast.map_or_else(|| (None, vec![]), typecheck::typecheck);
+
+    errors.extend(typecheck_errors);
+
+    eprintln!("{typed_ast:#?}");
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();

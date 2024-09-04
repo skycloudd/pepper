@@ -4,8 +4,7 @@ use crate::{
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, PrimitiveType, Statement,
-    Struct, StructField, Type, UnaryOp,
+    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, Statement, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -18,39 +17,12 @@ type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src st
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast, ParserExtra<'src, 'tok>> {
-    item_parser()
+    function_parser()
         .with_span()
         .repeated()
-        .collect::<Vec<Spanned<Item>>>()
-        .map(|items| {
-            let mut functions = Vec::new();
-            let mut structs = Vec::new();
-
-            for item in items {
-                match item.0 {
-                    Item::Function(item) => functions.push(item),
-                    Item::Struct(item) => structs.push(item),
-                }
-            }
-
-            Ast { functions, structs }
-        })
+        .collect()
+        .map(|functions| Ast { functions })
         .boxed()
-}
-
-fn item_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Item, ParserExtra<'src, 'tok>> {
-    choice((
-        function_parser().with_span().map(Item::Function),
-        struct_parser().with_span().map(Item::Struct),
-    ))
-    .boxed()
-}
-
-#[derive(Clone, Debug)]
-enum Item {
-    Function(Spanned<Function>),
-    Struct(Spanned<Struct>),
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -262,35 +234,6 @@ fn expression_parser<'src: 'tok, 'tok>(
     .boxed()
 }
 
-fn struct_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Struct, ParserExtra<'src, 'tok>> {
-    let name = ident_parser().with_span();
-
-    let fields = struct_field_parser()
-        .with_span()
-        .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
-        .allow_trailing()
-        .collect()
-        .curly_braced()
-        .with_span();
-
-    just(Token::Simple(SimpleToken::Kw(Kw::Struct)))
-        .ignore_then(name)
-        .then(fields)
-        .map(|(name, fields)| Struct { name, fields })
-        .boxed()
-}
-
-fn struct_field_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, StructField, ParserExtra<'src, 'tok>> {
-    ident_parser()
-        .with_span()
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Colon))))
-        .then(type_parser().with_span())
-        .map(|(name, ty)| StructField { name, ty })
-        .boxed()
-}
-
 fn ident_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
@@ -301,32 +244,7 @@ fn ident_parser<'src: 'tok, 'tok>(
 
 fn type_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type, ParserExtra<'src, 'tok>> {
-    macro_rules! prim {
-        ($ident:literal, $variant:ident) => {
-            just(Token::Simple(SimpleToken::Identifier($ident))).to(PrimitiveType::$variant)
-        };
-    }
-
-    let primitive = choice((
-        prim!("int8", Int8),
-        prim!("int16", Int16),
-        prim!("int32", Int32),
-        prim!("int64", Int64),
-        prim!("uint8", Uint8),
-        prim!("uint16", Uint16),
-        prim!("uint32", Uint32),
-        prim!("uint64", Uint64),
-        prim!("float32", Float32),
-        prim!("float64", Float64),
-        prim!("bool", Bool),
-    ))
-    .with_span()
-    .map(Type::Primitive)
-    .boxed();
-
-    let user = ident_parser().with_span().map(Type::User).boxed();
-
-    choice((primitive, user)).boxed()
+    ident_parser().with_span().map(Type).boxed()
 }
 
 trait SpannedExt<'src: 'tok, 'tok, O> {

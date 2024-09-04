@@ -1,11 +1,10 @@
-use crate::span::Spanned;
+use crate::{span::Spanned, RODEO};
 use lasso::Spur;
 use ordered_float::OrderedFloat;
 
 #[derive(Clone, Debug)]
 pub struct Ast {
     pub functions: Vec<Spanned<Function>>,
-    pub structs: Vec<Spanned<Struct>>,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,43 +66,38 @@ pub enum BinaryOp {
     Div,
 }
 
+impl core::fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Add => write!(f, "+"),
+            Self::Sub => write!(f, "-"),
+            Self::Mul => write!(f, "*"),
+            Self::Div => write!(f, "/"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UnaryOp {
     Neg,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Struct {
-    pub name: Spanned<Identifier>,
-    pub fields: Spanned<Vec<Spanned<StructField>>>,
+impl core::fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Neg => write!(f, "-"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StructField {
-    pub name: Spanned<Identifier>,
-    pub ty: Spanned<Type>,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Type {
-    Primitive(Spanned<PrimitiveType>),
-    User(Spanned<Identifier>),
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PrimitiveType {
-    Int8,
-    Int16,
-    Int32,
-    Int64,
-    Uint8,
-    Uint16,
-    Uint32,
-    Uint64,
-    Float32,
-    Float64,
-    Bool,
-}
+pub struct Type(pub Spanned<Identifier>);
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identifier(pub Spanned<Spur>);
+
+impl Identifier {
+    pub fn resolve(&self) -> &'static str {
+        RODEO.resolve(&self.0 .0)
+    }
+}
