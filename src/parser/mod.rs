@@ -207,6 +207,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         let variable = ident_parser().with_span().map(Expression::Variable).boxed();
 
         let call_args = expression
+            .clone()
             .with_span()
             .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
             .allow_trailing()
@@ -221,7 +222,13 @@ fn expression_parser<'src: 'tok, 'tok>(
             .map(|(name, args)| Expression::Call { name, args })
             .boxed();
 
-        let atom = choice((call, integer, float, bool, variable)).boxed();
+        let parenthesized = expression
+            .with_span()
+            .parenthesized()
+            .map(|expr| expr.0)
+            .boxed();
+
+        let atom = choice((parenthesized, call, integer, float, bool, variable)).boxed();
 
         let unary = unary_op!(atom, (Punc::Minus => UnaryOp::Neg)).boxed();
 

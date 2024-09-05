@@ -36,7 +36,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
 
     let mut files = SimpleFiles::new();
 
-    let source = read_to_string(&args.filename).unwrap();
+    let source = read_to_string(&args.filename)?;
 
     let file_id = FileId::new(files.add(&args.filename, source.to_string()));
 

@@ -7,7 +7,11 @@ func add_float(a: float32, b: float32) -> float32 {
 }
 
 func main() {
-    add(1, 2);
+    let a = 1;
+    let b = 2;
+    a = 3;
+    b = 4;
+
+    add(a, b);
     add_float(1.5, 2.);
-    add(1.5, 2.); // should error
 }

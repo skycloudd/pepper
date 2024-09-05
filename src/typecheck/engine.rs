@@ -76,14 +76,12 @@ impl Engine {
         }
     }
 
-    #[must_use]
-    pub fn info_to_type(&self, info: TypeInfo) -> Type {
-        match info {
-            TypeInfo::Unknown => Type::Error,
-            TypeInfo::Ref(id) => self.reconstruct(id).unwrap().0,
-            TypeInfo::Error => todo!(),
-            TypeInfo::Primitive(_) => todo!(),
-        }
+    pub fn info_to_type(&self, info: TypeInfo) -> Result<Type, Error> {
+        Ok(match info {
+            TypeInfo::Unknown | TypeInfo::Error => Type::Error,
+            TypeInfo::Ref(id) => self.reconstruct(id)?.0,
+            TypeInfo::Primitive(ty) => Type::Primitive(ty),
+        })
     }
 }
 

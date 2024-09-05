@@ -31,7 +31,7 @@ pub enum Error {
         name: String,
         span: Span,
     },
-    CallParamTypeMismatch {
+    TypeMismatch {
         expected: Spanned<TypeInfo>,
         found: Spanned<TypeInfo>,
     },
@@ -47,6 +47,7 @@ pub enum Error {
 }
 
 impl Diag for Error {
+    #[allow(clippy::match_same_arms)]
     fn message(&self) -> Cow<str> {
         match self {
             Self::ExpectedFound {
@@ -65,8 +66,8 @@ impl Diag for Error {
             Self::UndefinedFunction { name, span: _ } => {
                 format!("Undefined function `{name}`").into()
             }
-            Self::CallParamTypeMismatch { expected, found } => {
-                call_param_type_mismatch_message(&expected.0, &found.0).into()
+            Self::TypeMismatch { expected, found } => {
+                type_mismatch_message(&expected.0, &found.0).into()
             }
             Self::UndefinedVariable { name, span: _ } => {
                 format!("Undefined variable `{name}`").into()
@@ -107,7 +108,7 @@ impl Diag for Error {
                 Some(format!("Undefined function `{name}`")),
                 *span,
             )],
-            Self::CallParamTypeMismatch { expected, found } => vec![
+            Self::TypeMismatch { expected, found } => vec![
                 ErrorSpan::primary(
                     Some("Expected {todo add info here}".to_string()),
                     expected.1,
@@ -136,7 +137,7 @@ impl Diag for Error {
             | Self::UndefinedType { .. }
             | Self::CantInferType { .. }
             | Self::UndefinedFunction { .. }
-            | Self::CallParamTypeMismatch { .. }
+            | Self::TypeMismatch { .. }
             | Self::UndefinedVariable { .. }
             | Self::BinaryOpTypeMismatch { .. } => vec![],
         }
@@ -170,10 +171,7 @@ pub fn convert(error: &Rich<impl Display, Span, &str>) -> Vec<Error> {
     convert_inner(error.reason(), *error.span())
 }
 
-fn call_param_type_mismatch_message<'a>(
-    expected: &TypeInfo,
-    found: &TypeInfo,
-) -> impl Into<Cow<'a, str>> {
+fn type_mismatch_message<'a>(expected: &TypeInfo, found: &TypeInfo) -> impl Into<Cow<'a, str>> {
     format!(
         "{}{}",
         match expected {

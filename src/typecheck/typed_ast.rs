@@ -15,7 +15,7 @@ pub struct TypedAst {
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Option<Spanned<Type>>,
+    pub return_ty: Spanned<Type>,
     pub body: Spanned<Vec<Spanned<Statement>>>,
     pub return_expr: Option<Spanned<TypedExpression>>,
 }
