@@ -27,7 +27,7 @@ struct Args {
     filename: Utf8PathBuf,
 }
 
-fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
+fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     let args = Args::parse();
 
     if !args.filename.is_file() {

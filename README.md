@@ -11,5 +11,10 @@ This project is very early in development. It is not yet useful.
 ## Usage
 
 ```sh
-cargo run -- tests/compile_test
+# compile the example program
+cargo run -- tests/compile_test/main.pr
 ```
+
+## MSRV
+
+The minimum supported Rust version is the latest stable release.
