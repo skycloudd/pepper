@@ -4,10 +4,10 @@ use crate::{
     scopes::Scopes,
     span::{Span, Spanned},
 };
-use chumsky::span::Span as _;
 use engine::{Engine, TypeId, TypeInfo};
 use typed_ast::{
-    Expression, Function, FunctionParam, PrimitiveType, Statement, Type, TypedAst, TypedExpression,
+    Block, Expression, Function, FunctionParam, PrimitiveType, Statement, Type, TypedAst,
+    TypedExpression,
 };
 
 pub mod engine;
@@ -66,7 +66,7 @@ impl<'a> Typechecker<'a> {
                     .collect(),
                 return_ty: function.0.return_ty.as_ref().map_or_else(
                     || {
-                        let span = function.0.params.1.to_end();
+                        let span = function.0.params.1.at_last_idx();
                         Spanned(Type::Primitive(PrimitiveType::Unit), span)
                     },
                     |ty| ty.map_with(|ty, ty_span| self.lower_type_error(ty, ty_span)),
@@ -99,45 +99,36 @@ impl<'a> Typechecker<'a> {
 
         let return_ty = function.return_ty.as_ref().map_or_else(
             || {
-                let span = params.1.to_end();
+                let span = params.1.at_last_idx();
                 Spanned(Type::Primitive(PrimitiveType::Unit), span)
             },
             |ty| ty.map_with(|ty, ty_span| self.lower_type_error(ty, ty_span)),
         );
 
-        let body = function.body.map(|body| {
-            body.into_iter()
-                .map(|stmt| stmt.map(|stmt| self.typecheck_statement(stmt)))
-                .collect()
-        });
+        let body = function.body.map(|body| self.typecheck_block(body));
 
-        let return_expr = function
-            .return_expr
-            .map(|expr| expr.map(|expr| self.typecheck_expression(expr)));
+        let return_expr_ty = match &body.0.return_expr {
+            Some(return_expr) => return_expr.as_ref().map(|return_expr| return_expr.ty),
+            None => Spanned(Type::Primitive(PrimitiveType::Unit), body.1.at_last_idx()),
+        };
 
-        if let Some(return_expr) = &return_expr {
-            let return_expr_ty_id = self
-                .engine
-                .insert_type(return_expr.as_ref().map(|return_expr| return_expr.ty));
+        let return_expr_ty_id = self.engine.insert_type(return_expr_ty);
+        let return_ty_id = self.engine.insert_type(return_ty);
 
-            let return_ty_ty_id = self.engine.insert_type(return_ty);
+        self.engine
+            .unify(return_ty_id, return_expr_ty_id)
+            .unwrap_or_else(|err| {
+                let expected = err.a;
+                let found = err.b;
 
-            self.engine
-                .unify(return_expr_ty_id, return_ty_ty_id)
-                .unwrap_or_else(|err| {
-                    let expected = err.a;
-                    let found = err.b;
-
-                    self.errors.push(Error::TypeMismatch { expected, found });
-                });
-        }
+                self.errors.push(Error::TypeMismatch { expected, found });
+            });
 
         Function {
             name: function.name,
             params,
             return_ty,
             body,
-            return_expr,
         }
     }
 
@@ -146,12 +137,6 @@ impl<'a> Typechecker<'a> {
             ast::Statement::Expression(expr) => {
                 Statement::Expression(expr.map(|expr| self.typecheck_expression(expr)))
             }
-            ast::Statement::Block(stmts) => Statement::Block(stmts.map(|stmts| {
-                stmts
-                    .into_iter()
-                    .map(|stmt| stmt.map(|stmt| self.typecheck_statement(stmt)))
-                    .collect()
-            })),
             ast::Statement::Let { name, ty, value } => {
                 let ty = ty.map(|ty| ty.map_with(|ty, ty_span| self.lower_type_error(ty, ty_span)));
 
@@ -226,16 +211,47 @@ impl<'a> Typechecker<'a> {
     #[allow(clippy::too_many_lines)]
     fn typecheck_expression(&mut self, expr: ast::Expression) -> TypedExpression {
         match expr {
-            ast::Expression::Integer(value) => TypedExpression {
-                // TODO: Handle different integer sizes
-                ty: Type::Primitive(PrimitiveType::Int32),
-                expr: Expression::Integer(value),
-            },
-            ast::Expression::Float(value) => TypedExpression {
-                // TODO: Handle different float sizes
-                ty: Type::Primitive(PrimitiveType::Float32),
-                expr: Expression::Float(value),
-            },
+            ast::Expression::Integer(value, ty) => {
+                let ty = ty.map_or(Type::Primitive(PrimitiveType::Int32), |ty| {
+                    self.lower_type_error(&ty.0, ty.1)
+                });
+
+                {
+                    use PrimitiveType::{Int16, Int32, Int64, Int8, Uint16, Uint32, Uint64, Uint8};
+
+                    match ty {
+                        Type::Error
+                        | Type::Primitive(
+                            Int8 | Int16 | Int32 | Int64 | Uint8 | Uint16 | Uint32 | Uint64,
+                        ) => {}
+                        Type::Primitive(_) => todo!("error: not an integer type"),
+                    }
+                }
+
+                TypedExpression {
+                    ty,
+                    expr: Expression::Integer(value),
+                }
+            }
+            ast::Expression::Float(value, ty) => {
+                let ty = ty.map_or(Type::Primitive(PrimitiveType::Float32), |ty| {
+                    self.lower_type_error(&ty.0, ty.1)
+                });
+
+                {
+                    use PrimitiveType::{Float32, Float64};
+
+                    match ty {
+                        Type::Error | Type::Primitive(Float32 | Float64) => {}
+                        Type::Primitive(_) => todo!("error: not a float type"),
+                    }
+                }
+
+                TypedExpression {
+                    ty,
+                    expr: Expression::Float(value),
+                }
+            }
             ast::Expression::Bool(value) => TypedExpression {
                 ty: Type::Primitive(PrimitiveType::Bool),
                 expr: Expression::Bool(value),
@@ -339,8 +355,25 @@ impl<'a> Typechecker<'a> {
             ast::Expression::UnaryOp { op, expr } => {
                 let expr = expr.map(|expr| self.typecheck_expression(*expr));
 
+                let final_expr_ty = {
+                    use ast::UnaryOp::Neg;
+
+                    unary_op_type!(expr.0.ty, op.0,
+                        Neg => Int8 => Int8,
+                        Neg => Int16 => Int16,
+                        Neg => Int32 => Int32,
+                        Neg => Int64 => Int64,
+                        // Neg => Uint8 => Uint8,
+                        // Neg => Uint16 => Uint16,
+                        // Neg => Uint32 => Uint32,
+                        // Neg => Uint64 => Uint64,
+                        Neg => Float32 => Float32,
+                        Neg => Float64 => Float64,
+                    )
+                };
+
                 TypedExpression {
-                    ty: expr.0.ty,
+                    ty: final_expr_ty,
                     expr: Expression::UnaryOp {
                         op,
                         expr: expr.boxed(),
@@ -387,6 +420,25 @@ impl<'a> Typechecker<'a> {
                     expr: Expression::Call { name, args },
                 }
             }
+            ast::Expression::Block(block) => todo!("{:?}", block),
+        }
+    }
+
+    fn typecheck_block(&mut self, block: ast::Block) -> Block {
+        let statements = block.statements.map(|statements| {
+            statements
+                .into_iter()
+                .map(|stmt| stmt.map(|stmt| self.typecheck_statement(stmt)))
+                .collect()
+        });
+
+        let return_expr = block
+            .return_expr
+            .map(|expr| expr.map(|expr| self.typecheck_expression(expr)));
+
+        Block {
+            statements,
+            return_expr,
         }
     }
 
@@ -462,3 +514,21 @@ macro_rules! bin_op_type {
     };
 }
 use bin_op_type;
+
+macro_rules! unary_op_type {
+    (
+        $expr_ty:expr, $op:expr,
+        $($op_pat:pat => $expr_ty_pat:ident => $result_ty:ident),+ $(,)?
+    ) => {
+        match ($expr_ty, $op) {
+            $(
+                (
+                    Type::Primitive(PrimitiveType::$expr_ty_pat),
+                    $op_pat
+                ) => Type::Primitive(PrimitiveType::$result_ty),
+            )+
+            _ => Type::Error,
+        }
+    };
+}
+use unary_op_type;

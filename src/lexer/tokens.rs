@@ -12,8 +12,14 @@ pub enum Token<'src> {
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SimpleToken<'src> {
     Identifier(&'src str),
-    Integer(&'src str),
-    Float(&'src str),
+    Integer {
+        value: Spanned<&'src str>,
+        ty: Option<Spanned<&'src str>>,
+    },
+    Float {
+        value: Spanned<&'src str>,
+        ty: Option<Spanned<&'src str>>,
+    },
     Boolean(bool),
     Kw(Kw),
     Punc(Punc),
@@ -53,8 +59,14 @@ impl core::fmt::Display for SimpleToken<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Identifier(ident) => write!(f, "{ident}"),
-            Self::Integer(int) => write!(f, "{int}"),
-            Self::Float(float) => write!(f, "{float}"),
+            Self::Integer { value, ty } | Self::Float { value, ty } => {
+                write!(
+                    f,
+                    "{}{}",
+                    value.0,
+                    ty.map_or(String::new(), |ty| format!("_{}", ty.0))
+                )
+            }
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),

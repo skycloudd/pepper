@@ -15,6 +15,28 @@ impl Span {
     pub const fn range(&self) -> core::ops::Range<usize> {
         self.start..self.end
     }
+
+    #[must_use]
+    pub const fn at_last_idx(&self) -> Self {
+        let last_char = self.end.saturating_sub(1);
+
+        Self {
+            start: last_char,
+            end: last_char,
+            file_id: self.file_id,
+        }
+    }
+
+    #[must_use]
+    pub fn without_start(&self, n: usize) -> Self {
+        let new_start = self.start + n;
+
+        Self {
+            start: new_start,
+            end: self.end.max(new_start),
+            file_id: self.file_id,
+        }
+    }
 }
 
 impl chumsky::span::Span for Span {

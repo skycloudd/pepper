@@ -1,10 +1,9 @@
-use std::borrow::Cow;
-
 use crate::{
     parser::ast::{BinaryOp, Identifier, UnaryOp},
     span::Spanned,
 };
 use ordered_float::OrderedFloat;
+use std::borrow::Cow;
 
 #[derive(Clone, Debug)]
 pub struct TypedAst {
@@ -16,8 +15,7 @@ pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Spanned<Type>,
-    pub body: Spanned<Vec<Spanned<Statement>>>,
-    pub return_expr: Option<Spanned<TypedExpression>>,
+    pub body: Spanned<Block>,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -29,7 +27,6 @@ pub struct FunctionParam {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Statement {
     Expression(Spanned<TypedExpression>),
-    Block(Spanned<Vec<Spanned<Statement>>>),
     Let {
         name: Spanned<Identifier>,
         ty: Spanned<Type>,
@@ -66,6 +63,13 @@ pub enum Expression {
         name: Spanned<Identifier>,
         args: Spanned<Vec<Spanned<TypedExpression>>>,
     },
+    Block(Spanned<Box<Block>>),
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Block {
+    pub statements: Spanned<Vec<Spanned<Statement>>>,
+    pub return_expr: Option<Spanned<TypedExpression>>,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]

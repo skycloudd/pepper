@@ -12,8 +12,7 @@ pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Option<Spanned<Type>>,
-    pub body: Spanned<Vec<Spanned<Statement>>>,
-    pub return_expr: Option<Spanned<Expression>>,
+    pub body: Spanned<Block>,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -25,7 +24,6 @@ pub struct FunctionParam {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Statement {
     Expression(Spanned<Expression>),
-    Block(Spanned<Vec<Spanned<Statement>>>),
     Let {
         name: Spanned<Identifier>,
         ty: Option<Spanned<Type>>,
@@ -39,8 +37,8 @@ pub enum Statement {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Expression {
-    Integer(Spanned<u128>),
-    Float(Spanned<OrderedFloat<f64>>),
+    Integer(Spanned<u128>, Option<Spanned<Type>>),
+    Float(Spanned<OrderedFloat<f64>>, Option<Spanned<Type>>),
     Bool(Spanned<bool>),
     Variable(Spanned<Identifier>),
     BinaryOp {
@@ -56,6 +54,13 @@ pub enum Expression {
         name: Spanned<Identifier>,
         args: Spanned<Vec<Spanned<Expression>>>,
     },
+    Block(Spanned<Box<Block>>),
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Block {
+    pub statements: Spanned<Vec<Spanned<Statement>>>,
+    pub return_expr: Option<Spanned<Expression>>,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]

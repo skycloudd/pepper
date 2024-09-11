@@ -4,13 +4,13 @@ use tokens::{Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
+type ParserInput<'src> = WithContext<Span, &'src str>;
+
+type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
+
 #[must_use]
-pub fn lexer<'src>() -> impl Parser<
-    'src,
-    WithContext<Span, &'src str>,
-    Vec<tokens::Spanned<Token<'src>>>,
-    extra::Err<Rich<'src, char, Span, &'src str>>,
-> {
+pub fn lexer<'src>(
+) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token<'src>>>, ParserExtra<'src>> {
     recursive(|tokens| {
         let ident = text::ascii::ident().map(SimpleToken::Identifier).boxed();
 
@@ -21,13 +21,26 @@ pub fn lexer<'src>() -> impl Parser<
         .map(SimpleToken::Boolean)
         .boxed();
 
-        let integer = text::int(10).to_slice().map(SimpleToken::Integer).boxed();
+        let integer = text::int(10)
+            .to_slice()
+            .with_span()
+            .then(ident.clone().to_slice().with_span().or_not())
+            .map(|(value, ty)| SimpleToken::Integer {
+                value,
+                ty: ty.map(remove_prefix_underscores),
+            })
+            .boxed();
 
         let float = text::int(10)
             .then_ignore(just('.'))
             .then(text::digits(10).or_not())
             .to_slice()
-            .map(SimpleToken::Float)
+            .with_span()
+            .then(ident.clone().to_slice().with_span().or_not())
+            .map(|(value, ty)| SimpleToken::Float {
+                value,
+                ty: ty.map(remove_prefix_underscores),
+            })
             .boxed();
 
         let keyword = choice((
@@ -82,4 +95,25 @@ pub fn lexer<'src>() -> impl Parser<
     })
     .then_ignore(end())
     .boxed()
+}
+
+fn remove_prefix_underscores(ident: (&str, Span)) -> (&str, Span) {
+    let (ident, span) = ident;
+
+    ident
+        .strip_prefix('_')
+        .map_or((ident, span), |ident| (ident, span.without_start(1)))
+}
+
+trait SpannedExt<'src, O> {
+    fn with_span(self) -> impl Parser<'src, ParserInput<'src>, (O, Span), ParserExtra<'src>>;
+}
+
+impl<'src, P, O> SpannedExt<'src, O> for P
+where
+    P: Parser<'src, ParserInput<'src>, O, ParserExtra<'src>>,
+{
+    fn with_span(self) -> impl Parser<'src, ParserInput<'src>, (O, Span), ParserExtra<'src>> {
+        self.map_with(|t, e| (t, e.span()))
+    }
 }

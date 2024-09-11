@@ -4,9 +4,10 @@ use crate::{
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, Statement, Type, UnaryOp,
+    Ast, BinaryOp, Block, Expression, Function, FunctionParam, Identifier, Statement, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
+use ordered_float::OrderedFloat;
 
 pub mod ast;
 
@@ -37,14 +38,7 @@ fn function_parser<'src: 'tok, 'tok>(
         .parenthesized()
         .with_span();
 
-    let body_return_expr = statement_parser()
-        .with_span()
-        .repeated()
-        .collect()
-        .with_span()
-        .then(expression_parser().with_span().or_not())
-        .curly_braced()
-        .map(|(body, return_expr)| (body, return_expr));
+    let body = block_parser(statement_parser(), expression_parser(statement_parser())).with_span();
 
     just(Token::Simple(SimpleToken::Kw(Kw::Func)))
         .ignore_then(name)
@@ -54,16 +48,13 @@ fn function_parser<'src: 'tok, 'tok>(
                 .ignore_then(type_parser().with_span())
                 .or_not(),
         )
-        .then(body_return_expr)
-        .map(
-            |(((name, params), return_ty), (body, return_expr))| Function {
-                name,
-                params,
-                return_ty,
-                body,
-                return_expr,
-            },
-        )
+        .then(body)
+        .map(|(((name, params), return_ty), body)| Function {
+            name,
+            params,
+            return_ty,
+            body,
+        })
         .boxed()
 }
 
@@ -80,20 +71,10 @@ fn function_param_parser<'src: 'tok, 'tok>(
 fn statement_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Statement, ParserExtra<'src, 'tok>> {
     recursive(|statement| {
-        let expr = expression_parser()
+        let expr = expression_parser(statement.clone())
             .with_span()
             .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
             .map(Statement::Expression)
-            .boxed();
-
-        let block = statement
-            .clone()
-            .with_span()
-            .repeated()
-            .collect()
-            .curly_braced()
-            .with_span()
-            .map(Statement::Block)
             .boxed();
 
         let let_ = just(Token::Simple(SimpleToken::Kw(Kw::Let)))
@@ -104,7 +85,7 @@ fn statement_parser<'src: 'tok, 'tok>(
                     .or_not(),
             )
             .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Equals))))
-            .then(expression_parser().with_span())
+            .then(expression_parser(statement.clone()).with_span())
             .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
             .map(|((name, ty), value)| Statement::Let { name, ty, value })
             .boxed();
@@ -112,17 +93,19 @@ fn statement_parser<'src: 'tok, 'tok>(
         let assign = ident_parser()
             .with_span()
             .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Equals))))
-            .then(expression_parser().with_span())
+            .then(expression_parser(statement).with_span())
             .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))))
             .map(|(name, value)| Statement::Assign { name, value })
             .boxed();
 
-        choice((expr, block, let_, assign)).boxed()
+        choice((expr, let_, assign)).boxed()
     })
     .boxed()
 }
 
+#[allow(clippy::too_many_lines)]
 fn expression_parser<'src: 'tok, 'tok>(
+    statement: impl Parser<'tok, ParserInput<'src, 'tok>, Statement, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> {
     macro_rules! unary_op {
         ($base:expr, $(($punc:expr => $to:expr)),*) => {{
@@ -184,17 +167,47 @@ fn expression_parser<'src: 'tok, 'tok>(
 
     recursive(|expression| {
         let integer = select! {
-            Token::Simple(SimpleToken::Integer(int)) => int.parse().unwrap(),
+            Token::Simple(SimpleToken::Integer { value, ty }) => (value, ty),
         }
-        .with_span()
-        .map(Expression::Integer)
+        .map(|(value, ty)| {
+            let value = Spanned(value.0.parse().unwrap(), value.1);
+
+            let ty = ty.map(|ty| {
+                let span = ty.1;
+
+                Spanned(
+                    Type(Spanned(
+                        Identifier(Spanned(RODEO.get_or_intern(ty.0), span)),
+                        span,
+                    )),
+                    span,
+                )
+            });
+
+            Expression::Integer(value, ty)
+        })
         .boxed();
 
         let float = select! {
-            Token::Simple(SimpleToken::Float(float)) => float.parse().unwrap(),
+            Token::Simple(SimpleToken::Float { value, ty }) => (value, ty),
         }
-        .with_span()
-        .map(Expression::Float)
+        .map(|(value, ty)| {
+            let value = Spanned(OrderedFloat(value.0.parse().unwrap()), value.1);
+
+            let ty = ty.map(|ty| {
+                let span = ty.1;
+
+                Spanned(
+                    Type(Spanned(
+                        Identifier(Spanned(RODEO.get_or_intern(ty.0), span)),
+                        span,
+                    )),
+                    span,
+                )
+            });
+
+            Expression::Float(value, ty)
+        })
         .boxed();
 
         let bool = select! {
@@ -223,12 +236,18 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed();
 
         let parenthesized = expression
+            .clone()
             .with_span()
             .parenthesized()
             .map(|expr| expr.0)
             .boxed();
 
-        let atom = choice((parenthesized, call, integer, float, bool, variable)).boxed();
+        let block = block_parser(statement, expression)
+            .with_span()
+            .map(|block| Expression::Block(block.boxed()))
+            .boxed();
+
+        let atom = choice((parenthesized, block, call, integer, float, bool, variable)).boxed();
 
         let unary = unary_op!(atom, (Punc::Minus => UnaryOp::Neg)).boxed();
 
@@ -239,6 +258,24 @@ fn expression_parser<'src: 'tok, 'tok>(
         binary_op!(factor, (Punc::Plus => BinaryOp::Add), (Punc::Minus => BinaryOp::Sub)).boxed()
     })
     .boxed()
+}
+
+fn block_parser<'src: 'tok, 'tok>(
+    statement: impl Parser<'tok, ParserInput<'src, 'tok>, Statement, ParserExtra<'src, 'tok>> + 'tok,
+    expression: impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> + 'tok,
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Block, ParserExtra<'src, 'tok>> {
+    statement
+        .with_span()
+        .repeated()
+        .collect()
+        .with_span()
+        .then(expression.with_span().or_not())
+        .curly_braced()
+        .map(|(statements, return_expr)| Block {
+            statements,
+            return_expr,
+        })
+        .boxed()
 }
 
 fn ident_parser<'src: 'tok, 'tok>(
