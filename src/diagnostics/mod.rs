@@ -14,14 +14,14 @@ pub trait Diag {
 
 #[derive(Debug)]
 pub struct ErrorSpan {
-    pub message: Option<String>,
-    pub span: Span,
-    pub label_style: LabelStyle,
+    message: Option<String>,
+    span: Span,
+    label_style: LabelStyle,
 }
 
 impl ErrorSpan {
     #[must_use]
-    pub const fn primary(message: Option<String>, span: Span) -> Self {
+    const fn primary(message: Option<String>, span: Span) -> Self {
         Self {
             message,
             span,
@@ -29,12 +29,12 @@ impl ErrorSpan {
         }
     }
 
-    #[must_use]
-    pub const fn secondary(message: Option<String>, span: Span) -> Self {
-        Self {
-            message,
-            span,
-            label_style: LabelStyle::Secondary,
-        }
-    }
+    // #[must_use]
+    // const fn secondary(message: Option<String>, span: Span) -> Self {
+    //     Self {
+    //         message,
+    //         span,
+    //         label_style: LabelStyle::Secondary,
+    //     }
+    // }
 }

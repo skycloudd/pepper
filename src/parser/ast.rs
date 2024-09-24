@@ -1,46 +1,32 @@
 use crate::{span::Spanned, RODEO};
 use lasso::Spur;
-use ordered_float::OrderedFloat;
+use malachite::Rational;
 
 #[derive(Clone, Debug)]
 pub struct Ast {
     pub functions: Vec<Spanned<Function>>,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug)]
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Option<Spanned<Type>>,
-    pub body: Spanned<Block>,
+    pub return_ty: Option<Spanned<Type<Identifier>>>,
+    pub body: Spanned<Expression>,
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug)]
 pub struct FunctionParam {
     pub name: Spanned<Identifier>,
-    pub ty: Spanned<Type>,
+    pub ty: Spanned<Type<Identifier>>,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Statement {
-    Expression(Spanned<Expression>),
-    Let {
-        name: Spanned<Identifier>,
-        ty: Option<Spanned<Type>>,
-        value: Spanned<Expression>,
-    },
-    Assign {
-        name: Spanned<Identifier>,
-        value: Spanned<Expression>,
-    },
-}
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug)]
 pub enum Expression {
-    Integer(Spanned<u128>, Option<Spanned<Type>>),
-    Float(Spanned<OrderedFloat<f64>>, Option<Spanned<Type>>),
-    Bool(Spanned<bool>),
-    Variable(Spanned<Identifier>),
+    Unit,
+    Number(Rational),
+    Bool(bool),
+    Variable(Identifier),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<Expression>>,
@@ -54,16 +40,9 @@ pub enum Expression {
         name: Spanned<Identifier>,
         args: Spanned<Vec<Spanned<Expression>>>,
     },
-    Block(Spanned<Box<Block>>),
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Block {
-    pub statements: Spanned<Vec<Spanned<Statement>>>,
-    pub return_expr: Option<Spanned<Expression>>,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -82,7 +61,7 @@ impl core::fmt::Display for BinaryOp {
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
     Neg,
 }
@@ -95,14 +74,25 @@ impl core::fmt::Display for UnaryOp {
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Type(pub Spanned<Identifier>);
+#[derive(Clone, Debug)]
+pub enum Type<P> {
+    Primitive(P),
+    Unit,
+    Never,
+    Function(FunctionType<P>),
+}
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Identifier(pub Spanned<Spur>);
+#[derive(Clone, Debug)]
+pub struct FunctionType<P> {
+    pub params: Spanned<Vec<Spanned<Type<P>>>>,
+    pub return_ty: Option<Spanned<Box<Type<P>>>>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Identifier(pub Spur);
 
 impl Identifier {
-    pub fn resolve(&self) -> &'static str {
-        RODEO.resolve(&self.0 .0)
+    pub fn resolve(self) -> &'static str {
+        RODEO.resolve(&self.0)
     }
 }

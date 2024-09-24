@@ -1,25 +1,44 @@
-func add_int32(a: int32, b: int32) -> int32 {
+let add_numbers(a: number, b: number) -> number =
     a + b
-}
 
-func add_uint64(a: uint64, b: uint64) -> uint64 {
-    a + b
-}
+let returns_true() -> bool =
+    true
 
-func add_float32(a: float32, b: float32) -> float32 {
-    a + b
-}
+let returns_false() -> bool =
+    false
 
-func add_float64(a: float64, b: float64) -> float64 {
-    a + b
-}
+let returns_unit() -> # =
+    #
 
-func main() {
-    let a = 1_uint64;
-    let b = 2uint64;
+let returns_unit_implicit() =
+    #
 
-    add_int32(3, 4);
-    add_uint64(a, b);
-    add_float32(1.5, 2.);
-    add_float64(2.5float64, 3.14159265_float64);
-}
+let never_returns() -> ! =
+    never_returns()
+
+let apply_fn(fn: (number, number) -> number, a: number, b: number) -> number =
+    fn(a, b)
+
+let nt(
+    a: number,
+    b: number,
+    c: bool,
+    d: bool,
+    e: number,
+    f: #,
+    g: #,
+    h: !
+) =
+    #
+
+let main() =
+    nt(
+        add_numbers(1, 2),
+        add_numbers(1.0, 2.0),
+        returns_true(),
+        returns_false(),
+        apply_fn(add_numbers, 1, 2),
+        returns_unit(),
+        returns_unit_implicit(),
+        never_returns(),
+    )

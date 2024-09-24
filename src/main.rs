@@ -13,12 +13,12 @@ use lasso::ThreadedRodeo;
 use span::{FileId, Span};
 use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
 
-pub mod diagnostics;
-pub mod lexer;
-pub mod parser;
-pub mod scopes;
-pub mod span;
-pub mod typecheck;
+mod diagnostics;
+mod lexer;
+mod parser;
+mod scopes;
+mod span;
+mod typecheck;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
@@ -67,7 +67,11 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
 
     errors.extend(typecheck_errors);
 
-    eprintln!("{typed_ast:#?}");
+    if let Some(typed_ast) = typed_ast {
+        if cfg!(debug_assertions) {
+            eprintln!("{:?}", typed_ast.functions);
+        }
+    }
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();

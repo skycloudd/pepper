@@ -1,6 +1,6 @@
 use crate::span::Span;
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{Kw, Punc, SimpleToken, Token};
+use tokens::{FractionalPart, Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
@@ -21,35 +21,23 @@ pub fn lexer<'src>(
         .map(SimpleToken::Boolean)
         .boxed();
 
-        let integer = text::int(10)
-            .to_slice()
-            .with_span()
-            .then(ident.clone().to_slice().with_span().or_not())
-            .map(|(value, ty)| SimpleToken::Integer {
-                value,
-                ty: ty.map(remove_prefix_underscores),
-            })
+        let number = text::int(10)
+            .then(
+                just('.')
+                    .ignore_then(text::digits(10).to_slice().or_not())
+                    .or_not()
+                    .map(|frac| match frac {
+                        Some(Some(frac)) => FractionalPart::Full(frac),
+                        Some(None) => FractionalPart::Period,
+                        None => FractionalPart::None,
+                    }),
+            )
+            .map(|(int, frac)| SimpleToken::Number(int, frac))
             .boxed();
 
-        let float = text::int(10)
-            .then_ignore(just('.'))
-            .then(text::digits(10).or_not())
-            .to_slice()
-            .with_span()
-            .then(ident.clone().to_slice().with_span().or_not())
-            .map(|(value, ty)| SimpleToken::Float {
-                value,
-                ty: ty.map(remove_prefix_underscores),
-            })
+        let keyword = choice((text::keyword("let").to(Kw::Let),))
+            .map(SimpleToken::Kw)
             .boxed();
-
-        let keyword = choice((
-            text::keyword("func").to(Kw::Func),
-            text::keyword("struct").to(Kw::Struct),
-            text::keyword("let").to(Kw::Let),
-        ))
-        .map(SimpleToken::Kw)
-        .boxed();
 
         let punctuation = choice((
             just("->").to(Punc::Arrow),
@@ -60,7 +48,8 @@ pub fn lexer<'src>(
             just(":").to(Punc::Colon),
             just(",").to(Punc::Comma),
             just("=").to(Punc::Equals),
-            just(";").to(Punc::Semicolon),
+            just("#").to(Punc::Hash),
+            just("!").to(Punc::Bang),
         ))
         .map(SimpleToken::Punc)
         .boxed();
@@ -70,7 +59,7 @@ pub fn lexer<'src>(
             .padded()
             .boxed();
 
-        let simple = choice((keyword, bool, ident, float, integer, punctuation))
+        let simple = choice((keyword, bool, ident, number, punctuation))
             .map(Token::Simple)
             .boxed();
 
@@ -95,25 +84,4 @@ pub fn lexer<'src>(
     })
     .then_ignore(end())
     .boxed()
-}
-
-fn remove_prefix_underscores(ident: (&str, Span)) -> (&str, Span) {
-    let (ident, span) = ident;
-
-    ident
-        .strip_prefix('_')
-        .map_or((ident, span), |ident| (ident, span.without_start(1)))
-}
-
-trait SpannedExt<'src, O> {
-    fn with_span(self) -> impl Parser<'src, ParserInput<'src>, (O, Span), ParserExtra<'src>>;
-}
-
-impl<'src, P, O> SpannedExt<'src, O> for P
-where
-    P: Parser<'src, ParserInput<'src>, O, ParserExtra<'src>>,
-{
-    fn with_span(self) -> impl Parser<'src, ParserInput<'src>, (O, Span), ParserExtra<'src>> {
-        self.map_with(|t, e| (t, e.span()))
-    }
 }

@@ -2,37 +2,35 @@ use crate::span::Span;
 
 pub type Spanned<T> = (T, Span);
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token<'src> {
     Simple(SimpleToken<'src>),
     Parentheses(Vec<Spanned<Token<'src>>>),
     CurlyBraces(Vec<Spanned<Token<'src>>>),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SimpleToken<'src> {
     Identifier(&'src str),
-    Integer {
-        value: Spanned<&'src str>,
-        ty: Option<Spanned<&'src str>>,
-    },
-    Float {
-        value: Spanned<&'src str>,
-        ty: Option<Spanned<&'src str>>,
-    },
+    Number(&'src str, FractionalPart<'src>),
     Boolean(bool),
     Kw(Kw),
     Punc(Punc),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FractionalPart<'src> {
+    None,
+    Period,
+    Full(&'src str),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kw {
-    Func,
-    Struct,
     Let,
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Punc {
     Arrow,
     Plus,
@@ -42,7 +40,8 @@ pub enum Punc {
     Colon,
     Comma,
     Equals,
-    Semicolon,
+    Hash,
+    Bang,
 }
 
 impl core::fmt::Display for Token<'_> {
@@ -58,18 +57,21 @@ impl core::fmt::Display for Token<'_> {
 impl core::fmt::Display for SimpleToken<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Identifier(ident) => write!(f, "{ident}"),
-            Self::Integer { value, ty } | Self::Float { value, ty } => {
-                write!(
-                    f,
-                    "{}{}",
-                    value.0,
-                    ty.map_or(String::new(), |ty| format!("_{}", ty.0))
-                )
-            }
+            Self::Identifier(name) => write!(f, "{name}"),
+            Self::Number(int, frac) => write!(f, "{int}{frac}"),
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
+        }
+    }
+}
+
+impl core::fmt::Display for FractionalPart<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::None => write!(f, ""),
+            Self::Period => write!(f, "."),
+            Self::Full(full) => write!(f, ".{full}"),
         }
     }
 }
@@ -80,8 +82,6 @@ impl core::fmt::Display for Kw {
             f,
             "{}",
             match self {
-                Self::Func => "func",
-                Self::Struct => "struct",
                 Self::Let => "let",
             }
         )
@@ -102,7 +102,8 @@ impl core::fmt::Display for Punc {
                 Self::Colon => ":",
                 Self::Comma => ",",
                 Self::Equals => "=",
-                Self::Semicolon => ";",
+                Self::Hash => "#",
+                Self::Bang => "!",
             }
         )
     }
