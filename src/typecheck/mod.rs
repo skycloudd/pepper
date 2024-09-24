@@ -30,9 +30,7 @@ impl<'a> Typechecker<'a> {
     }
 
     fn typecheck_ast(&mut self, ast: Ast) -> TypedAst {
-        self.types
-            .insert("number", Type::Primitive(Primitive::Number));
-        self.types.insert("bool", Type::Primitive(Primitive::Bool));
+        self.primitive_types();
 
         TypedAst {
             functions: ast
@@ -40,6 +38,15 @@ impl<'a> Typechecker<'a> {
                 .into_iter()
                 .map(|function| function.map(|function| self.typecheck_function(function)))
                 .collect(),
+        }
+    }
+
+    fn primitive_types(&mut self) {
+        const PRIMITIVE_TYPES: [(&str, Primitive); 2] =
+            [("number", Primitive::Number), ("bool", Primitive::Bool)];
+
+        for (name, ty) in PRIMITIVE_TYPES {
+            self.types.insert(name, Type::Primitive(ty));
         }
     }
 
