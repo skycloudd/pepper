@@ -68,9 +68,7 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     errors.extend(typecheck_errors);
 
     if let Some(typed_ast) = typed_ast {
-        if cfg!(debug_assertions) {
-            eprintln!("{:?}", typed_ast.functions);
-        }
+        eprintln!("{typed_ast:#?}");
     }
 
     let writer = StandardStream::stderr(ColorChoice::Auto);

@@ -8,11 +8,11 @@ pub struct Scopes<K, V> {
 }
 
 impl<K, V> Scopes<K, V> {
-    fn push_scope(&mut self) {
+    pub fn push_scope(&mut self) {
         self.scopes.push(FxHashMap::default());
     }
 
-    fn pop_scope(&mut self) -> Option<FxHashMap<K, V>> {
+    pub fn pop_scope(&mut self) -> Option<FxHashMap<K, V>> {
         self.scopes.pop()
     }
 }
@@ -33,9 +33,9 @@ impl<K: Eq + Hash, V> Scopes<K, V> {
             .or_else(|| self.base.get(k))
     }
 
-    fn contains_key(&self, k: &K) -> bool {
-        self.scopes.iter().rev().any(|scope| scope.contains_key(k)) || self.base.contains_key(k)
-    }
+    // pub fn contains_key(&self, k: &K) -> bool {
+    //     self.scopes.iter().rev().any(|scope| scope.contains_key(k)) || self.base.contains_key(k)
+    // }
 }
 
 impl<K, V> Default for Scopes<K, V> {

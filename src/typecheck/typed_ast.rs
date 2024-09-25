@@ -13,7 +13,7 @@ pub struct TypedAst {
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Option<Spanned<Type<Primitive>>>,
+    pub return_ty: Spanned<Type<Primitive>>,
     pub body: Spanned<TypedExpression>,
 }
 
@@ -50,8 +50,17 @@ pub enum Expression {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Primitive {
     Number,
     Bool,
+}
+
+impl core::fmt::Display for Primitive {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Number => write!(f, "number"),
+            Self::Bool => write!(f, "bool"),
+        }
+    }
 }

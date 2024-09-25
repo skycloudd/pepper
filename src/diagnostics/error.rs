@@ -1,8 +1,9 @@
 use super::{Diag, ErrorSpan};
-use crate::span::Span;
+use crate::{span::Span, typecheck::TyName};
 use chumsky::error::{Rich, RichReason};
 use codespan_reporting::diagnostic::Severity;
 use core::fmt::Display;
+use polytype::UnificationError;
 use std::borrow::Cow;
 
 #[derive(Clone, Debug)]
@@ -16,10 +17,35 @@ pub enum Error {
         message: String,
         span: Span,
     },
+    UnificationFailure {
+        lhs_type: String,
+        lhs_span: Span,
+        rhs_type: String,
+        rhs_span: Span,
+    },
+}
+
+impl Error {
+    pub fn from_unification_error(
+        value: UnificationError<TyName>,
+        lhs_span: Span,
+        rhs_span: Span,
+    ) -> Self {
+        match value {
+            polytype::UnificationError::Occurs(_id) => todo!(),
+            polytype::UnificationError::Failure(failed_lhs, failed_rhs) => {
+                Self::UnificationFailure {
+                    lhs_type: failed_lhs.to_string(),
+                    lhs_span,
+                    rhs_type: failed_rhs.to_string(),
+                    rhs_span,
+                }
+            }
+        }
+    }
 }
 
 impl Diag for Error {
-    #[allow(clippy::match_same_arms)]
     fn message(&self) -> Cow<str> {
         match self {
             Self::ExpectedFound {
@@ -33,10 +59,15 @@ impl Diag for Error {
             )
             .into(),
             Self::Custom { message, span: _ } => message.into(),
+            Self::UnificationFailure {
+                lhs_type,
+                lhs_span: _,
+                rhs_type,
+                rhs_span: _,
+            } => format!("Cannot unify types {lhs_type} and {rhs_type}").into(),
         }
     }
 
-    #[allow(clippy::match_same_arms)]
     fn spans(&self) -> Vec<ErrorSpan> {
         match self {
             Self::ExpectedFound {
@@ -51,12 +82,23 @@ impl Diag for Error {
                 *span,
             )],
             Self::Custom { message: _, span } => vec![ErrorSpan::primary(None, *span)],
+            Self::UnificationFailure {
+                lhs_type,
+                lhs_span,
+                rhs_type,
+                rhs_span,
+            } => vec![
+                ErrorSpan::primary(Some(lhs_type.to_string()), *lhs_span),
+                ErrorSpan::primary(Some(rhs_type.to_string()), *rhs_span),
+            ],
         }
     }
 
     fn notes(&self) -> Vec<String> {
         match self {
-            Self::ExpectedFound { .. } | Self::Custom { .. } => vec![],
+            Self::ExpectedFound { .. } | Self::Custom { .. } | Self::UnificationFailure { .. } => {
+                vec![]
+            }
         }
     }
 

@@ -69,7 +69,6 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .boxed()
 }
 
-#[allow(clippy::too_many_lines)]
 fn expression_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> {
     macro_rules! unary_op {
@@ -210,17 +209,17 @@ fn type_parser<'src: 'tok, 'tok>(
         let function = {
             let params = type_
                 .clone()
-                .with_span()
                 .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
                 .allow_trailing()
                 .collect()
                 .parenthesized()
-                .with_span()
                 .boxed();
 
             let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
-                .ignore_then(type_.map(Box::new).with_span())
+                .ignore_then(type_)
                 .or_not()
+                .map(|ty| ty.unwrap_or_else(|| Type::Unit))
+                .map(Box::new)
                 .boxed();
 
             params.then(return_ty)

@@ -74,7 +74,7 @@ impl core::fmt::Display for UnaryOp {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type<P> {
     Primitive(P),
     Unit,
@@ -82,10 +82,10 @@ pub enum Type<P> {
     Function(FunctionType<P>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionType<P> {
-    pub params: Spanned<Vec<Spanned<Type<P>>>>,
-    pub return_ty: Option<Spanned<Box<Type<P>>>>,
+    pub params: Vec<Type<P>>,
+    pub return_ty: Box<Type<P>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -94,5 +94,31 @@ pub struct Identifier(pub Spur);
 impl Identifier {
     pub fn resolve(self) -> &'static str {
         RODEO.resolve(&self.0)
+    }
+}
+
+impl<P: core::fmt::Display> core::fmt::Display for Type<P> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Primitive(p) => write!(f, "{p}"),
+            Self::Unit => write!(f, "#"),
+            Self::Never => write!(f, "!"),
+            Self::Function(function) => {
+                write!(f, "(")?;
+
+                for (i, param) in function.params.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{param}")?;
+                }
+
+                write!(f, ")")?;
+
+                write!(f, " -> {}", function.return_ty)?;
+
+                Ok(())
+            }
+        }
     }
 }
