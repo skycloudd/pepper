@@ -89,11 +89,11 @@ pub struct FunctionType<P> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Identifier(pub Spur);
+pub struct Identifier(pub Spanned<Spur>);
 
 impl Identifier {
     pub fn resolve(self) -> &'static str {
-        RODEO.resolve(&self.0)
+        RODEO.resolve(&self.0 .0)
     }
 }
 

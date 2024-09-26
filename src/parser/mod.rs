@@ -188,7 +188,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 fn ident_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
-        Token::Simple(SimpleToken::Identifier(ident)) => Identifier( RODEO.get_or_intern(ident)),
+        Token::Simple(SimpleToken::Identifier(ident)) = e => Identifier(Spanned(RODEO.get_or_intern(ident), e.span())),
     }
     .boxed()
 }
