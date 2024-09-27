@@ -138,16 +138,18 @@ fn expression_parser<'src: 'tok, 'tok>(
             Token::Simple(SimpleToken::Number(int, frac)) => (int, frac),
         }
         .map(|(int, frac)| rational_from_parts_base(int, frac, 10))
+        .with_span()
         .map(Expression::Number)
         .boxed();
 
         let bool = select! {
             Token::Simple(SimpleToken::Boolean(bool)) => bool,
         }
+        .with_span()
         .map(Expression::Bool)
         .boxed();
 
-        let variable = ident_parser().map(Expression::Variable).boxed();
+        let variable = ident_parser().with_span().map(Expression::Variable).boxed();
 
         let call_args = expression
             .clone()
@@ -209,10 +211,12 @@ fn type_parser<'src: 'tok, 'tok>(
         let function = {
             let params = type_
                 .clone()
+                .with_span()
                 .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
                 .allow_trailing()
                 .collect()
                 .parenthesized()
+                .with_span()
                 .boxed();
 
             let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
@@ -220,6 +224,7 @@ fn type_parser<'src: 'tok, 'tok>(
                 .or_not()
                 .map(|ty| ty.unwrap_or_else(|| Type::Unit))
                 .map(Box::new)
+                .with_span()
                 .boxed();
 
             params.then(return_ty)

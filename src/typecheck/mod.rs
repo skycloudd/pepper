@@ -2,7 +2,7 @@ use crate::{
     diagnostics::error::Error,
     parser::ast::{self, Ast, BinaryOp, FunctionType, Identifier, Type, UnaryOp},
     scopes::Scopes,
-    span::Spanned,
+    span::{Span, Spanned},
 };
 use chumsky::span::Span as _;
 use polytype::Context;
@@ -24,6 +24,7 @@ struct Typechecker<'a> {
     errors: &'a mut Vec<Error>,
     types: FxHashMap<&'static str, Type<Primitive>>,
     vars: Scopes<&'static str, polytype::Type<TyName>>,
+    functions: FxHashMap<&'static str, FunctionType<Primitive>>,
     ctx: Context<TyName>,
 }
 
@@ -33,6 +34,7 @@ impl<'a> Typechecker<'a> {
             errors,
             types: FxHashMap::default(),
             vars: Scopes::default(),
+            functions: FxHashMap::default(),
             ctx: Context::default(),
         }
     }
@@ -41,24 +43,17 @@ impl<'a> Typechecker<'a> {
         self.primitive_types();
 
         for function in &ast.functions {
-            let fn_type = polytype_type_from_ty(&Type::Function(FunctionType {
-                params: function
-                    .0
-                    .params
-                    .0
-                    .iter()
-                    .map(|param| self.lower_type(&param.0.ty.0))
-                    .collect(),
-                return_ty: Box::new(
-                    function
-                        .0
-                        .return_ty
-                        .as_ref()
-                        .map_or(Type::Unit, |ty| self.lower_type(&ty.0)),
-                ),
-            }));
+            let fn_type = self.function_type(&function.0);
 
-            self.vars.insert(function.0.name.0.resolve(), fn_type);
+            if let Some(fn_type) = fn_type {
+                self.functions
+                    .insert(function.0.name.0.resolve(), fn_type.clone());
+
+                self.vars.insert(
+                    function.0.name.0.resolve(),
+                    polytype_type_from_ty(&Type::Function(fn_type)),
+                );
+            }
         }
 
         TypedAst {
@@ -74,6 +69,39 @@ impl<'a> Typechecker<'a> {
         }
     }
 
+    fn function_type(&mut self, function: &ast::Function) -> Option<FunctionType<Primitive>> {
+        Some(FunctionType {
+            params: function
+                .params
+                .as_ref()
+                .map(|param| {
+                    param
+                        .iter()
+                        .map(|param| {
+                            param
+                                .as_ref()
+                                .map(|param| self.lower_type(&param.ty.0))
+                                .transpose()
+                        })
+                        .collect::<Option<_>>()
+                })
+                .transpose()?,
+            return_ty: function
+                .return_ty
+                .as_ref()
+                .map_or(
+                    Spanned(Some(Type::Unit), function.params.1.to_end()),
+                    |return_ty| {
+                        return_ty
+                            .as_ref()
+                            .map(|return_ty| self.lower_type(return_ty))
+                    },
+                )
+                .transpose()?
+                .boxed(),
+        })
+    }
+
     fn primitive_types(&mut self) {
         const PRIMITIVE_TYPES: [(&str, Primitive); 2] =
             [("number", Primitive::Number), ("bool", Primitive::Bool)];
@@ -86,27 +114,24 @@ impl<'a> Typechecker<'a> {
     fn typecheck_function(&mut self, function: ast::Function) -> Option<Function> {
         self.vars.push_scope();
 
-        let params = function.params.as_ref().map(|params| {
+        let function_ty = self.functions.get(&function.name.0.resolve())?;
+
+        let params = function_ty.params.as_ref().map(|params| {
             params
                 .iter()
-                .map(|param| {
-                    param.as_ref().map(|param| {
-                        let param_ty = self.lower_type(&param.ty.0);
-                        let param_ty = polytype_type_from_ty(&param_ty);
+                .zip(function.params.0.into_iter().map(|param| param.0.name))
+                .map(|(param, name)| {
+                    self.vars
+                        .insert(name.0.resolve(), polytype_type_from_ty(&param.0));
 
-                        self.vars.insert(param.name.0.resolve(), param_ty);
-
-                        self.function_param(param)
-                    })
+                    param
+                        .as_ref()
+                        .cloned()
+                        .map_self(|ty| FunctionParam { name, ty })
                 })
-                .collect()
+                .collect::<Vec<_>>()
         });
-
-        let return_ty = match function.return_ty.as_ref() {
-            Some(return_ty) => return_ty.as_ref().map(|ty| self.lower_type(ty)),
-
-            None => Spanned::new(Type::Unit, function.params.1.to_end()),
-        };
+        let return_ty = function_ty.return_ty.clone();
 
         let body = function
             .body
@@ -118,7 +143,7 @@ impl<'a> Typechecker<'a> {
         body.map(|body| -> Option<_> {
             let body_ty = body.as_ref().map(|body| polytype_type_from_ty(&body.ty));
 
-            let return_ty = return_ty.as_ref().map(polytype_type_from_ty);
+            let return_ty = return_ty.unbox().as_ref().map(polytype_type_from_ty);
 
             if let Err(err) = self.ctx.unify(&body_ty.0, &return_ty.0) {
                 self.errors
@@ -127,6 +152,7 @@ impl<'a> Typechecker<'a> {
 
             let return_ty = return_ty
                 .map(|ty| ty.apply(&self.ctx))
+                .as_ref()
                 .map(ty_from_polytype_type)
                 .transpose()?;
 
@@ -154,20 +180,24 @@ impl<'a> Typechecker<'a> {
                 expr: Expression::Bool(value),
                 ty: Type::Primitive(Primitive::Bool),
             }),
-            ast::Expression::Variable(identifier) => {
+            ast::Expression::Variable(name) => {
                 let ty = self
                     .vars
-                    .get(&identifier.resolve())
-                    .unwrap_or_else(|| {
-                        panic!("cant find variable with name {}", identifier.resolve())
-                    })
+                    .get(&name.0.resolve())
+                    .or_else(|| {
+                        self.errors.push(Error::CantFindFunction {
+                            name: name.0.resolve(),
+                            span: name.1,
+                        });
+                        None
+                    })?
                     .clone();
 
                 let var_ty = ty.apply(&self.ctx);
 
                 Some(TypedExpression {
-                    expr: Expression::Variable(identifier),
-                    ty: ty_from_polytype_type(var_ty)?,
+                    expr: Expression::Variable(name),
+                    ty: ty_from_polytype_type(&var_ty)?,
                 })
             }
             ast::Expression::BinaryOp { op, lhs, rhs } => {
@@ -202,7 +232,7 @@ impl<'a> Typechecker<'a> {
                         lhs: lhs.boxed(),
                         rhs: rhs.boxed(),
                     },
-                    ty: ty_from_polytype_type(result_ty)?,
+                    ty: ty_from_polytype_type(&result_ty)?,
                 })
             }
             ast::Expression::UnaryOp { op, expr } => {
@@ -234,7 +264,7 @@ impl<'a> Typechecker<'a> {
                         op,
                         expr: expr.boxed(),
                     },
-                    ty: ty_from_polytype_type(result_ty)?,
+                    ty: ty_from_polytype_type(&result_ty)?,
                 })
             }
             ast::Expression::Call { name, args } => self.typecheck_call(name, args),
@@ -257,8 +287,24 @@ impl<'a> Typechecker<'a> {
         let callee_ty = self
             .vars
             .get(&name.0.resolve())
-            .unwrap_or_else(|| panic!("cant find function with name {}", name.0.resolve()))
+            .or_else(|| {
+                self.errors.push(Error::CantFindFunction {
+                    name: name.0.resolve(),
+                    span: name.1,
+                });
+                None
+            })?
             .clone();
+
+        println!("{}: {callee_ty}", name.0.resolve());
+
+        if callee_ty.as_arrow().is_none() {
+            self.errors.push(Error::NotFunction {
+                name: name.0.resolve(),
+                span: name.1,
+            });
+            return None;
+        }
 
         let arg_types = args
             .as_ref()
@@ -268,11 +314,17 @@ impl<'a> Typechecker<'a> {
 
         let return_ty = self.ctx.new_variable();
 
-        let call_ty = polytype::Type::from(
-            arg_types
-                .chain(core::iter::once(return_ty.clone()))
-                .collect::<Vec<_>>(),
-        );
+        let mut call_ty_args = arg_types
+            .chain(core::iter::once(return_ty.clone()))
+            .collect::<Vec<_>>();
+
+        assert!(!call_ty_args.is_empty());
+
+        if call_ty_args.len() == 1 {
+            call_ty_args.insert(0, polytype_type_from_ty(&Type::Unit));
+        }
+
+        let call_ty = polytype::Type::Constructed(TyName::Arrow, call_ty_args);
 
         if let Err(err) = self.ctx.unify(&callee_ty, &call_ty) {
             self.errors
@@ -283,39 +335,52 @@ impl<'a> Typechecker<'a> {
 
         Some(TypedExpression {
             expr: Expression::Call { name, args },
-            ty: ty_from_polytype_type(return_ty)?,
+            ty: ty_from_polytype_type(&return_ty)?,
         })
     }
 
-    fn function_param(&self, params: &ast::FunctionParam) -> FunctionParam {
-        FunctionParam {
-            name: params.name,
-            ty: params.ty.as_ref().map(|ty| self.lower_type(ty)),
-        }
-    }
-
-    fn lower_type(&self, ty: &Type<Identifier>) -> Type<Primitive> {
+    fn lower_type(&mut self, ty: &Type<Identifier>) -> Option<Type<Primitive>> {
         match ty {
-            Type::Primitive(name) => self
-                .types
-                .get(name.resolve())
-                .unwrap_or_else(|| panic!("cant find type with name {}", name.resolve()))
-                .clone(),
-            Type::Unit => Type::Unit,
-            Type::Never => Type::Never,
-            Type::Function(function) => Type::Function(self.lower_function_type(function)),
+            Type::Primitive(name) => self.types.get(name.resolve()).cloned().or_else(|| {
+                self.errors.push(Error::CantFindType {
+                    name: name.resolve(),
+                    span: name.0 .1,
+                });
+                None
+            }),
+            Type::Unit => Some(Type::Unit),
+            Type::Never => Some(Type::Never),
+            Type::Function(function) => Some(Type::Function(self.lower_function_type(function)?)),
         }
     }
 
-    fn lower_function_type(&self, function: &FunctionType<Identifier>) -> FunctionType<Primitive> {
-        FunctionType {
+    fn lower_function_type(
+        &mut self,
+        function: &FunctionType<Identifier>,
+    ) -> Option<FunctionType<Primitive>> {
+        Some(FunctionType {
             params: function
                 .params
-                .iter()
-                .map(|param| self.lower_type(param))
-                .collect(),
-            return_ty: Box::new(self.lower_type(&function.return_ty)),
-        }
+                .as_ref()
+                .map(|params| {
+                    params
+                        .iter()
+                        .map(|param| {
+                            param
+                                .as_ref()
+                                .map(|param| self.lower_type(param))
+                                .transpose()
+                        })
+                        .collect::<Option<_>>()
+                })
+                .transpose()?,
+            return_ty: function
+                .return_ty
+                .as_ref()
+                .map(|return_ty| self.lower_type(return_ty))
+                .transpose()?
+                .boxed(),
+        })
     }
 }
 
@@ -326,37 +391,55 @@ fn polytype_type_from_ty(ty: &Type<Primitive>) -> polytype::Type<TyName> {
         }
         Type::Unit => polytype::Type::Constructed(TyName::Unit, vec![]),
         Type::Never => polytype::Type::Constructed(TyName::Never, vec![]),
-        Type::Function(function_type) => polytype::Type::from(
-            function_type
+        Type::Function(function_type) => {
+            let mut args = function_type
                 .params
+                .0
                 .iter()
-                .map(polytype_type_from_ty)
+                .map(|param| polytype_type_from_ty(&param.0))
                 .chain(core::iter::once(polytype_type_from_ty(
-                    &function_type.return_ty,
+                    &function_type.return_ty.0,
                 )))
-                .collect::<Vec<_>>(),
-        ),
+                .collect::<Vec<_>>();
+
+            assert!(!args.is_empty());
+
+            if args.len() == 1 {
+                args.insert(0, polytype_type_from_ty(&Type::Unit));
+            }
+
+            polytype::Type::Constructed(TyName::Arrow, args)
+        }
     }
 }
 
-fn ty_from_polytype_type(ty: polytype::Type<TyName>) -> Option<Type<Primitive>> {
+fn ty_from_polytype_type(ty: &polytype::Type<TyName>) -> Option<Type<Primitive>> {
     match ty {
         arrow @ polytype::Type::Constructed(TyName::Arrow, _) => {
             let params = arrow
                 .args()
                 .unwrap()
                 .into_iter()
-                .map(|arg| ty_from_polytype_type(arg.clone()))
-                .collect::<Option<_>>()?;
+                .map(ty_from_polytype_type)
+                .collect::<Option<Vec<_>>>()?;
 
-            let return_ty = Box::new(ty_from_polytype_type(arrow.returns().unwrap().clone())?);
+            let return_ty = Box::new(ty_from_polytype_type(arrow.returns().unwrap())?);
 
-            Some(Type::Function(FunctionType { params, return_ty }))
+            Some(Type::Function(FunctionType {
+                params: Spanned(
+                    params
+                        .into_iter()
+                        .map(|param| Spanned(param, Span::default()))
+                        .collect(),
+                    Span::default(),
+                ),
+                return_ty: Spanned(return_ty, Span::default()),
+            }))
         }
         polytype::Type::Constructed(TyName::Unit, _) => Some(Type::Unit),
         polytype::Type::Constructed(TyName::Never, _) => Some(Type::Never),
         polytype::Type::Constructed(TyName::Primitive(primitive), _) => {
-            Some(Type::Primitive(primitive))
+            Some(Type::Primitive(*primitive))
         }
         polytype::Type::Variable(_) => None,
     }

@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Span {
     start: usize,
     end: usize,
@@ -43,7 +43,7 @@ impl chumsky::span::Span for Span {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct FileId(pub usize);
 
 impl FileId {
@@ -69,17 +69,30 @@ impl<T> Spanned<T> {
         Spanned(f(self.0), self.1)
     }
 
+    pub fn map_self<U>(self, f: impl FnOnce(Self) -> U) -> Spanned<U> {
+        let span = self.1;
+        Spanned(f(self), span)
+    }
+
     pub const fn as_ref(&self) -> Spanned<&T> {
         Spanned(&self.0, self.1)
     }
-
-    // pub fn map_with<U>(&self, f: impl FnOnce(&T, Span) -> U) -> Spanned<U> {
-    //     Spanned(f(&self.0, self.1), self.1)
-    // }
 }
 
 impl<T> Spanned<Option<T>> {
     pub fn transpose(self) -> Option<Spanned<T>> {
         self.0.map(|value| Spanned(value, self.1))
+    }
+}
+
+impl<T> Spanned<Box<T>> {
+    pub fn unbox(self) -> Spanned<T> {
+        Spanned(*self.0, self.1)
+    }
+}
+
+impl<T: Clone> Spanned<&T> {
+    pub fn cloned(self) -> Spanned<T> {
+        self.map(Clone::clone)
     }
 }

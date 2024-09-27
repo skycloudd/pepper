@@ -32,9 +32,9 @@ pub struct TypedExpression {
 #[derive(Clone, Debug)]
 pub enum Expression {
     Unit,
-    Number(Rational),
-    Bool(bool),
-    Variable(Identifier),
+    Number(Spanned<Rational>),
+    Bool(Spanned<bool>),
+    Variable(Spanned<Identifier>),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<TypedExpression>>,

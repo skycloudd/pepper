@@ -15,7 +15,7 @@ pub struct Function {
     pub body: Spanned<Expression>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam {
     pub name: Spanned<Identifier>,
     pub ty: Spanned<Type<Identifier>>,
@@ -24,9 +24,9 @@ pub struct FunctionParam {
 #[derive(Clone, Debug)]
 pub enum Expression {
     Unit,
-    Number(Rational),
-    Bool(bool),
-    Variable(Identifier),
+    Number(Spanned<Rational>),
+    Bool(Spanned<bool>),
+    Variable(Spanned<Identifier>),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<Expression>>,
@@ -84,11 +84,11 @@ pub enum Type<P> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionType<P> {
-    pub params: Vec<Type<P>>,
-    pub return_ty: Box<Type<P>>,
+    pub params: Spanned<Vec<Spanned<Type<P>>>>,
+    pub return_ty: Spanned<Box<Type<P>>>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Identifier(pub Spanned<Spur>);
 
 impl Identifier {
@@ -106,16 +106,16 @@ impl<P: core::fmt::Display> core::fmt::Display for Type<P> {
             Self::Function(function) => {
                 write!(f, "(")?;
 
-                for (i, param) in function.params.iter().enumerate() {
+                for (i, param) in function.params.0.iter().enumerate() {
                     if i != 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{param}")?;
+                    write!(f, "{}", param.0)?;
                 }
 
                 write!(f, ")")?;
 
-                write!(f, " -> {}", function.return_ty)?;
+                write!(f, " -> {}", function.return_ty.0)?;
 
                 Ok(())
             }

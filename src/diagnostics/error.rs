@@ -23,6 +23,18 @@ pub enum Error {
         rhs_type: String,
         rhs_span: Span,
     },
+    CantFindType {
+        name: &'static str,
+        span: Span,
+    },
+    CantFindFunction {
+        name: &'static str,
+        span: Span,
+    },
+    NotFunction {
+        name: &'static str,
+        span: Span,
+    },
 }
 
 impl Error {
@@ -65,9 +77,17 @@ impl Diag for Error {
                 rhs_type,
                 rhs_span: _,
             } => format!("Cannot unify types {lhs_type} and {rhs_type}").into(),
+            Self::CantFindType { name, span: _ } => {
+                format!("Cannot find type with name {name}").into()
+            }
+            Self::CantFindFunction { name, span: _ } => {
+                format!("Cannot find function with name {name}").into()
+            }
+            Self::NotFunction { name, span: _ } => format!("{name} is not a function").into(),
         }
     }
 
+    #[allow(clippy::match_same_arms)]
     fn spans(&self) -> Vec<ErrorSpan> {
         match self {
             Self::ExpectedFound {
@@ -91,12 +111,23 @@ impl Diag for Error {
                 ErrorSpan::primary(Some(lhs_type.to_string()), *lhs_span),
                 ErrorSpan::primary(Some(rhs_type.to_string()), *rhs_span),
             ],
+            Self::CantFindType { name: _, span } => vec![ErrorSpan::primary(None, *span)],
+            Self::CantFindFunction { name: _, span } => vec![ErrorSpan::primary(None, *span)],
+            Self::NotFunction { name: _, span } => vec![ErrorSpan::primary(
+                Some("Must be a function".to_string()),
+                *span,
+            )],
         }
     }
 
     fn notes(&self) -> Vec<String> {
         match self {
-            Self::ExpectedFound { .. } | Self::Custom { .. } | Self::UnificationFailure { .. } => {
+            Self::ExpectedFound { .. }
+            | Self::Custom { .. }
+            | Self::UnificationFailure { .. }
+            | Self::CantFindType { .. }
+            | Self::CantFindFunction { .. }
+            | Self::NotFunction { .. } => {
                 vec![]
             }
         }
