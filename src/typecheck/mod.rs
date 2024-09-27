@@ -296,8 +296,6 @@ impl<'a> Typechecker<'a> {
             })?
             .clone();
 
-        println!("{}: {callee_ty}", name.0.resolve());
-
         if callee_ty.as_arrow().is_none() {
             self.errors.push(Error::NotFunction {
                 name: name.0.resolve(),
