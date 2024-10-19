@@ -26,20 +26,8 @@ let apply_unary_op_fn(fn: (number) -> number, a: number) -> number =
 let add_numbers(a: number, b: number) -> number =
     a + b
 
-let returns_true() -> bool =
-    true
-
-let returns_false() -> bool =
-    false
-
-let returns_unit() -> # =
-    #
-
-let returns_unit_implicit() =
-    #
-
-let never_returns() -> ! =
-    never_returns()
+let never_returns(_: #) -> ! =
+    never_returns(_)
 
 let apply_fn(fn: (number, number) -> number, a: number, b: number) -> number =
     fn(a, b)
@@ -47,23 +35,14 @@ let apply_fn(fn: (number, number) -> number, a: number, b: number) -> number =
 let nt(
     a: number,
     b: number,
-    c: bool,
-    d: bool,
-    e: number,
-    f: #,
-    g: #,
-    h: !
+    c: number,
+    d: !
 ) =
     #
 
-let main() =
-    nt(
-        add_numbers(1, 2),
-        add_numbers(1.0, 2.0),
-        returns_true(),
-        returns_false(),
-        apply_fn(add_numbers, 1, 2),
-        returns_unit(),
-        returns_unit_implicit(),
-        never_returns(),
-    )
+do nt(
+    add_numbers(1, 2),
+    add_numbers(1.0, 2.0),
+    apply_fn(add_numbers, true, 2),
+    never_returns(#),
+)

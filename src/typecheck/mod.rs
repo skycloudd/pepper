@@ -5,9 +5,12 @@ use crate::{
     span::{Span, Spanned},
 };
 use chumsky::span::Span as _;
+use nonempty::NonEmpty;
 use polytype::Context;
 use rustc_hash::FxHashMap;
-use typed_ast::{Expression, Function, FunctionParam, Primitive, TypedAst, TypedExpression};
+use typed_ast::{
+    Expression, Function, FunctionParam, Primitive, TopLevel, TypedAst, TypedExpression,
+};
 
 pub mod typed_ast;
 
@@ -42,30 +45,48 @@ impl<'a> Typechecker<'a> {
     fn typecheck_ast(&mut self, ast: Ast) -> TypedAst {
         self.primitive_types();
 
-        for function in &ast.functions {
-            let fn_type = self.function_type(&function.0);
+        for toplevel in &ast.toplevels {
+            match &toplevel.0 {
+                ast::TopLevel::Function(function) => {
+                    let fn_type = self.function_type(&function.0);
 
-            if let Some(fn_type) = fn_type {
-                self.functions
-                    .insert(function.0.name.0.resolve(), fn_type.clone());
+                    if let Some(fn_type) = fn_type {
+                        self.functions
+                            .insert(function.0.name.0.resolve(), fn_type.clone());
 
-                self.vars.insert(
-                    function.0.name.0.resolve(),
-                    polytype_type_from_ty(&Type::Function(fn_type)),
-                );
+                        self.vars.insert(
+                            function.0.name.0.resolve(),
+                            polytype_type_from_ty(&Type::Function(fn_type)),
+                        );
+                    }
+                }
+                ast::TopLevel::Do(_expr) => {}
             }
         }
 
         TypedAst {
-            functions: ast
-                .functions
+            toplevels: ast
+                .toplevels
                 .into_iter()
-                .filter_map(|function| {
-                    function
-                        .map(|function| self.typecheck_function(function))
+                .filter_map(|toplevel| {
+                    toplevel
+                        .map(|toplevel| self.typecheck_toplevel(toplevel))
                         .transpose()
                 })
                 .collect(),
+        }
+    }
+
+    fn typecheck_toplevel(&mut self, toplevel: ast::TopLevel) -> Option<TopLevel> {
+        match toplevel {
+            ast::TopLevel::Function(function) => function
+                .map(|function| self.typecheck_function(function))
+                .transpose()
+                .map(TopLevel::Function),
+            ast::TopLevel::Do(expr) => expr
+                .map(|expr| self.typecheck_expression(expr))
+                .transpose()
+                .map(TopLevel::Do),
         }
     }
 
@@ -117,19 +138,21 @@ impl<'a> Typechecker<'a> {
         let function_ty = self.functions.get(&function.name.0.resolve())?;
 
         let params = function_ty.params.as_ref().map(|params| {
-            params
-                .iter()
-                .zip(function.params.0.into_iter().map(|param| param.0.name))
-                .map(|(param, name)| {
-                    self.vars
-                        .insert(name.0.resolve(), polytype_type_from_ty(&param.0));
+            NonEmpty::collect(
+                params
+                    .iter()
+                    .zip(function.params.0.into_iter().map(|param| param.0.name))
+                    .map(|(param, name)| {
+                        self.vars
+                            .insert(name.0.resolve(), polytype_type_from_ty(&param.0));
 
-                    param
-                        .as_ref()
-                        .cloned()
-                        .map_self(|ty| FunctionParam { name, ty })
-                })
-                .collect::<Vec<_>>()
+                        param
+                            .as_ref()
+                            .cloned()
+                            .map_self(|ty| FunctionParam { name, ty })
+                    }),
+            )
+            .unwrap()
         });
         let return_ty = function_ty.return_ty.clone();
 
@@ -267,20 +290,28 @@ impl<'a> Typechecker<'a> {
                     ty: ty_from_polytype_type(&result_ty)?,
                 })
             }
-            ast::Expression::Call { name, args } => self.typecheck_call(name, args),
+            ast::Expression::Call { name, args } => self.typecheck_call(
+                name,
+                args.map(|args| NonEmpty::collect(args.into_iter().map(Spanned::unbox)).unwrap()),
+            ),
         }
     }
 
     fn typecheck_call(
         &mut self,
         name: Spanned<Identifier>,
-        args: Spanned<Vec<Spanned<ast::Expression>>>,
+        args: Spanned<NonEmpty<Spanned<ast::Expression>>>,
     ) -> Option<TypedExpression> {
         let args = args
             .map(|args| {
                 args.into_iter()
-                    .map(|arg| arg.map(|arg| self.typecheck_expression(arg)).transpose())
+                    .map(|arg| {
+                        arg.map(|arg| self.typecheck_expression(arg))
+                            .transpose()
+                            .map(Spanned::boxed)
+                    })
                     .collect::<Option<Vec<_>>>()
+                    .map(|args| NonEmpty::from_vec(args).unwrap())
             })
             .transpose()?;
 

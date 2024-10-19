@@ -28,6 +28,7 @@ pub enum FractionalPart<'src> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kw {
     Let,
+    Do,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,6 +84,7 @@ impl core::fmt::Display for Kw {
             "{}",
             match self {
                 Self::Let => "let",
+                Self::Do => "do",
             }
         )
     }

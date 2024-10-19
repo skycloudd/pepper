@@ -4,10 +4,12 @@ use crate::{
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, FunctionType, Identifier, Type, UnaryOp,
+    Ast, BinaryOp, Expression, Function, FunctionParam, FunctionType, Identifier, TopLevel, Type,
+    UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 use malachite::{rational_sequences::RationalSequence, Natural, Rational};
+use nonempty::NonEmpty;
 
 pub mod ast;
 
@@ -18,12 +20,28 @@ type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src st
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast, ParserExtra<'src, 'tok>> {
-    function_parser()
+    toplevel_parser()
         .with_span()
         .repeated()
         .collect()
-        .map(|functions| Ast { functions })
+        .map(|toplevels| Ast { toplevels })
         .boxed()
+}
+
+fn toplevel_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, TopLevel, ParserExtra<'src, 'tok>> {
+    let function = function_parser()
+        .with_span()
+        .map(TopLevel::Function)
+        .boxed();
+
+    let do_ = just(Token::Simple(SimpleToken::Kw(Kw::Do)))
+        .ignore_then(expression_parser())
+        .with_span()
+        .map(TopLevel::Do)
+        .boxed();
+
+    choice((function, do_)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -33,8 +51,10 @@ fn function_parser<'src: 'tok, 'tok>(
     let params = function_param_parser()
         .with_span()
         .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+        .at_least(1)
         .allow_trailing()
         .collect()
+        .map(|params| NonEmpty::from_vec(params).unwrap())
         .parenthesized()
         .with_span();
 
@@ -69,6 +89,7 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .boxed()
 }
 
+#[allow(clippy::too_many_lines)]
 fn expression_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> {
     macro_rules! unary_op {
@@ -153,10 +174,13 @@ fn expression_parser<'src: 'tok, 'tok>(
 
         let call_args = expression
             .clone()
+            .map(Box::new)
             .with_span()
             .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+            .at_least(1)
             .allow_trailing()
             .collect()
+            .map(|args| NonEmpty::from_vec(args).unwrap())
             .parenthesized()
             .with_span()
             .boxed();

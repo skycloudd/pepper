@@ -35,9 +35,12 @@ pub fn lexer<'src>(
             .map(|(int, frac)| SimpleToken::Number(int, frac))
             .boxed();
 
-        let keyword = choice((text::keyword("let").to(Kw::Let),))
-            .map(SimpleToken::Kw)
-            .boxed();
+        let keyword = choice((
+            text::keyword("let").to(Kw::Let),
+            text::keyword("do").to(Kw::Do),
+        ))
+        .map(SimpleToken::Kw)
+        .boxed();
 
         let punctuation = choice((
             just("->").to(Punc::Arrow),
