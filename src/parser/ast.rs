@@ -44,7 +44,7 @@ pub enum Expression {
         expr: Spanned<Box<Expression>>,
     },
     Call {
-        name: Spanned<Identifier>,
+        name: Spanned<Box<Expression>>,
         args: Spanned<NonEmpty<Spanned<Box<Expression>>>>,
     },
 }

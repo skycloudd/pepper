@@ -185,7 +185,8 @@ fn expression_parser<'src: 'tok, 'tok>(
             .with_span()
             .boxed();
 
-        let call = ident_parser()
+        let call = choice((variable.clone(), expression.clone().parenthesized()))
+            .map(Box::new)
             .with_span()
             .then(call_args)
             .map(|(name, args)| Expression::Call { name, args })

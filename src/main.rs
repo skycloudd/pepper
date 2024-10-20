@@ -12,9 +12,11 @@ use diagnostics::{error::convert, report::report};
 use lasso::ThreadedRodeo;
 use span::{FileId, Span};
 use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
+use typecheck::typed_ast::TypedAst;
 
 mod diagnostics;
 mod lexer;
+mod mir;
 mod parser;
 mod scopes;
 mod span;
@@ -67,9 +69,9 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
 
     errors.extend(typecheck_errors);
 
-    if let Some(typed_ast) = typed_ast {
-        eprintln!("{typed_ast:?}");
-    }
+    // if let Some(typed_ast) = typed_ast {
+    //     eprintln!("{typed_ast:?}");
+    // }
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();
@@ -81,8 +83,18 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     }
 
     if errors.is_empty() {
+        backend(typed_ast.unwrap());
+
         Ok(ExitCode::SUCCESS)
     } else {
         Ok(ExitCode::FAILURE)
     }
+}
+
+fn backend(typed_ast: TypedAst) {
+    let mir = mir::lower::lower(typed_ast);
+
+    eprintln!("{mir:?}");
+
+    todo!()
 }

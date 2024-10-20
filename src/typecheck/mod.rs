@@ -95,8 +95,8 @@ impl<'a> Typechecker<'a> {
             params: function
                 .params
                 .as_ref()
-                .map(|param| {
-                    param
+                .map(|params| {
+                    params
                         .iter()
                         .map(|param| {
                             param
@@ -291,7 +291,7 @@ impl<'a> Typechecker<'a> {
                 })
             }
             ast::Expression::Call { name, args } => self.typecheck_call(
-                name,
+                name.unbox(),
                 args.map(|args| NonEmpty::collect(args.into_iter().map(Spanned::unbox)).unwrap()),
             ),
         }
@@ -299,9 +299,13 @@ impl<'a> Typechecker<'a> {
 
     fn typecheck_call(
         &mut self,
-        name: Spanned<Identifier>,
+        name: Spanned<ast::Expression>,
         args: Spanned<NonEmpty<Spanned<ast::Expression>>>,
     ) -> Option<TypedExpression> {
+        let name = name
+            .map(|name| self.typecheck_expression(name))
+            .transpose()?;
+
         let args = args
             .map(|args| {
                 args.into_iter()
@@ -315,23 +319,10 @@ impl<'a> Typechecker<'a> {
             })
             .transpose()?;
 
-        let callee_ty = self
-            .vars
-            .get(&name.0.resolve())
-            .or_else(|| {
-                self.errors.push(Error::CantFindFunction {
-                    name: name.0.resolve(),
-                    span: name.1,
-                });
-                None
-            })?
-            .clone();
+        let callee_ty = polytype_type_from_ty(&name.0.ty);
 
         if callee_ty.as_arrow().is_none() {
-            self.errors.push(Error::NotFunction {
-                name: name.0.resolve(),
-                span: name.1,
-            });
+            self.errors.push(Error::NotFunction { span: name.1 });
             return None;
         }
 
@@ -363,7 +354,10 @@ impl<'a> Typechecker<'a> {
         let return_ty = return_ty.apply(&self.ctx);
 
         Some(TypedExpression {
-            expr: Expression::Call { name, args },
+            expr: Expression::Call {
+                name: name.boxed(),
+                args,
+            },
             ty: ty_from_polytype_type(&return_ty)?,
         })
     }
@@ -421,7 +415,7 @@ fn polytype_type_from_ty(ty: &Type<Primitive>) -> polytype::Type<TyName> {
         Type::Unit => polytype::Type::Constructed(TyName::Unit, vec![]),
         Type::Never => polytype::Type::Constructed(TyName::Never, vec![]),
         Type::Function(function_type) => {
-            let mut args = function_type
+            let args = function_type
                 .params
                 .0
                 .iter()
@@ -430,12 +424,6 @@ fn polytype_type_from_ty(ty: &Type<Primitive>) -> polytype::Type<TyName> {
                     &function_type.return_ty.0,
                 )))
                 .collect::<Vec<_>>();
-
-            assert!(!args.is_empty());
-
-            if args.len() == 1 {
-                args.insert(0, polytype_type_from_ty(&Type::Unit));
-            }
 
             polytype::Type::Constructed(TyName::Arrow, args)
         }

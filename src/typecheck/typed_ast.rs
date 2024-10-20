@@ -52,7 +52,7 @@ pub enum Expression {
         expr: Spanned<Box<TypedExpression>>,
     },
     Call {
-        name: Spanned<Identifier>,
+        name: Spanned<Box<TypedExpression>>,
         args: Spanned<NonEmpty<Spanned<Box<TypedExpression>>>>,
     },
 }

@@ -40,9 +40,7 @@ let nt(
 ) =
     #
 
-do nt(
-    add_numbers(1, 2),
-    add_numbers(1.0, 2.0),
-    apply_fn(add_numbers, true, 2),
-    never_returns(#),
-)
+do add_numbers(1, 2)
+do add_numbers(1.0, 2.0)
+do apply_fn(add_numbers, 1, 2)
+do never_returns(#)

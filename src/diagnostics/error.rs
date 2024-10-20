@@ -32,7 +32,6 @@ pub enum Error {
         span: Span,
     },
     NotFunction {
-        name: &'static str,
         span: Span,
     },
 }
@@ -83,7 +82,7 @@ impl Diag for Error {
             Self::CantFindFunction { name, span: _ } => {
                 format!("Cannot find function with name {name}").into()
             }
-            Self::NotFunction { name, span: _ } => format!("{name} is not a function").into(),
+            Self::NotFunction { span: _ } => "This expression is not a function".into(),
         }
     }
 
@@ -113,7 +112,7 @@ impl Diag for Error {
             ],
             Self::CantFindType { name: _, span } => vec![ErrorSpan::primary(None, *span)],
             Self::CantFindFunction { name: _, span } => vec![ErrorSpan::primary(None, *span)],
-            Self::NotFunction { name: _, span } => vec![ErrorSpan::primary(
+            Self::NotFunction { span } => vec![ErrorSpan::primary(
                 Some("Must be a function".to_string()),
                 *span,
             )],
