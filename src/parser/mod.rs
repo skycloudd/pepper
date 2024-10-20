@@ -9,7 +9,6 @@ use ast::{
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 use malachite::{rational_sequences::RationalSequence, Natural, Rational};
-use nonempty::NonEmpty;
 
 pub mod ast;
 
@@ -54,7 +53,6 @@ fn function_parser<'src: 'tok, 'tok>(
         .at_least(1)
         .allow_trailing()
         .collect()
-        .map(|params| NonEmpty::from_vec(params).unwrap())
         .parenthesized()
         .with_span();
 
@@ -174,13 +172,11 @@ fn expression_parser<'src: 'tok, 'tok>(
 
         let call_args = expression
             .clone()
-            .map(Box::new)
             .with_span()
             .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
             .at_least(1)
             .allow_trailing()
             .collect()
-            .map(|args| NonEmpty::from_vec(args).unwrap())
             .parenthesized()
             .with_span()
             .boxed();
@@ -238,6 +234,7 @@ fn type_parser<'src: 'tok, 'tok>(
                 .clone()
                 .with_span()
                 .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+                .at_least(1)
                 .allow_trailing()
                 .collect()
                 .parenthesized()

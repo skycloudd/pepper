@@ -1,7 +1,6 @@
 use crate::{span::Spanned, RODEO};
 use lasso::Spur;
 use malachite::Rational;
-use nonempty::NonEmpty;
 
 #[derive(Clone, Debug)]
 pub struct Ast {
@@ -17,7 +16,7 @@ pub enum TopLevel {
 #[derive(Clone, Debug)]
 pub struct Function {
     pub name: Spanned<Identifier>,
-    pub params: Spanned<NonEmpty<Spanned<FunctionParam>>>,
+    pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Option<Spanned<Type<Identifier>>>,
     pub body: Spanned<Expression>,
 }
@@ -45,7 +44,7 @@ pub enum Expression {
     },
     Call {
         name: Spanned<Box<Expression>>,
-        args: Spanned<NonEmpty<Spanned<Box<Expression>>>>,
+        args: Spanned<Vec<Spanned<Expression>>>,
     },
 }
 

@@ -1,7 +1,6 @@
 use crate::RODEO;
 use lasso::Spur;
 use malachite::Rational;
-use nonempty::NonEmpty;
 
 pub mod lower;
 
@@ -14,7 +13,7 @@ pub struct Mir {
 #[derive(Clone, Debug)]
 pub struct Function {
     pub name: Identifier,
-    pub params: NonEmpty<FunctionParam>,
+    pub params: Vec<FunctionParam>,
     pub return_ty: Type<Primitive>,
     pub body: TypedExpression,
 }
@@ -48,7 +47,7 @@ pub enum Expression {
     },
     Call {
         name: Box<TypedExpression>,
-        args: NonEmpty<Box<TypedExpression>>,
+        args: Vec<TypedExpression>,
     },
 }
 

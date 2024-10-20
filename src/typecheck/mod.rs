@@ -5,7 +5,6 @@ use crate::{
     span::{Span, Spanned},
 };
 use chumsky::span::Span as _;
-use nonempty::NonEmpty;
 use polytype::Context;
 use rustc_hash::FxHashMap;
 use typed_ast::{
@@ -138,22 +137,21 @@ impl<'a> Typechecker<'a> {
         let function_ty = self.functions.get(&function.name.0.resolve())?;
 
         let params = function_ty.params.as_ref().map(|params| {
-            NonEmpty::collect(
-                params
-                    .iter()
-                    .zip(function.params.0.into_iter().map(|param| param.0.name))
-                    .map(|(param, name)| {
-                        self.vars
-                            .insert(name.0.resolve(), polytype_type_from_ty(&param.0));
+            params
+                .iter()
+                .zip(function.params.0.into_iter().map(|param| param.0.name))
+                .map(|(param, name)| {
+                    self.vars
+                        .insert(name.0.resolve(), polytype_type_from_ty(&param.0));
 
-                        param
-                            .as_ref()
-                            .cloned()
-                            .map_self(|ty| FunctionParam { name, ty })
-                    }),
-            )
-            .unwrap()
+                    param
+                        .as_ref()
+                        .cloned()
+                        .map_self(|ty| FunctionParam { name, ty })
+                })
+                .collect()
         });
+
         let return_ty = function_ty.return_ty.clone();
 
         let body = function
@@ -290,17 +288,14 @@ impl<'a> Typechecker<'a> {
                     ty: ty_from_polytype_type(&result_ty)?,
                 })
             }
-            ast::Expression::Call { name, args } => self.typecheck_call(
-                name.unbox(),
-                args.map(|args| NonEmpty::collect(args.into_iter().map(Spanned::unbox)).unwrap()),
-            ),
+            ast::Expression::Call { name, args } => self.typecheck_call(name.unbox(), args),
         }
     }
 
     fn typecheck_call(
         &mut self,
         name: Spanned<ast::Expression>,
-        args: Spanned<NonEmpty<Spanned<ast::Expression>>>,
+        args: Spanned<Vec<Spanned<ast::Expression>>>,
     ) -> Option<TypedExpression> {
         let name = name
             .map(|name| self.typecheck_expression(name))
@@ -309,13 +304,8 @@ impl<'a> Typechecker<'a> {
         let args = args
             .map(|args| {
                 args.into_iter()
-                    .map(|arg| {
-                        arg.map(|arg| self.typecheck_expression(arg))
-                            .transpose()
-                            .map(Spanned::boxed)
-                    })
+                    .map(|arg| arg.map(|arg| self.typecheck_expression(arg)).transpose())
                     .collect::<Option<Vec<_>>>()
-                    .map(|args| NonEmpty::from_vec(args).unwrap())
             })
             .transpose()?;
 
@@ -438,6 +428,7 @@ fn ty_from_polytype_type(ty: &polytype::Type<TyName>) -> Option<Type<Primitive>>
                 .unwrap()
                 .into_iter()
                 .map(ty_from_polytype_type)
+                .map(|ty| ty.map(Box::new))
                 .collect::<Option<Vec<_>>>()?;
 
             let return_ty = Box::new(ty_from_polytype_type(arrow.returns().unwrap())?);
@@ -446,7 +437,7 @@ fn ty_from_polytype_type(ty: &polytype::Type<TyName>) -> Option<Type<Primitive>>
                 params: Spanned(
                     params
                         .into_iter()
-                        .map(|param| Spanned(param, Span::default()))
+                        .map(|param| Spanned(*param, Span::default()))
                         .collect(),
                     Span::default(),
                 ),

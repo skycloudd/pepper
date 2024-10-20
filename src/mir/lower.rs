@@ -6,7 +6,6 @@ use crate::{
     parser::ast,
     typecheck::typed_ast::{self, TypedAst},
 };
-use nonempty::NonEmpty;
 
 pub fn lower(typed_ast: TypedAst) -> Mir {
     let mut functions = vec![];
@@ -25,13 +24,17 @@ pub fn lower(typed_ast: TypedAst) -> Mir {
 fn lower_function(function: typed_ast::Function) -> Function {
     let name = lower_ident(function.name.0);
 
-    let params = NonEmpty::collect(function.params.0.into_iter().map(|param| {
-        let name = lower_ident(param.0.name.0);
-        let ty = lower_type(param.0.ty.0);
+    let params = function
+        .params
+        .0
+        .into_iter()
+        .map(|param| {
+            let name = lower_ident(param.0.name.0);
+            let ty = lower_type(param.0.ty.0);
 
-        FunctionParam { name, ty }
-    }))
-    .unwrap();
+            FunctionParam { name, ty }
+        })
+        .collect();
 
     let return_ty = lower_type(function.return_ty.0);
 
@@ -104,12 +107,11 @@ fn lower_expression(expr: typed_ast::TypedExpression) -> TypedExpression {
             },
             typed_ast::Expression::Call { name, args } => Expression::Call {
                 name: Box::new(lower_expression(*name.0)),
-                args: NonEmpty::collect(
-                    args.0
-                        .into_iter()
-                        .map(|arg| Box::new(lower_expression(*arg.0))),
-                )
-                .unwrap(),
+                args: args
+                    .0
+                    .into_iter()
+                    .map(|arg| lower_expression(arg.0))
+                    .collect(),
             },
         },
     }

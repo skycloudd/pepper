@@ -3,7 +3,6 @@ use crate::{
     span::Spanned,
 };
 use malachite::Rational;
-use nonempty::NonEmpty;
 
 #[derive(Clone, Debug)]
 pub struct TypedAst {
@@ -19,7 +18,7 @@ pub enum TopLevel {
 #[derive(Clone, Debug)]
 pub struct Function {
     pub name: Spanned<Identifier>,
-    pub params: Spanned<NonEmpty<Spanned<FunctionParam>>>,
+    pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Spanned<Type<Primitive>>,
     pub body: Spanned<TypedExpression>,
 }
@@ -53,7 +52,7 @@ pub enum Expression {
     },
     Call {
         name: Spanned<Box<TypedExpression>>,
-        args: Spanned<NonEmpty<Spanned<Box<TypedExpression>>>>,
+        args: Spanned<Vec<Spanned<TypedExpression>>>,
     },
 }
 
