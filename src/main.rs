@@ -94,7 +94,7 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
 fn backend(typed_ast: TypedAst) {
     let mir = mir::lower::lower(typed_ast);
 
-    println!("{mir:?}");
+    eprintln!("{mir:?}");
 
     todo!()
 }
