@@ -1,14 +1,12 @@
 use crate::{
-    lexer::tokens::{FractionalPart, Kw, Punc, SimpleToken, Token},
+    lexer::tokens::{Kw, Punc, SimpleToken, Token},
     span::{Span, Spanned},
     RODEO,
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, FunctionType, Identifier, TopLevel, Type,
-    UnaryOp,
+    Ast, BinaryOp, Expression, Function, FunctionParam, Identifier, TopLevel, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
-use malachite::{rational_sequences::RationalSequence, Natural, Rational};
 
 pub mod ast;
 
@@ -23,7 +21,7 @@ pub fn parser<'src: 'tok, 'tok>(
         .with_span()
         .repeated()
         .collect()
-        .map(|toplevels| Ast { toplevels })
+        .map(Ast)
         .boxed()
 }
 
@@ -34,13 +32,7 @@ fn toplevel_parser<'src: 'tok, 'tok>(
         .map(TopLevel::Function)
         .boxed();
 
-    let do_ = just(Token::Simple(SimpleToken::Kw(Kw::Do)))
-        .ignore_then(expression_parser())
-        .with_span()
-        .map(TopLevel::Do)
-        .boxed();
-
-    choice((function, do_)).boxed()
+    choice((function,)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -50,7 +42,6 @@ fn function_parser<'src: 'tok, 'tok>(
     let params = function_param_parser()
         .with_span()
         .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
-        .at_least(1)
         .allow_trailing()
         .collect()
         .parenthesized()
@@ -154,27 +145,23 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed();
 
         let number = select! {
-            Token::Simple(SimpleToken::Number(int, frac)) => (int, frac),
+            Token::Simple(SimpleToken::Number(num)) => num,
         }
-        .map(|(int, frac)| rational_from_parts_base(int, frac, 10))
-        .with_span()
         .map(Expression::Number)
         .boxed();
 
         let bool = select! {
             Token::Simple(SimpleToken::Boolean(bool)) => bool,
         }
-        .with_span()
         .map(Expression::Bool)
         .boxed();
 
-        let variable = ident_parser().with_span().map(Expression::Variable).boxed();
+        let variable = ident_parser().map(Expression::Variable).boxed();
 
         let call_args = expression
             .clone()
             .with_span()
             .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
-            .at_least(1)
             .allow_trailing()
             .collect()
             .parenthesized()
@@ -211,7 +198,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 fn ident_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
-        Token::Simple(SimpleToken::Identifier(ident)) = e => Identifier(Spanned(RODEO.get_or_intern(ident), e.span())),
+        Token::Simple(SimpleToken::Identifier(ident)) => Identifier(RODEO.get_or_intern(ident)),
     }
     .boxed()
 }
@@ -232,13 +219,10 @@ fn type_parser<'src: 'tok, 'tok>(
         let function = {
             let params = type_
                 .clone()
-                .with_span()
                 .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
-                .at_least(1)
                 .allow_trailing()
                 .collect()
                 .parenthesized()
-                .with_span()
                 .boxed();
 
             let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
@@ -246,13 +230,11 @@ fn type_parser<'src: 'tok, 'tok>(
                 .or_not()
                 .map(|ty| ty.unwrap_or_else(|| Type::Unit))
                 .map(Box::new)
-                .with_span()
                 .boxed();
 
             params.then(return_ty)
         }
-        .map(|(params, return_ty)| FunctionType { params, return_ty })
-        .map(Type::Function)
+        .map(|(params, return_ty)| Type::Function { params, return_ty })
         .boxed();
 
         choice((prim, unit, never, function)).boxed()
@@ -286,23 +268,4 @@ where
             Token::Parentheses(tokens) = e => tokens.as_slice().spanned(e.span()),
         })
     }
-}
-
-fn rational_from_parts_base(int: &str, frac: FractionalPart, radix: u32) -> Rational {
-    let before_point = int
-        .chars()
-        .rev()
-        .map(|c| Natural::from(c.to_digit(radix).unwrap()))
-        .collect();
-
-    let after_point = match frac {
-        FractionalPart::None | FractionalPart::Period => RationalSequence::default(),
-        FractionalPart::Full(full) => RationalSequence::from_vec(
-            full.chars()
-                .map(|c| Natural::from(c.to_digit(radix).unwrap()))
-                .collect(),
-        ),
-    };
-
-    Rational::from_digits(&Natural::from(radix), before_point, after_point)
 }

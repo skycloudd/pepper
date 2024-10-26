@@ -77,6 +77,10 @@ impl<T> Spanned<T> {
     pub const fn as_ref(&self) -> Spanned<&T> {
         Spanned(&self.0, self.1)
     }
+
+    pub fn as_mut(&mut self) -> Spanned<&mut T> {
+        Spanned(&mut self.0, self.1)
+    }
 }
 
 impl<T> Spanned<Option<T>> {
@@ -86,6 +90,7 @@ impl<T> Spanned<Option<T>> {
 }
 
 impl<T> Spanned<Box<T>> {
+    #[must_use]
     pub fn unbox(self) -> Spanned<T> {
         Spanned(*self.0, self.1)
     }
@@ -94,5 +99,19 @@ impl<T> Spanned<Box<T>> {
 impl<T: Clone> Spanned<&T> {
     pub fn cloned(self) -> Spanned<T> {
         self.map(Clone::clone)
+    }
+}
+
+impl<T> core::ops::Deref for Spanned<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> core::ops::DerefMut for Spanned<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

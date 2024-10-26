@@ -5,24 +5,17 @@ pub type Spanned<T> = (T, Span);
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token<'src> {
     Simple(SimpleToken<'src>),
-    Parentheses(Vec<Spanned<Token<'src>>>),
-    CurlyBraces(Vec<Spanned<Token<'src>>>),
+    Parentheses(Vec<Spanned<Self>>),
+    CurlyBraces(Vec<Spanned<Self>>),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SimpleToken<'src> {
     Identifier(&'src str),
-    Number(&'src str, FractionalPart<'src>),
+    Number(f64),
     Boolean(bool),
     Kw(Kw),
     Punc(Punc),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FractionalPart<'src> {
-    None,
-    Period,
-    Full(&'src str),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -59,20 +52,10 @@ impl core::fmt::Display for SimpleToken<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Identifier(name) => write!(f, "{name}"),
-            Self::Number(int, frac) => write!(f, "{int}{frac}"),
+            Self::Number(num) => write!(f, "{num}"),
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
-        }
-    }
-}
-
-impl core::fmt::Display for FractionalPart<'_> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::None => write!(f, ""),
-            Self::Period => write!(f, "."),
-            Self::Full(full) => write!(f, ".{full}"),
         }
     }
 }

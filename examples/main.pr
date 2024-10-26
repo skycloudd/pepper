@@ -1,0 +1,14 @@
+let add(x: number, y: number) -> number =
+    x + y
+
+let apply_bin_op_fn(
+    f: (number, number) -> number,
+    a: number,
+    b: number
+) -> number =
+    f(a, b)
+
+let never_returns() -> ! =
+    never_returns()
+
+do add_numbers(1, 2)

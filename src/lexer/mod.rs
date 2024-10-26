@@ -1,6 +1,6 @@
 use crate::span::Span;
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{FractionalPart, Kw, Punc, SimpleToken, Token};
+use tokens::{Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
@@ -22,17 +22,10 @@ pub fn lexer<'src>(
         .boxed();
 
         let number = text::int(10)
-            .then(
-                just('.')
-                    .ignore_then(text::digits(10).to_slice().or_not())
-                    .or_not()
-                    .map(|frac| match frac {
-                        Some(Some(frac)) => FractionalPart::Full(frac),
-                        Some(None) => FractionalPart::Period,
-                        None => FractionalPart::None,
-                    }),
-            )
-            .map(|(int, frac)| SimpleToken::Number(int, frac))
+            .then(just('.').ignore_then(text::digits(10).or_not()).or_not())
+            .to_slice()
+            .map(|num: &str| num.parse().unwrap())
+            .map(SimpleToken::Number)
             .boxed();
 
         let keyword = choice((

@@ -2,12 +2,9 @@ use crate::{
     parser::ast::{BinaryOp, Identifier, Type, UnaryOp},
     span::Spanned,
 };
-use malachite::Rational;
 
 #[derive(Clone, Debug)]
-pub struct TypedAst {
-    pub toplevels: Vec<Spanned<TopLevel>>,
-}
+pub struct TypedAst(pub Vec<Spanned<TopLevel>>);
 
 #[derive(Clone, Debug)]
 pub enum TopLevel {
@@ -38,9 +35,9 @@ pub struct TypedExpression {
 #[derive(Clone, Debug)]
 pub enum Expression {
     Unit,
-    Number(Spanned<Rational>),
-    Bool(Spanned<bool>),
-    Variable(Spanned<Identifier>),
+    Number(f64),
+    Bool(bool),
+    Variable(Identifier),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<TypedExpression>>,
@@ -60,13 +57,4 @@ pub enum Expression {
 pub enum Primitive {
     Number,
     Bool,
-}
-
-impl core::fmt::Display for Primitive {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Number => write!(f, "number"),
-            Self::Bool => write!(f, "bool"),
-        }
-    }
 }

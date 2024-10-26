@@ -33,9 +33,9 @@ impl<K: Eq + Hash, V> Scopes<K, V> {
             .or_else(|| self.base.get(k))
     }
 
-    // pub fn contains_key(&self, k: &K) -> bool {
-    //     self.scopes.iter().rev().any(|scope| scope.contains_key(k)) || self.base.contains_key(k)
-    // }
+    pub fn contains_key(&self, k: &K) -> bool {
+        self.scopes.iter().rev().any(|scope| scope.contains_key(k)) || self.base.contains_key(k)
+    }
 }
 
 impl<K, V> Default for Scopes<K, V> {
