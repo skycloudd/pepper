@@ -41,7 +41,7 @@ pub enum Punc {
 pub struct Identifier(Spur, pub Span);
 
 impl Identifier {
-    pub fn new(name: Spur, span: Span) -> Self {
+    pub const fn new(name: Spur, span: Span) -> Self {
         Self(name, span)
     }
 

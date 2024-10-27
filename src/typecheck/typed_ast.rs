@@ -57,3 +57,12 @@ pub enum Primitive {
     Number,
     Bool,
 }
+
+impl core::fmt::Display for Primitive {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Number => write!(f, "number"),
+            Self::Bool => write!(f, "bool"),
+        }
+    }
+}

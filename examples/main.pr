@@ -1,8 +1,11 @@
 func main() -> number =
-    apply_bin_op_fn(add, 1, 2)
+    apply_bin_op_fn(add, 1, 2) + apply_bin_op_fn(mul_add, 1, 2)
 
 func add(x: number, y: number) -> number =
     x + y
+
+func mul_add(x: number, y: number, z: number) -> number =
+    x * y + z
 
 func apply_bin_op_fn(
     f: func (number, number) -> number,
@@ -11,5 +14,5 @@ func apply_bin_op_fn(
 ) -> number =
     f(a, b)
 
-func never_returns() -> ! =
-    never_returns()
+func never_returns(a: number) -> ! =
+    never_returns(a + 1)

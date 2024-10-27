@@ -85,6 +85,12 @@ impl<T> Spanned<Option<T>> {
     }
 }
 
+impl<T, E> Spanned<Result<T, E>> {
+    pub fn transpose_result(self) -> Result<Spanned<T>, E> {
+        self.0.map(|value| Spanned(value, self.1))
+    }
+}
+
 impl<T> Spanned<Box<T>> {
     #[must_use]
     pub fn unbox(self) -> Spanned<T> {

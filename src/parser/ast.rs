@@ -50,9 +50,28 @@ pub enum BinaryOp {
     Div,
 }
 
+impl core::fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Add => write!(f, "+"),
+            Self::Sub => write!(f, "-"),
+            Self::Mul => write!(f, "*"),
+            Self::Div => write!(f, "/"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
     Neg,
+}
+
+impl core::fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Neg => write!(f, "-"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -64,4 +83,33 @@ pub enum Type<P> {
         params: Spanned<Vec<Spanned<Type<P>>>>,
         return_ty: Spanned<Box<Type<P>>>,
     },
+}
+
+impl<P: core::fmt::Display> core::fmt::Display for Type<P> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Primitive(primitive) => write!(f, "{primitive}"),
+            Self::Tuple(inner) => {
+                write!(f, "(")?;
+                for (i, ty) in inner.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", ty.0)?;
+                }
+                write!(f, ")")
+            }
+            Self::Never => write!(f, "!"),
+            Self::Function { params, return_ty } => {
+                write!(f, "func (")?;
+                for (i, param) in params.0.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", param.0)?;
+                }
+                write!(f, ") -> {}", return_ty.0)
+            }
+        }
+    }
 }

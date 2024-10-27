@@ -73,9 +73,9 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
 
     errors.extend(typecheck_errors);
 
-    if let Some(typed_ast) = typed_ast {
-        eprintln!("{typed_ast:?}");
-    }
+    // if let Some(typed_ast) = typed_ast {
+    //     eprintln!("{typed_ast:?}");
+    // }
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let term_config = term::Config::default();

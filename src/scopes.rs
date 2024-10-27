@@ -46,3 +46,11 @@ impl<K, V> Default for Scopes<K, V> {
         }
     }
 }
+
+impl<K: Eq + Hash, V> core::ops::Index<&K> for Scopes<K, V> {
+    type Output = V;
+
+    fn index(&self, index: &K) -> &Self::Output {
+        self.get(index).unwrap()
+    }
+}
