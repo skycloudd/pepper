@@ -2,17 +2,17 @@
 
 [![Rust](https://github.com/skycloudd/pepper/actions/workflows/rust.yml/badge.svg)](https://github.com/skycloudd/pepper/actions/workflows/rust.yml)
 
-A small toy programming language that compiles to native executables.
+A small toy programming language.
 
 ## Status
 
-This project is very early in development. It is not yet useful.
+This project is very early in development.
 
 ## Usage
 
 ```sh
 # compile the example program
-cargo run -- tests/compile_test/main.pr
+cargo run -- examples/main.pr
 ```
 
 ## MSRV
