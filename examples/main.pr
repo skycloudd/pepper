@@ -1,14 +1,15 @@
-let add(x: number, y: number) -> number =
+func main() -> number =
+    apply_bin_op_fn(add, 1, 2)
+
+func add(x: number, y: number) -> number =
     x + y
 
-let apply_bin_op_fn(
-    f: (number, number) -> number,
+func apply_bin_op_fn(
+    f: func (number, number) -> number,
     a: number,
     b: number
 ) -> number =
     f(a, b)
 
-let never_returns() -> ! =
+func never_returns() -> ! =
     never_returns()
-
-do add_numbers(1, 2)

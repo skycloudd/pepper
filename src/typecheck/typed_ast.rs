@@ -1,5 +1,6 @@
 use crate::{
-    parser::ast::{BinaryOp, Identifier, Type, UnaryOp},
+    lexer::tokens::Identifier,
+    parser::ast::{BinaryOp, Type, UnaryOp},
     span::Spanned,
 };
 
@@ -9,7 +10,6 @@ pub struct TypedAst(pub Vec<Spanned<TopLevel>>);
 #[derive(Clone, Debug)]
 pub enum TopLevel {
     Function(Spanned<Function>),
-    Do(Spanned<TypedExpression>),
 }
 
 #[derive(Clone, Debug)]
@@ -34,7 +34,6 @@ pub struct TypedExpression {
 
 #[derive(Clone, Debug)]
 pub enum Expression {
-    Unit,
     Number(f64),
     Bool(bool),
     Variable(Identifier),
@@ -48,7 +47,7 @@ pub enum Expression {
         expr: Spanned<Box<TypedExpression>>,
     },
     Call {
-        name: Spanned<Box<TypedExpression>>,
+        callee: Spanned<Box<TypedExpression>>,
         args: Spanned<Vec<Spanned<TypedExpression>>>,
     },
 }

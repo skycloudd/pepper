@@ -21,20 +21,38 @@ pub struct ErrorSpan {
 
 impl ErrorSpan {
     #[must_use]
-    const fn primary(message: Option<String>, span: Span) -> Self {
+    pub const fn primary(span: Span) -> Self {
         Self {
-            message,
+            message: None,
             span,
             label_style: LabelStyle::Primary,
         }
     }
 
-    // #[must_use]
-    // const fn secondary(message: Option<String>, span: Span) -> Self {
-    //     Self {
-    //         message,
-    //         span,
-    //         label_style: LabelStyle::Secondary,
-    //     }
-    // }
+    #[must_use]
+    pub const fn primary_message(message: String, span: Span) -> Self {
+        Self {
+            message: Some(message),
+            span,
+            label_style: LabelStyle::Primary,
+        }
+    }
+
+    #[must_use]
+    pub const fn secondary(span: Span) -> Self {
+        Self {
+            message: None,
+            span,
+            label_style: LabelStyle::Secondary,
+        }
+    }
+
+    #[must_use]
+    pub const fn secondary_message(message: String, span: Span) -> Self {
+        Self {
+            message: Some(message),
+            span,
+            label_style: LabelStyle::Secondary,
+        }
+    }
 }

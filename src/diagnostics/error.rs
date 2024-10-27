@@ -16,6 +16,15 @@ pub enum Error {
         message: String,
         span: Span,
     },
+    FunctionRedefinition {
+        name: &'static str,
+        new_span: crate::span::Span,
+        previous_span: crate::span::Span,
+    },
+    UndefinedVariable {
+        name: &'static str,
+        span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -32,30 +41,47 @@ impl Diag for Error {
             )
             .into(),
             Self::Custom { message, span: _ } => message.into(),
+            Self::FunctionRedefinition {
+                name,
+                new_span: _,
+                previous_span: _,
+            } => format!("Function '{name}' has already been defined").into(),
+            Self::UndefinedVariable { name, span: _ } => {
+                format!("Variable '{name}' has not been defined").into()
+            }
         }
     }
 
-    #[allow(clippy::match_same_arms)]
     fn spans(&self) -> Vec<ErrorSpan> {
         match self {
             Self::ExpectedFound {
                 expected: _,
                 found,
                 span,
-            } => vec![ErrorSpan::primary(
-                Some(format!(
-                    "Found {}",
-                    found.as_deref().unwrap_or("end of file")
-                )),
+            } => vec![ErrorSpan::primary_message(
+                format!("Found {}", found.as_deref().unwrap_or("end of file")),
                 *span,
             )],
-            Self::Custom { message: _, span } => vec![ErrorSpan::primary(None, *span)],
+            Self::Custom { message: _, span } | Self::UndefinedVariable { name: _, span } => {
+                vec![ErrorSpan::primary(*span)]
+            }
+            Self::FunctionRedefinition {
+                name: _,
+                new_span,
+                previous_span,
+            } => vec![
+                ErrorSpan::primary_message("First defined here".into(), *previous_span),
+                ErrorSpan::primary_message("Redefinition here".into(), *new_span),
+            ],
         }
     }
 
     fn notes(&self) -> Vec<String> {
         match self {
-            Self::ExpectedFound { .. } | Self::Custom { .. } => {
+            Self::FunctionRedefinition { .. } => {
+                vec![format!("Functions must have unique names")]
+            }
+            Self::ExpectedFound { .. } | Self::Custom { .. } | Self::UndefinedVariable { .. } => {
                 vec![]
             }
         }

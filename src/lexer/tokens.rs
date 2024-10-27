@@ -1,17 +1,18 @@
-use crate::span::Span;
+use crate::{span::Span, RODEO};
+use lasso::Spur;
 
 pub type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Token<'src> {
-    Simple(SimpleToken<'src>),
+pub enum Token {
+    Simple(SimpleToken),
     Parentheses(Vec<Spanned<Self>>),
     CurlyBraces(Vec<Spanned<Self>>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SimpleToken<'src> {
-    Identifier(&'src str),
+pub enum SimpleToken {
+    Identifier(Identifier),
     Number(f64),
     Boolean(bool),
     Kw(Kw),
@@ -20,8 +21,7 @@ pub enum SimpleToken<'src> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kw {
-    Let,
-    Do,
+    Func,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,11 +34,23 @@ pub enum Punc {
     Colon,
     Comma,
     Equals,
-    Hash,
     Bang,
 }
 
-impl core::fmt::Display for Token<'_> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Identifier(Spur, pub Span);
+
+impl Identifier {
+    pub fn new(name: Spur, span: Span) -> Self {
+        Self(name, span)
+    }
+
+    pub fn resolve(self) -> &'static str {
+        RODEO.resolve(&self.0)
+    }
+}
+
+impl core::fmt::Display for Token {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Simple(simple) => write!(f, "{simple}"),
@@ -48,10 +60,10 @@ impl core::fmt::Display for Token<'_> {
     }
 }
 
-impl core::fmt::Display for SimpleToken<'_> {
+impl core::fmt::Display for SimpleToken {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Identifier(name) => write!(f, "{name}"),
+            Self::Identifier(name) => write!(f, "{}", name.resolve()),
             Self::Number(num) => write!(f, "{num}"),
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
@@ -66,8 +78,7 @@ impl core::fmt::Display for Kw {
             f,
             "{}",
             match self {
-                Self::Let => "let",
-                Self::Do => "do",
+                Self::Func => "func",
             }
         )
     }
@@ -87,7 +98,6 @@ impl core::fmt::Display for Punc {
                 Self::Colon => ":",
                 Self::Comma => ",",
                 Self::Equals => "=",
-                Self::Hash => "#",
                 Self::Bang => "!",
             }
         )

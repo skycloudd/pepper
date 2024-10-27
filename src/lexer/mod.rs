@@ -1,6 +1,6 @@
-use crate::span::Span;
+use crate::{span::Span, RODEO};
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{Kw, Punc, SimpleToken, Token};
+use tokens::{Identifier, Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
@@ -10,9 +10,12 @@ type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 
 #[must_use]
 pub fn lexer<'src>(
-) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token<'src>>>, ParserExtra<'src>> {
+) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token>>, ParserExtra<'src>> {
     recursive(|tokens| {
-        let ident = text::ascii::ident().map(SimpleToken::Identifier).boxed();
+        let ident = text::ascii::ident()
+            .map_with(|name, e| Identifier::new(RODEO.get_or_intern(name), e.span()))
+            .map(SimpleToken::Identifier)
+            .boxed();
 
         let bool = choice((
             text::keyword("true").to(true),
@@ -28,12 +31,9 @@ pub fn lexer<'src>(
             .map(SimpleToken::Number)
             .boxed();
 
-        let keyword = choice((
-            text::keyword("let").to(Kw::Let),
-            text::keyword("do").to(Kw::Do),
-        ))
-        .map(SimpleToken::Kw)
-        .boxed();
+        let keyword = choice((text::keyword("func").to(Kw::Func),))
+            .map(SimpleToken::Kw)
+            .boxed();
 
         let punctuation = choice((
             just("->").to(Punc::Arrow),
@@ -44,7 +44,6 @@ pub fn lexer<'src>(
             just(":").to(Punc::Colon),
             just(",").to(Punc::Comma),
             just("=").to(Punc::Equals),
-            just("#").to(Punc::Hash),
             just("!").to(Punc::Bang),
         ))
         .map(SimpleToken::Punc)

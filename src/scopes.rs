@@ -18,11 +18,11 @@ impl<K, V> Scopes<K, V> {
 }
 
 impl<K: Eq + Hash, V> Scopes<K, V> {
-    pub fn insert(&mut self, k: K, v: V) {
+    pub fn insert(&mut self, k: K, v: V) -> Option<V> {
         self.scopes
             .last_mut()
             .unwrap_or(&mut self.base)
-            .insert(k, v);
+            .insert(k, v)
     }
 
     pub fn get(&self, k: &K) -> Option<&V> {

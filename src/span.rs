@@ -77,10 +77,6 @@ impl<T> Spanned<T> {
     pub const fn as_ref(&self) -> Spanned<&T> {
         Spanned(&self.0, self.1)
     }
-
-    pub fn as_mut(&mut self) -> Spanned<&mut T> {
-        Spanned(&mut self.0, self.1)
-    }
 }
 
 impl<T> Spanned<Option<T>> {

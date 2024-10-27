@@ -1,5 +1,4 @@
-use crate::{span::Spanned, RODEO};
-use lasso::Spur;
+use crate::{lexer::tokens::Identifier, span::Spanned};
 
 #[derive(Clone, Debug)]
 pub struct Ast(pub Vec<Spanned<TopLevel>>);
@@ -13,7 +12,7 @@ pub enum TopLevel {
 pub struct Function {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Option<Spanned<Type<Identifier>>>,
+    pub return_ty: Spanned<Type<Identifier>>,
     pub body: Spanned<Expression>,
 }
 
@@ -25,7 +24,6 @@ pub struct FunctionParam {
 
 #[derive(Clone, Debug)]
 pub enum Expression {
-    Unit,
     Number(f64),
     Bool(bool),
     Variable(Identifier),
@@ -39,7 +37,7 @@ pub enum Expression {
         expr: Spanned<Box<Expression>>,
     },
     Call {
-        name: Spanned<Box<Expression>>,
+        callee: Spanned<Box<Expression>>,
         args: Spanned<Vec<Spanned<Expression>>>,
     },
 }
@@ -60,19 +58,10 @@ pub enum UnaryOp {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type<P> {
     Primitive(P),
-    Unit,
+    Tuple(Vec<Spanned<Type<P>>>),
     Never,
     Function {
-        params: Vec<Type<P>>,
-        return_ty: Box<Type<P>>,
+        params: Spanned<Vec<Spanned<Type<P>>>>,
+        return_ty: Spanned<Box<Type<P>>>,
     },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Identifier(pub Spur);
-
-impl Identifier {
-    pub fn resolve(self) -> &'static str {
-        RODEO.resolve(&self.0)
-    }
 }

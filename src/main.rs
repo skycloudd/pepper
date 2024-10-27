@@ -13,7 +13,7 @@ use lasso::ThreadedRodeo;
 use span::{FileId, Span};
 use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
 
-mod diagnostics;
+pub mod diagnostics;
 mod lexer;
 mod parser;
 pub mod scopes;
