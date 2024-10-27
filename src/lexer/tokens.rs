@@ -37,7 +37,7 @@ pub enum Punc {
     Bang,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Identifier(Spur, pub Span);
 
 impl Identifier {
@@ -47,6 +47,15 @@ impl Identifier {
 
     pub fn resolve(self) -> &'static str {
         RODEO.resolve(&self.0)
+    }
+}
+
+impl core::fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Identifier")
+            .field(&self.resolve())
+            .field(&self.1)
+            .finish()
     }
 }
 
