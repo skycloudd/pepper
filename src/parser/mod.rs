@@ -113,6 +113,7 @@ macro_rules! binary_op {
         .boxed();
 
         $base
+            .clone()
             .with_span()
             .foldl(ops.then($base.with_span()).repeated(), |lhs, (op, rhs)| {
                 let span = lhs.1.union(rhs.1);
@@ -182,14 +183,14 @@ fn expression_parser<'src: 'tok, 'tok>(
         .boxed();
 
         let factor = binary_op!(
-            unary.clone(),
+            unary,
             Punc::Star => BinaryOp::Mul,
             Punc::Slash => BinaryOp::Div,
         )
         .boxed();
 
         binary_op!(
-            factor.clone(),
+            factor,
             Punc::Plus => BinaryOp::Add,
             Punc::Minus => BinaryOp::Sub,
         )
