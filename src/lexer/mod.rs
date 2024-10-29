@@ -31,20 +31,32 @@ pub fn lexer<'src>(
             .map(SimpleToken::Number)
             .boxed();
 
-        let keyword = choice((text::keyword("func").to(Kw::Func),))
-            .map(SimpleToken::Kw)
-            .boxed();
+        let keyword = choice((
+            text::keyword("func").to(Kw::Func),
+            text::keyword("match").to(Kw::Match),
+            text::keyword("where").to(Kw::Where),
+        ))
+        .map(SimpleToken::Kw)
+        .boxed();
 
         let punctuation = choice((
             just("->").to(Punc::Arrow),
+            just("=>").to(Punc::DoubleArrow),
             just('+').to(Punc::Plus),
             just('-').to(Punc::Minus),
             just('*').to(Punc::Star),
             just('/').to(Punc::Slash),
-            just(":").to(Punc::Colon),
-            just(",").to(Punc::Comma),
-            just("=").to(Punc::Equals),
-            just("!").to(Punc::Bang),
+            just(':').to(Punc::Colon),
+            just(',').to(Punc::Comma),
+            just("==").to(Punc::DoubleEquals),
+            just("!=").to(Punc::NotEquals),
+            just('=').to(Punc::Equals),
+            just('!').to(Punc::Bang),
+            just("<=").to(Punc::LessEquals),
+            just(">=").to(Punc::GreaterEquals),
+            just('<').to(Punc::Less),
+            just('>').to(Punc::Greater),
+            just('|').to(Punc::Pipe),
         ))
         .map(SimpleToken::Punc)
         .boxed();

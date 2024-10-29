@@ -30,9 +30,9 @@ impl ErrorSpan {
     }
 
     #[must_use]
-    pub const fn primary_message(message: String, span: Span) -> Self {
+    pub fn primary_message(message: impl Into<String>, span: Span) -> Self {
         Self {
-            message: Some(message),
+            message: Some(message.into()),
             span,
             label_style: LabelStyle::Primary,
         }
@@ -48,9 +48,9 @@ impl ErrorSpan {
     }
 
     #[must_use]
-    pub const fn secondary_message(message: String, span: Span) -> Self {
+    pub fn secondary_message(message: impl Into<String>, span: Span) -> Self {
         Self {
-            message: Some(message),
+            message: Some(message.into()),
             span,
             label_style: LabelStyle::Secondary,
         }

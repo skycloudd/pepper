@@ -2,7 +2,10 @@ use crate::{
     lexer::tokens::{Identifier, Kw, Punc, SimpleToken, Token},
     span::{Span, Spanned},
 };
-use ast::{Ast, BinaryOp, Expression, Function, FunctionParam, TopLevel, Type, UnaryOp};
+use ast::{
+    Ast, BinaryOp, Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, TopLevel,
+    Type, UnaryOp,
+};
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
 pub mod ast;
@@ -168,22 +171,69 @@ fn expression_parser<'src: 'tok, 'tok>(
             })
             .boxed();
 
+        let pattern = choice((
+            ident_parser().map(PatternType::Variable),
+            select! { Token::Simple(SimpleToken::Number(num)) => num }.map(PatternType::Number),
+            select! { Token::Simple(SimpleToken::Boolean(bool)) => bool }.map(PatternType::Bool),
+        ))
+        .with_span()
+        .then(
+            just(Token::Simple(SimpleToken::Kw(Kw::Where)))
+                .ignore_then(expression.clone().with_span())
+                .or_not(),
+        )
+        .map(|(pattern, condition)| Pattern { pattern, condition })
+        .with_span();
+
+        let match_arm = just(Token::Simple(SimpleToken::Punc(Punc::Pipe)))
+            .ignore_then(pattern)
+            .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::DoubleArrow))))
+            .then(expression.clone().with_span())
+            .map(|(pattern, body)| MatchArm { pattern, body })
+            .with_span()
+            .boxed();
+
+        let match_ = just(Token::Simple(SimpleToken::Kw(Kw::Match)))
+            .ignore_then(expression.clone().with_span())
+            .then(match_arm.repeated().collect().with_span())
+            .map(|(expr, arms)| Expression::Match {
+                expr: expr.boxed(),
+                arms,
+            });
+
         let parenthesized = expression
             .with_span()
             .parenthesized()
             .map(|expr| expr.0)
             .boxed();
 
-        let atom = choice((parenthesized, call, number, bool, variable)).boxed();
+        let atom = choice((parenthesized, match_, call, number, bool, variable)).boxed();
 
         let unary = unary_op!(
             atom,
             Punc::Minus => UnaryOp::Neg,
+            Punc::Bang => UnaryOp::Not,
+        )
+        .boxed();
+
+        let equality = binary_op!(
+            unary,
+            Punc::DoubleEquals => BinaryOp::Equals,
+            Punc::NotEquals => BinaryOp::NotEquals,
+        )
+        .boxed();
+
+        let relational = binary_op!(
+            equality,
+            Punc::LessEquals => BinaryOp::LessEquals,
+            Punc::GreaterEquals => BinaryOp::GreaterEquals,
+            Punc::Less => BinaryOp::Less,
+            Punc::Greater => BinaryOp::Greater,
         )
         .boxed();
 
         let factor = binary_op!(
-            unary,
+            relational,
             Punc::Star => BinaryOp::Mul,
             Punc::Slash => BinaryOp::Div,
         )

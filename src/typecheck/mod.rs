@@ -5,8 +5,10 @@ use crate::{
     scopes::Scopes,
     span::{Span, Spanned},
 };
+use chumsky::span::Span as _;
 use typed_ast::{
-    Expression, Function, FunctionParam, Primitive, TopLevel, TypedAst, TypedExpression,
+    Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, Primitive, TopLevel,
+    TypedAst, TypedExpression,
 };
 
 pub mod typed_ast;
@@ -224,7 +226,17 @@ impl Typechecker {
                         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div,
                         (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number)),
                     ) => Type::Primitive(Primitive::Number),
-                    (BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div, _) => {
+                    (
+                        BinaryOp::LessEquals
+                        | BinaryOp::GreaterEquals
+                        | BinaryOp::Less
+                        | BinaryOp::Greater
+                        | BinaryOp::Equals
+                        | BinaryOp::NotEquals,
+                        (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number))
+                        | (Type::Primitive(Primitive::Bool), Type::Primitive(Primitive::Bool)),
+                    ) => Type::Primitive(Primitive::Bool),
+                    _ => {
                         self.errors.push(Error::CantPerformOperation {
                             op: op.0,
                             op_span: op.1,
@@ -254,7 +266,19 @@ impl Typechecker {
                     (ast::UnaryOp::Neg, Type::Primitive(Primitive::Number)) => {
                         Type::Primitive(Primitive::Number)
                     }
-                    (ast::UnaryOp::Neg, _) => todo!(),
+                    (ast::UnaryOp::Not, Type::Primitive(Primitive::Bool)) => {
+                        Type::Primitive(Primitive::Bool)
+                    }
+                    _ => {
+                        self.errors.push(Error::CantPerformUnaryOperation {
+                            op: op.0,
+                            op_span: op.1,
+                            ty: expr.ty.clone(),
+                            span: expr.1,
+                        });
+
+                        return None;
+                    }
                 };
 
                 TypedExpression {
@@ -313,6 +337,76 @@ impl Typechecker {
                     todo!()
                 }
             }
+            ast::Expression::Match { expr, arms } => {
+                let expr = expr.map(|expr| self.lower_expression(*expr)).transpose()?;
+
+                let arms = arms
+                    .map(|arms| {
+                        arms.into_iter()
+                            .map(|arm| arm.map(|arm| self.lower_match_arm(arm)).transpose())
+                            .collect::<Option<Vec<_>>>()
+                    })
+                    .transpose()?;
+
+                let ty = self
+                    .engine
+                    .insert_info(TyInfo::Unknown, expr.1.union(arms.1));
+
+                for arm in &arms.0 {
+                    let arm_ty = self.engine.insert_type(&arm.body.ty, arm.body.1);
+
+                    if self.engine.unify(ty, arm_ty).is_err() {
+                        let ty = self.engine.solve(ty).ok();
+
+                        self.errors.push(Error::ArmTypeMismatch {
+                            arm_ty: arm.body.ty.clone(),
+                            ty: ty.as_ref().map(|ty| ty.0.clone()),
+                            arm_span: arm.body.1,
+                            ty_span: ty.map(|ty| ty.1),
+                            whole_span: expr.1.union(arms.1),
+                        });
+                    }
+                }
+
+                TypedExpression {
+                    expr: Expression::Match {
+                        expr: expr.boxed(),
+                        arms,
+                    },
+                    ty: self.engine.solve(ty).unwrap().0,
+                }
+            }
+        })
+    }
+
+    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> Option<MatchArm> {
+        Some(MatchArm {
+            pattern: arm
+                .pattern
+                .map(|pattern| self.lower_pattern(pattern))
+                .transpose()?,
+            body: arm
+                .body
+                .map(|body| self.lower_expression(body))
+                .transpose()?,
+        })
+    }
+
+    fn lower_pattern(&mut self, pattern: ast::Pattern) -> Option<Pattern> {
+        Some(Pattern {
+            pattern: pattern.pattern.map(|pattern| match pattern {
+                ast::PatternType::Variable(name) => PatternType::Variable(name),
+                ast::PatternType::Number(value) => PatternType::Number(value),
+                ast::PatternType::Bool(value) => PatternType::Bool(value),
+            }),
+            condition: match pattern.condition {
+                Some(condition) => Some(
+                    condition
+                        .map(|condition| self.lower_expression(condition))
+                        .transpose()?,
+                ),
+                None => None,
+            },
         })
     }
 
@@ -410,7 +504,7 @@ impl Engine {
         let a_ty = self.vars[a.0].clone();
         let b_ty = self.vars[b.0].clone();
 
-        match (a_ty.0, b_ty.0) {
+        match (a_ty.0.clone(), b_ty.0.clone()) {
             (TyInfo::Unknown, _) => {
                 self.vars[a.0] = Spanned::new(TyInfo::Ref(b), b_ty.1);
                 Ok(())
@@ -455,11 +549,11 @@ impl Engine {
         }
     }
 
-    fn solve(&mut self, ty: TyVar) -> Result<Spanned<Type<Primitive>>, ()> {
+    fn solve(&mut self, ty: TyVar) -> Result<Spanned<Type<Primitive>>, Spanned<TyInfo>> {
         let ty = self.vars[ty.0].clone();
 
         match ty.0 {
-            TyInfo::Unknown => Err(()),
+            TyInfo::Unknown => Err(ty),
             TyInfo::Ref(ty_var) => self.solve(ty_var),
             TyInfo::Primitive(primitive) => Ok(Spanned::new(Type::Primitive(primitive), ty.1)),
             TyInfo::Tuple(inner) => {
@@ -500,7 +594,6 @@ struct TyVar(usize);
 
 #[derive(Clone, Debug)]
 enum TyInfo {
-    #[allow(dead_code)]
     Unknown,
     Ref(TyVar),
     Primitive(Primitive),

@@ -52,6 +52,29 @@ pub enum Expression {
         callee: Spanned<Box<TypedExpression>>,
         args: Spanned<Vec<Spanned<TypedExpression>>>,
     },
+    Match {
+        expr: Spanned<Box<TypedExpression>>,
+        arms: Spanned<Vec<Spanned<MatchArm>>>,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub struct MatchArm {
+    pub pattern: Spanned<Pattern>,
+    pub body: Spanned<TypedExpression>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Pattern {
+    pub pattern: Spanned<PatternType>,
+    pub condition: Option<Spanned<TypedExpression>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum PatternType {
+    Variable(Identifier),
+    Number(f64),
+    Bool(bool),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

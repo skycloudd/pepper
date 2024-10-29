@@ -1,6 +1,6 @@
 use super::{Diag, ErrorSpan};
 use crate::{
-    parser::ast::{BinaryOp, Type},
+    parser::ast::{BinaryOp, Type, UnaryOp},
     span::Span,
     typecheck::typed_ast::Primitive,
 };
@@ -62,15 +62,29 @@ pub enum Error {
         lhs_span: Span,
         rhs_span: Span,
     },
+    CantPerformUnaryOperation {
+        op: UnaryOp,
+        op_span: Span,
+        ty: Type<Primitive>,
+        span: Span,
+    },
     ArgumentCountMismatch {
         expected: usize,
         found: usize,
         expected_span: Span,
         found_span: Span,
     },
+    ArmTypeMismatch {
+        arm_ty: Type<Primitive>,
+        ty: Option<Type<Primitive>>,
+        arm_span: Span,
+        ty_span: Option<Span>,
+        whole_span: Span,
+    },
 }
 
 impl Diag for Error {
+    #[allow(clippy::too_many_lines)]
     fn message(&self) -> Cow<str> {
         match self {
             Self::ExpectedFound {
@@ -153,6 +167,17 @@ impl Diag for Error {
                 )
             }
             .into(),
+            Self::CantPerformUnaryOperation {
+                op,
+                op_span: _,
+                ty,
+                span: _,
+            } => format!(
+                "The operator {} cannot be applied to an operand of type {}",
+                op.yellow(),
+                ty.yellow()
+            )
+            .into(),
             Self::ArgumentCountMismatch {
                 expected,
                 found,
@@ -164,9 +189,29 @@ impl Diag for Error {
                 found.yellow()
             )
             .into(),
+            Self::ArmTypeMismatch {
+                arm_ty,
+                ty,
+                arm_span: _,
+                ty_span: _,
+                whole_span: _,
+            } => ty
+                .as_ref()
+                .map_or_else(
+                    || format!("This arm evaluates to {}", arm_ty.yellow()),
+                    |ty| {
+                        format!(
+                            "Incompatible types: {} and {}",
+                            ty.yellow(),
+                            arm_ty.yellow(),
+                        )
+                    },
+                )
+                .into(),
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn spans(&self) -> Vec<ErrorSpan> {
         #[allow(clippy::match_same_arms)]
         match self {
@@ -186,8 +231,8 @@ impl Diag for Error {
                 new_span,
                 previous_span,
             } => vec![
-                ErrorSpan::primary_message("First defined here".into(), *previous_span),
-                ErrorSpan::primary_message("Redefinition here".into(), *new_span),
+                ErrorSpan::primary_message("First defined here", *previous_span),
+                ErrorSpan::primary_message("Redefinition here", *new_span),
             ],
             Self::ArgumentTypeMismatch {
                 param_ty,
@@ -224,11 +269,11 @@ impl Diag for Error {
                 body_span,
             } => vec![
                 ErrorSpan::primary_message(
-                    format!("This function should return a value of type: {return_ty}"),
+                    format!("The expected return type is: {return_ty}"),
                     *return_span,
                 ),
                 ErrorSpan::primary_message(
-                    format!("This expression evaluates to: {body_ty}"),
+                    format!("The function body evaluates to: {body_ty}"),
                     *body_span,
                 ),
             ],
@@ -243,6 +288,15 @@ impl Diag for Error {
                 ErrorSpan::primary_message(format!("{lhs_ty}"), *lhs_span),
                 ErrorSpan::secondary(*op_span),
                 ErrorSpan::primary_message(format!("{rhs_ty}"), *rhs_span),
+            ],
+            Self::CantPerformUnaryOperation {
+                op: _,
+                op_span,
+                ty,
+                span,
+            } => vec![
+                ErrorSpan::primary_message(format!("{ty}"), *span),
+                ErrorSpan::secondary(*op_span),
             ],
             Self::ArgumentCountMismatch {
                 expected,
@@ -259,6 +313,30 @@ impl Diag for Error {
                     *found_span,
                 ),
             ],
+            Self::ArmTypeMismatch {
+                arm_ty,
+                ty,
+                arm_span,
+                ty_span,
+                whole_span,
+            } => {
+                let mut spans = vec![
+                    ErrorSpan::primary_message(format!("This is of type: {arm_ty}"), *arm_span),
+                    ErrorSpan::secondary_message(
+                        "The values are outputs of this match expression",
+                        *whole_span,
+                    ),
+                ];
+
+                if let (Some(ty), Some(ty_span)) = (ty, ty_span) {
+                    spans.push(ErrorSpan::primary_message(
+                        format!("This is of type: {ty}"),
+                        *ty_span,
+                    ));
+                }
+
+                spans
+            }
         }
     }
 
@@ -266,6 +344,11 @@ impl Diag for Error {
         match self {
             Self::FunctionRedefinition { .. } => {
                 vec![format!("Functions must have unique names")]
+            }
+            Self::ArmTypeMismatch { .. } => {
+                vec![format!(
+                    "Outputs of match expressions must all evaluate to the same type"
+                )]
             }
             Self::ExpectedFound { .. }
             | Self::Custom { .. }
@@ -275,6 +358,7 @@ impl Diag for Error {
             | Self::BinaryOperatorTypeMismatch { .. }
             | Self::BodyTypeMismatch { .. }
             | Self::CantPerformOperation { .. }
+            | Self::CantPerformUnaryOperation { .. }
             | Self::ArgumentCountMismatch { .. } => {
                 vec![]
             }

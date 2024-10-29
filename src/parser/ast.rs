@@ -40,6 +40,29 @@ pub enum Expression {
         callee: Spanned<Box<Expression>>,
         args: Spanned<Vec<Spanned<Expression>>>,
     },
+    Match {
+        expr: Spanned<Box<Expression>>,
+        arms: Spanned<Vec<Spanned<MatchArm>>>,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub struct MatchArm {
+    pub pattern: Spanned<Pattern>,
+    pub body: Spanned<Expression>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Pattern {
+    pub pattern: Spanned<PatternType>,
+    pub condition: Option<Spanned<Expression>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum PatternType {
+    Variable(Identifier),
+    Number(f64),
+    Bool(bool),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -48,6 +71,12 @@ pub enum BinaryOp {
     Sub,
     Mul,
     Div,
+    LessEquals,
+    GreaterEquals,
+    Less,
+    Greater,
+    Equals,
+    NotEquals,
 }
 
 impl core::fmt::Display for BinaryOp {
@@ -57,6 +86,12 @@ impl core::fmt::Display for BinaryOp {
             Self::Sub => write!(f, "-"),
             Self::Mul => write!(f, "*"),
             Self::Div => write!(f, "/"),
+            Self::LessEquals => write!(f, "<="),
+            Self::GreaterEquals => write!(f, ">="),
+            Self::Less => write!(f, "<"),
+            Self::Greater => write!(f, ">"),
+            Self::Equals => write!(f, "=="),
+            Self::NotEquals => write!(f, "!="),
         }
     }
 }
@@ -64,12 +99,14 @@ impl core::fmt::Display for BinaryOp {
 #[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
     Neg,
+    Not,
 }
 
 impl core::fmt::Display for UnaryOp {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Neg => write!(f, "-"),
+            Self::Not => write!(f, "!"),
         }
     }
 }

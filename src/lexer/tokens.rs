@@ -22,19 +22,29 @@ pub enum SimpleToken {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kw {
     Func,
+    Match,
+    Where,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Punc {
     Arrow,
+    DoubleArrow,
     Plus,
     Minus,
     Star,
     Slash,
     Colon,
     Comma,
+    DoubleEquals,
+    NotEquals,
     Equals,
     Bang,
+    LessEquals,
+    GreaterEquals,
+    Less,
+    Greater,
+    Pipe,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -88,6 +98,8 @@ impl core::fmt::Display for Kw {
             "{}",
             match self {
                 Self::Func => "func",
+                Self::Match => "match",
+                Self::Where => "where",
             }
         )
     }
@@ -100,14 +112,22 @@ impl core::fmt::Display for Punc {
             "{}",
             match self {
                 Self::Arrow => "->",
+                Self::DoubleArrow => "=>",
                 Self::Plus => "+",
                 Self::Minus => "-",
                 Self::Star => "*",
                 Self::Slash => "/",
                 Self::Colon => ":",
                 Self::Comma => ",",
+                Self::DoubleEquals => "==",
+                Self::NotEquals => "!=",
                 Self::Equals => "=",
                 Self::Bang => "!",
+                Self::LessEquals => "<=",
+                Self::GreaterEquals => ">=",
+                Self::Less => "<",
+                Self::Greater => ">",
+                Self::Pipe => "|",
             }
         )
     }

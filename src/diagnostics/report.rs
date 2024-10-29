@@ -12,7 +12,7 @@ pub fn report(diagnostic: &dyn Diag) -> Diagnostic<usize> {
                 .map(|error_span| {
                     let mut label = Label::new(
                         error_span.label_style,
-                        error_span.span.context().0,
+                        error_span.span.context().get(),
                         error_span.span.range(),
                     );
 

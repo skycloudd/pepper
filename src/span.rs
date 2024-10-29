@@ -1,4 +1,6 @@
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+use core::num::NonZeroUsize;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Span {
     start: usize,
     end: usize,
@@ -43,13 +45,18 @@ impl chumsky::span::Span for Span {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct FileId(pub usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FileId(NonZeroUsize);
 
 impl FileId {
     #[must_use]
-    pub const fn new(id: usize) -> Self {
-        Self(id)
+    pub fn new(id: usize) -> Self {
+        Self(NonZeroUsize::new(id.checked_add(1).unwrap()).unwrap())
+    }
+
+    #[must_use]
+    pub fn get(self) -> usize {
+        usize::from(self.0) - 1
     }
 }
 
