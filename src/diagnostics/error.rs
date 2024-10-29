@@ -81,6 +81,10 @@ pub enum Error {
         ty_span: Option<Span>,
         whole_span: Span,
     },
+    CantCallType {
+        ty: Type<Primitive>,
+        span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -208,6 +212,9 @@ impl Diag for Error {
                     },
                 )
                 .into(),
+            Self::CantCallType { ty, span: _ } => {
+                format!("Cannot call a value of type {}", ty.yellow()).into()
+            }
         }
     }
 
@@ -337,6 +344,10 @@ impl Diag for Error {
 
                 spans
             }
+            Self::CantCallType { ty, span } => vec![ErrorSpan::primary_message(
+                format!("This is of type: {ty}"),
+                *span,
+            )],
         }
     }
 
@@ -359,7 +370,8 @@ impl Diag for Error {
             | Self::BodyTypeMismatch { .. }
             | Self::CantPerformOperation { .. }
             | Self::CantPerformUnaryOperation { .. }
-            | Self::ArgumentCountMismatch { .. } => {
+            | Self::ArgumentCountMismatch { .. }
+            | Self::CantCallType { .. } => {
                 vec![]
             }
         }

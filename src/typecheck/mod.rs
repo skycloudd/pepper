@@ -302,39 +302,44 @@ impl Typechecker {
                     })
                     .transpose()?;
 
-                if let Type::Function { params, return_ty } = callee.ty.clone() {
-                    if args.len() != params.len() {
-                        self.errors.push(Error::ArgumentCountMismatch {
-                            expected: params.len(),
-                            found: args.len(),
-                            expected_span: params.1,
-                            found_span: args.1,
-                        });
-                    }
-
-                    for (arg, param) in args.as_ref().0.iter().zip(params.0) {
-                        let arg_ty = self.engine.insert_type(&arg.ty, arg.1);
-                        let param_ty = self.engine.insert_type(&param.0, param.1);
-
-                        if self.engine.unify(arg_ty, param_ty).is_err() {
-                            self.errors.push(Error::ArgumentTypeMismatch {
-                                param_ty: param.0,
-                                arg_ty: arg.ty.clone(),
-                                param_span: param.1,
-                                arg_span: arg.1,
+                match callee.ty.clone() {
+                    Type::Function { params, return_ty } => {
+                        if args.len() != params.len() {
+                            self.errors.push(Error::ArgumentCountMismatch {
+                                expected: params.len(),
+                                found: args.len(),
+                                expected_span: params.1,
+                                found_span: args.1,
                             });
                         }
-                    }
 
-                    TypedExpression {
-                        expr: Expression::Call {
-                            callee: callee.boxed(),
-                            args,
-                        },
-                        ty: *return_ty.0,
+                        for (arg, param) in args.as_ref().0.iter().zip(params.0) {
+                            let arg_ty = self.engine.insert_type(&arg.ty, arg.1);
+                            let param_ty = self.engine.insert_type(&param.0, param.1);
+
+                            if self.engine.unify(arg_ty, param_ty).is_err() {
+                                self.errors.push(Error::ArgumentTypeMismatch {
+                                    param_ty: param.0,
+                                    arg_ty: arg.ty.clone(),
+                                    param_span: param.1,
+                                    arg_span: arg.1,
+                                });
+                            }
+                        }
+
+                        TypedExpression {
+                            expr: Expression::Call {
+                                callee: callee.boxed(),
+                                args,
+                            },
+                            ty: *return_ty.0,
+                        }
                     }
-                } else {
-                    todo!()
+                    ty => {
+                        self.errors.push(Error::CantCallType { ty, span: callee.1 });
+
+                        return None;
+                    }
                 }
             }
             ast::Expression::Match { expr, arms } => {
