@@ -80,6 +80,11 @@ impl<T> Spanned<T> {
         Spanned(f(self.0, self.1), self.1)
     }
 
+    #[must_use]
+    pub fn map_span(self, f: impl FnOnce(Span) -> Span) -> Self {
+        Self(self.0, f(self.1))
+    }
+
     pub const fn as_ref(&self) -> Spanned<&T> {
         Spanned(&self.0, self.1)
     }

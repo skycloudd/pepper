@@ -91,6 +91,9 @@ pub enum Error {
         expected_span: Span,
         found_span: Span,
     },
+    UnderscoreVariable {
+        span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -232,6 +235,9 @@ impl Diag for Error {
                 found.yellow()
             )
             .into(),
+            Self::UnderscoreVariable { span: _ } => {
+                format!("The name {} cannot be used in expressions", "_".blue()).into()
+            }
         }
     }
 
@@ -380,6 +386,7 @@ impl Diag for Error {
                     *found_span,
                 ),
             ],
+            Self::UnderscoreVariable { span } => vec![ErrorSpan::primary(*span)],
         }
     }
 
@@ -404,7 +411,8 @@ impl Diag for Error {
             | Self::CantPerformUnaryOperation { .. }
             | Self::ArgumentCountMismatch { .. }
             | Self::CantCallType { .. }
-            | Self::PatternTypeMismatch { .. } => {
+            | Self::PatternTypeMismatch { .. }
+            | Self::UnderscoreVariable { .. } => {
                 vec![]
             }
         }

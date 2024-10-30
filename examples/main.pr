@@ -16,10 +16,10 @@ func never_returns() -> ! =
 
 func fib(n: number) -> number =
     match n
-    | x where x < 2 => x
+    | n where n < 2 => n
     | _ => fib(n - 1) + fib(n - 2)
 
 func bool_to_number(b: bool) -> number =
     match b
-    | 54321 => 1
-    | 12345 => 0
+    | true => 1
+    | false => 0

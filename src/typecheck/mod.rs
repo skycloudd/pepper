@@ -190,6 +190,11 @@ impl Typechecker {
                 ty: Type::Primitive(Primitive::Bool),
             },
             ast::Expression::Variable(name) => {
+                if name.resolve() == "_" {
+                    self.errors.push(Error::UnderscoreVariable { span: name.1 });
+                    return None;
+                }
+
                 let ty = self.names.get(&name.resolve()).cloned().or_else(|| {
                     self.errors.push(Error::UndefinedVariable {
                         name: name.resolve(),
@@ -412,13 +417,38 @@ impl Typechecker {
                     ast::PatternType::Bool(value) => PatternType::Bool(value),
                 });
 
-                match &pattern_type.0 {
+                let pattern_ty = match pattern_type.0 {
                     PatternType::Variable(identifier) => {
-                        self.names
-                            .insert(identifier.resolve(), expected_pattern_type);
+                        self.names.insert(
+                            identifier.resolve(),
+                            expected_pattern_type.clone().map_span(|_| pattern_type.1),
+                        );
+
+                        expected_pattern_type.0.clone()
                     }
-                    PatternType::Number(_) => todo!(),
-                    PatternType::Bool(_) => todo!(),
+                    PatternType::Number(_) => Type::Primitive(Primitive::Number),
+                    PatternType::Bool(_) => Type::Primitive(Primitive::Bool),
+                };
+
+                let pattern_ty_var = self.engine.insert_type(&pattern_ty, pattern_type.1);
+
+                let expected_pattern_ty_var = self
+                    .engine
+                    .insert_type(&expected_pattern_type.0, expected_pattern_type.1);
+
+                if self
+                    .engine
+                    .unify(pattern_ty_var, expected_pattern_ty_var)
+                    .is_err()
+                {
+                    self.errors.push(Error::PatternTypeMismatch {
+                        expected: expected_pattern_type.0,
+                        found: pattern_ty,
+                        expected_span: expected_pattern_type.1,
+                        found_span: pattern_type.1,
+                    });
+
+                    return None;
                 }
 
                 let condition = match pattern.condition {
