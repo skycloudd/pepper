@@ -76,9 +76,8 @@ impl<T> Spanned<T> {
         Spanned(f(self.0), self.1)
     }
 
-    pub fn map_self<U>(self, f: impl FnOnce(Self) -> U) -> Spanned<U> {
-        let span = self.1;
-        Spanned(f(self), span)
+    pub fn map_with_span<U>(self, f: impl FnOnce(T, Span) -> U) -> Spanned<U> {
+        Spanned(f(self.0, self.1), self.1)
     }
 
     pub const fn as_ref(&self) -> Spanned<&T> {

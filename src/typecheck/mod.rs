@@ -125,6 +125,8 @@ impl Typechecker {
         let sig = &self.functions[&function.name.resolve()];
 
         sig.0.clone().and_then(|sig| {
+            self.names.push_scope();
+
             let params = sig.params;
 
             for param in &params.0 {
@@ -151,6 +153,8 @@ impl Typechecker {
                     });
                 }
             }
+
+            self.names.pop_scope();
 
             Some(Function {
                 name: function.name,
@@ -348,7 +352,15 @@ impl Typechecker {
                 let arms = arms
                     .map(|arms| {
                         arms.into_iter()
-                            .map(|arm| arm.map(|arm| self.lower_match_arm(arm)).transpose())
+                            .map(|arm| {
+                                arm.map(|arm| {
+                                    self.lower_match_arm(
+                                        arm,
+                                        expr.as_ref().map(|expr| expr.ty.clone()),
+                                    )
+                                })
+                                .transpose()
+                            })
                             .collect::<Option<Vec<_>>>()
                     })
                     .transpose()?;
@@ -384,25 +396,63 @@ impl Typechecker {
         })
     }
 
-    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> Option<MatchArm> {
-        Some(MatchArm {
-            pattern: arm
-                .pattern
-                .map(|pattern| self.lower_pattern(pattern))
-                .transpose()?,
-            body: arm
-                .body
-                .map(|body| self.lower_expression(body))
-                .transpose()?,
-        })
+    fn lower_match_arm(
+        &mut self,
+        arm: ast::MatchArm,
+        pattern_ty: Spanned<Type<Primitive>>,
+    ) -> Option<MatchArm> {
+        let pattern = arm
+            .pattern
+            .map(|pattern| self.lower_pattern(pattern, pattern_ty))
+            .transpose()?;
+
+        let body = arm
+            .body
+            .map(|body| self.lower_expression(body))
+            .transpose()?;
+
+        Some(MatchArm { pattern, body })
     }
 
-    fn lower_pattern(&mut self, pattern: ast::Pattern) -> Option<Pattern> {
+    fn lower_pattern(
+        &mut self,
+        pattern: ast::Pattern,
+        expected_pattern_ty: Spanned<Type<Primitive>>,
+    ) -> Option<Pattern> {
         Some(Pattern {
-            pattern: pattern.pattern.map(|pattern| match pattern {
-                ast::PatternType::Variable(name) => PatternType::Variable(name),
-                ast::PatternType::Number(value) => PatternType::Number(value),
-                ast::PatternType::Bool(value) => PatternType::Bool(value),
+            pattern: pattern.pattern.map_with_span(|pattern, pattern_span| {
+                let primitive_type = match pattern {
+                    ast::PatternType::Variable(name) => {
+                        self.names.insert(name.resolve(), expected_pattern_ty);
+
+                        return PatternType::Variable(name);
+                    }
+                    ast::PatternType::Number(_) => Primitive::Number,
+                    ast::PatternType::Bool(_) => Primitive::Bool,
+                };
+
+                let ty = self
+                    .engine
+                    .insert_info(TyInfo::Primitive(primitive_type), pattern_span);
+
+                let pattern_ty_var = self
+                    .engine
+                    .insert_type(&expected_pattern_ty.0, expected_pattern_ty.1);
+
+                if self.engine.unify(ty, pattern_ty_var).is_err() {
+                    self.errors.push(Error::PatternTypeMismatch {
+                        expected: expected_pattern_ty.0.clone(),
+                        found: Type::Primitive(primitive_type),
+                        expected_span: expected_pattern_ty.1,
+                        found_span: pattern_span,
+                    });
+                }
+
+                match pattern {
+                    ast::PatternType::Variable(_) => unreachable!(),
+                    ast::PatternType::Number(value) => PatternType::Number(value),
+                    ast::PatternType::Bool(value) => PatternType::Bool(value),
+                }
             }),
             condition: match pattern.condition {
                 Some(condition) => Some(

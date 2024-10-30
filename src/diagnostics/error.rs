@@ -85,6 +85,12 @@ pub enum Error {
         ty: Type<Primitive>,
         span: Span,
     },
+    PatternTypeMismatch {
+        expected: Type<Primitive>,
+        found: Type<Primitive>,
+        expected_span: Span,
+        found_span: Span,
+    },
 }
 
 impl Diag for Error {
@@ -215,6 +221,17 @@ impl Diag for Error {
             Self::CantCallType { ty, span: _ } => {
                 format!("Cannot call a value of type {}", ty.yellow()).into()
             }
+            Self::PatternTypeMismatch {
+                expected,
+                found,
+                expected_span: _,
+                found_span: _,
+            } => format!(
+                "Expected a pattern of type {}, but found {}",
+                expected.yellow(),
+                found.yellow()
+            )
+            .into(),
         }
     }
 
@@ -348,6 +365,21 @@ impl Diag for Error {
                 format!("This is of type: {ty}"),
                 *span,
             )],
+            Self::PatternTypeMismatch {
+                expected,
+                found,
+                expected_span,
+                found_span,
+            } => vec![
+                ErrorSpan::primary_message(
+                    format!("This expression is of type: {expected}"),
+                    *expected_span,
+                ),
+                ErrorSpan::primary_message(
+                    format!("This pattern is of type: {found}"),
+                    *found_span,
+                ),
+            ],
         }
     }
 
@@ -371,7 +403,8 @@ impl Diag for Error {
             | Self::CantPerformOperation { .. }
             | Self::CantPerformUnaryOperation { .. }
             | Self::ArgumentCountMismatch { .. }
-            | Self::CantCallType { .. } => {
+            | Self::CantCallType { .. }
+            | Self::PatternTypeMismatch { .. } => {
                 vec![]
             }
         }
