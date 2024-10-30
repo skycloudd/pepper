@@ -182,7 +182,10 @@ fn expression_parser<'src: 'tok, 'tok>(
                 .ignore_then(expression.clone().with_span())
                 .or_not(),
         )
-        .map(|(pattern, condition)| Pattern { pattern, condition })
+        .map(|(pattern_type, condition)| Pattern {
+            pattern_type,
+            condition,
+        })
         .with_span();
 
         let match_arm = just(Token::Simple(SimpleToken::Punc(Punc::Pipe)))

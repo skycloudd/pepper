@@ -54,7 +54,7 @@ pub struct MatchArm {
 
 #[derive(Clone, Debug)]
 pub struct Pattern {
-    pub pattern: Spanned<PatternType>,
+    pub pattern_type: Spanned<PatternType>,
     pub condition: Option<Spanned<Expression>>,
 }
 
