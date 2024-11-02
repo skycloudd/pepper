@@ -557,7 +557,7 @@ impl Engine {
                             .map(|param| self.solve(param))
                             .collect::<Result<_, _>>()
                     })
-                    .transpose_result()?;
+                    .transpose()?;
 
                 let return_ty = self.solve(return_ty)?;
 

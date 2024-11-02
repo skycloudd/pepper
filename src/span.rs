@@ -90,14 +90,8 @@ impl<T> Spanned<T> {
     }
 }
 
-impl<T> Spanned<Option<T>> {
-    pub fn transpose(self) -> Option<Spanned<T>> {
-        self.0.map(|value| Spanned(value, self.1))
-    }
-}
-
 impl<T, E> Spanned<Result<T, E>> {
-    pub fn transpose_result(self) -> Result<Spanned<T>, E> {
+    pub fn transpose(self) -> Result<Spanned<T>, E> {
         self.0.map(|value| Spanned(value, self.1))
     }
 }
