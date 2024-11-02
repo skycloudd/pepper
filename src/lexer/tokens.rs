@@ -17,6 +17,7 @@ pub enum SimpleToken {
     Boolean(bool),
     Kw(Kw),
     Punc(Punc),
+    Wildcard,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,6 +88,7 @@ impl core::fmt::Display for SimpleToken {
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
+            Self::Wildcard => write!(f, "_"),
         }
     }
 }

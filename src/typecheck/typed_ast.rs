@@ -72,6 +72,7 @@ pub struct Pattern {
 
 #[derive(Clone, Debug)]
 pub enum PatternType {
+    Wildcard,
     Variable(Identifier),
     Number(f64),
     Bool(bool),

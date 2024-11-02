@@ -12,7 +12,7 @@ type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 pub fn lexer<'src>(
 ) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token>>, ParserExtra<'src>> {
     recursive(|tokens| {
-        let ident = text::ascii::ident()
+        let ident = text::unicode::ident()
             .map_with(|name, e| Identifier::new(RODEO.get_or_intern(name), e.span()))
             .map(SimpleToken::Identifier)
             .boxed();
@@ -61,12 +61,14 @@ pub fn lexer<'src>(
         .map(SimpleToken::Punc)
         .boxed();
 
+        let wildcard = text::ascii::keyword("_").to(SimpleToken::Wildcard).boxed();
+
         let comment = just("//")
             .then(any().and_is(just('\n').not()).repeated())
             .padded()
             .boxed();
 
-        let simple = choice((keyword, bool, ident, number, punctuation))
+        let simple = choice((keyword, bool, ident, number, punctuation, wildcard))
             .map(Token::Simple)
             .boxed();
 

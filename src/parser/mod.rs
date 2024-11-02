@@ -172,6 +172,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed();
 
         let pattern = choice((
+            just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
             select! { Token::Simple(SimpleToken::Number(num)) => num }.map(PatternType::Number),
             select! { Token::Simple(SimpleToken::Boolean(bool)) => bool }.map(PatternType::Bool),

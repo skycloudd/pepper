@@ -162,10 +162,6 @@ impl Typechecker {
                 ty: Type::Primitive(Primitive::Bool),
             },
             ast::Expression::Variable(name) => {
-                if name.resolve() == "_" {
-                    self.errors.push(Error::UnderscoreVariable { span: name.1 });
-                }
-
                 let ty = self.names.get(&name.resolve()).cloned().unwrap_or_else(|| {
                     self.errors.push(Error::UndefinedVariable {
                         name: name.resolve(),
@@ -325,7 +321,29 @@ impl Typechecker {
 
                 let arms = arms.map(|arms| {
                     arms.into_iter()
-                        .map(|arm| arm.map(|arm| self.lower_match_arm(arm)))
+                        .map(|arm| {
+                            arm.map(|arm| {
+                                self.names.push_scope();
+
+                                match &arm.pattern.pattern_type.0 {
+                                    ast::PatternType::Variable(identifier) => {
+                                        self.names.insert(
+                                            identifier.resolve(),
+                                            expr.as_ref().map(|expr| expr.ty.clone()),
+                                        );
+                                    }
+                                    ast::PatternType::Wildcard
+                                    | ast::PatternType::Number(_)
+                                    | ast::PatternType::Bool(_) => {}
+                                }
+
+                                let res = self.lower_match_arm(arm);
+
+                                self.names.pop_scope();
+
+                                res
+                            })
+                        })
                         .collect::<Vec<_>>()
                 });
 
@@ -353,7 +371,7 @@ impl Typechecker {
                             .pattern_type
                             .as_ref()
                             .map(|pattern_type| match pattern_type {
-                                PatternType::Variable(_) => expr.ty.clone(),
+                                PatternType::Wildcard | PatternType::Variable(_) => expr.ty.clone(),
                                 PatternType::Number(_) => Type::Primitive(Primitive::Number),
                                 PatternType::Bool(_) => Type::Primitive(Primitive::Bool),
                             });
@@ -386,6 +404,7 @@ impl Typechecker {
     fn lower_match_arm(&mut self, arm: ast::MatchArm) -> MatchArm {
         let pattern = arm.pattern.map(|pattern| {
             let pattern_type = pattern.pattern_type.map(|pattern_type| match pattern_type {
+                ast::PatternType::Wildcard => PatternType::Wildcard,
                 ast::PatternType::Variable(identifier) => PatternType::Variable(identifier),
                 ast::PatternType::Number(value) => PatternType::Number(value),
                 ast::PatternType::Bool(value) => PatternType::Bool(value),
