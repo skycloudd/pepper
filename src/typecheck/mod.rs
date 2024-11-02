@@ -21,7 +21,7 @@ pub fn typecheck(ast: Ast) -> (TypedAst, Vec<Error>) {
 struct Typechecker {
     errors: ErrorVec,
     names: Scopes<&'static str, Spanned<Type<Primitive>>>,
-    functions: Scopes<&'static str, Spanned<Option<FunctionSignature>>>,
+    functions: Scopes<&'static str, Spanned<FunctionSignature>>,
     types: Scopes<&'static str, Type<Primitive>>,
     engine: Engine,
 }
@@ -40,11 +40,7 @@ impl Typechecker {
             TypedAst(
                 ast.0
                     .into_iter()
-                    .filter_map(|toplevel| {
-                        toplevel
-                            .map(|toplevel| self.typecheck_toplevel(toplevel))
-                            .transpose()
-                    })
+                    .map(|toplevel| toplevel.map(|toplevel| self.typecheck_toplevel(toplevel)))
                     .collect(),
             ),
             self.errors.0,
@@ -62,18 +58,16 @@ impl Typechecker {
             .as_ref()
             .map(|function| self.function_signature(function));
 
-        if let Some(signature) = &function_type.0 {
-            let ty = Type::Function {
-                params: signature
-                    .params
-                    .clone()
-                    .map(|params| params.into_iter().map(|param| param.ty.clone()).collect()),
-                return_ty: signature.return_ty.clone().boxed(),
-            };
+        let ty = Type::Function {
+            params: function_type
+                .params
+                .clone()
+                .map(|params| params.into_iter().map(|param| param.ty.clone()).collect()),
+            return_ty: function_type.return_ty.clone().boxed(),
+        };
 
-            self.names
-                .insert(function.name.resolve(), Spanned::new(ty, function_type.1));
-        }
+        self.names
+            .insert(function.name.resolve(), Spanned::new(ty, function_type.1));
 
         let name = function.name.map(Identifier::resolve);
 
@@ -86,101 +80,79 @@ impl Typechecker {
         }
     }
 
-    fn function_signature(&mut self, function: &ast::Function) -> Option<FunctionSignature> {
-        Some(FunctionSignature {
-            params: function
-                .params
-                .as_ref()
-                .map(|params| {
-                    params
-                        .iter()
-                        .map(|param| {
-                            param
-                                .as_ref()
-                                .map(|param| self.lower_function_param(param))
-                                .transpose()
-                        })
-                        .collect::<Option<_>>()
-                })
-                .transpose()?,
-            return_ty: function
-                .return_ty
-                .as_ref()
-                .map(|ty| self.lower_type(ty))
-                .transpose()?,
-        })
+    fn function_signature(&mut self, function: &ast::Function) -> FunctionSignature {
+        FunctionSignature {
+            params: function.params.as_ref().map(|params| {
+                params
+                    .iter()
+                    .map(|param| param.as_ref().map(|param| self.lower_function_param(param)))
+                    .collect()
+            }),
+            return_ty: function.return_ty.as_ref().map(|ty| self.lower_type(ty)),
+        }
     }
 
-    fn typecheck_toplevel(&mut self, toplevel: ast::TopLevel) -> Option<TopLevel> {
-        Some(match toplevel {
-            ast::TopLevel::Function(function) => TopLevel::Function(
+    fn typecheck_toplevel(&mut self, toplevel: ast::TopLevel) -> TopLevel {
+        match toplevel {
+            ast::TopLevel::Function(function) => TopLevel::Function(function.map(|function| {
+                self.names.push_scope();
+                let function = self.typecheck_function(function);
+                self.names.pop_scope();
+
                 function
-                    .map(|function| {
-                        self.names.push_scope();
-                        let function = self.typecheck_function(function);
-                        self.names.pop_scope();
-
-                        function
-                    })
-                    .transpose()?,
-            ),
-        })
+            })),
+        }
     }
 
-    fn typecheck_function(&mut self, function: ast::Function) -> Option<Function> {
-        let sig = &self.functions[&function.name.resolve()];
+    fn typecheck_function(&mut self, function: ast::Function) -> Function {
+        let sig = self
+            .functions
+            .get(&function.name.resolve())
+            .unwrap()
+            .clone();
 
-        sig.0.clone().and_then(|sig| {
-            let params = sig.params;
+        let params = sig.params.clone();
 
-            for param in &params.0 {
-                self.names.insert(param.name.resolve(), param.ty.clone());
+        for param in &params.0 {
+            self.names.insert(param.name.resolve(), param.ty.clone());
+        }
+
+        let return_ty = sig.return_ty.clone();
+
+        let body = function.body.map(|body| self.lower_expression(body));
+
+        {
+            let return_ty_var = self.engine.insert_type(&return_ty.0, return_ty.1);
+            let body_ty = self.engine.insert_type(&body.ty, body.1);
+
+            if self.engine.unify(return_ty_var, body_ty).is_err() {
+                self.errors.push(Error::BodyTypeMismatch {
+                    return_ty: return_ty.0.clone(),
+                    body_ty: body.ty.clone(),
+                    return_span: return_ty.1,
+                    body_span: body.1,
+                });
             }
+        }
 
-            let return_ty = sig.return_ty;
-
-            let body = function
-                .body
-                .map(|body| self.lower_expression(body))
-                .transpose()?;
-
-            {
-                let return_ty_var = self.engine.insert_type(&return_ty.0, return_ty.1);
-                let body_ty = self.engine.insert_type(&body.ty, body.1);
-
-                if self.engine.unify(return_ty_var, body_ty).is_err() {
-                    self.errors.push(Error::BodyTypeMismatch {
-                        return_ty: return_ty.0.clone(),
-                        body_ty: body.ty.clone(),
-                        return_span: return_ty.1,
-                        body_span: body.1,
-                    });
-                }
-            }
-
-            Some(Function {
-                name: function.name,
-                params,
-                return_ty,
-                body,
-            })
-        })
+        Function {
+            name: function.name,
+            params,
+            return_ty,
+            body,
+        }
     }
 
-    fn lower_function_param(&mut self, param: &ast::FunctionParam) -> Option<FunctionParam> {
-        Some(FunctionParam {
+    fn lower_function_param(&mut self, param: &ast::FunctionParam) -> FunctionParam {
+        FunctionParam {
             name: param.name,
-            ty: param
-                .ty
-                .as_ref()
-                .map(|ty| self.lower_type(ty))
-                .transpose()?,
-        })
+            ty: param.ty.as_ref().map(|ty| self.lower_type(ty)),
+        }
     }
 
     #[allow(clippy::too_many_lines)]
-    fn lower_expression(&mut self, expr: ast::Expression) -> Option<TypedExpression> {
-        Some(match expr {
+    fn lower_expression(&mut self, expr: ast::Expression) -> TypedExpression {
+        match expr {
             ast::Expression::Number(value) => TypedExpression {
                 expr: Expression::Number(value),
                 ty: Type::Primitive(Primitive::Number),
@@ -192,17 +164,16 @@ impl Typechecker {
             ast::Expression::Variable(name) => {
                 if name.resolve() == "_" {
                     self.errors.push(Error::UnderscoreVariable { span: name.1 });
-                    return None;
                 }
 
-                let ty = self.names.get(&name.resolve()).cloned().or_else(|| {
+                let ty = self.names.get(&name.resolve()).cloned().unwrap_or_else(|| {
                     self.errors.push(Error::UndefinedVariable {
                         name: name.resolve(),
                         span: name.1,
                     });
 
-                    None
-                })?;
+                    Spanned(Type::Error, name.1)
+                });
 
                 TypedExpression {
                     expr: Expression::Variable(name),
@@ -210,8 +181,8 @@ impl Typechecker {
                 }
             }
             ast::Expression::BinaryOp { op, lhs, rhs } => {
-                let lhs = lhs.map(|lhs| self.lower_expression(*lhs)).transpose()?;
-                let rhs = rhs.map(|rhs| self.lower_expression(*rhs)).transpose()?;
+                let lhs = lhs.map(|lhs| self.lower_expression(*lhs));
+                let rhs = rhs.map(|rhs| self.lower_expression(*rhs));
 
                 let lhs_ty = self.engine.insert_type(&lhs.ty, lhs.1);
                 let rhs_ty = self.engine.insert_type(&rhs.ty, rhs.1);
@@ -225,14 +196,9 @@ impl Typechecker {
                         lhs_span: lhs.1,
                         rhs_span: rhs.1,
                     });
-
-                    return None;
                 }
 
-                let lhs_ty = self.engine.solve(lhs_ty).ok()?;
-                let rhs_ty = self.engine.solve(rhs_ty).ok()?;
-
-                let ty = match (op.0, (&lhs_ty.0, &rhs_ty.0)) {
+                let ty = match (op.0, (&lhs.ty, &lhs.ty)) {
                     (
                         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div,
                         (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number)),
@@ -247,6 +213,7 @@ impl Typechecker {
                         (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number))
                         | (Type::Primitive(Primitive::Bool), Type::Primitive(Primitive::Bool)),
                     ) => Type::Primitive(Primitive::Bool),
+                    (_, (Type::Error, _) | (_, Type::Error)) => Type::Error,
                     _ => {
                         self.errors.push(Error::CantPerformOperation {
                             op: op.0,
@@ -257,7 +224,7 @@ impl Typechecker {
                             rhs_span: rhs.1,
                         });
 
-                        return None;
+                        Type::Error
                     }
                 };
 
@@ -271,7 +238,7 @@ impl Typechecker {
                 }
             }
             ast::Expression::UnaryOp { op, expr } => {
-                let expr = expr.map(|expr| self.lower_expression(*expr)).transpose()?;
+                let expr = expr.map(|expr| self.lower_expression(*expr));
 
                 let ty = match (op.0, &expr.ty) {
                     (ast::UnaryOp::Neg, Type::Primitive(Primitive::Number)) => {
@@ -280,6 +247,7 @@ impl Typechecker {
                     (ast::UnaryOp::Not, Type::Primitive(Primitive::Bool)) => {
                         Type::Primitive(Primitive::Bool)
                     }
+                    (_, Type::Error) => Type::Error,
                     _ => {
                         self.errors.push(Error::CantPerformUnaryOperation {
                             op: op.0,
@@ -288,7 +256,7 @@ impl Typechecker {
                             span: expr.1,
                         });
 
-                        return None;
+                        Type::Error
                     }
                 };
 
@@ -301,19 +269,15 @@ impl Typechecker {
                 }
             }
             ast::Expression::Call { callee, args } => {
-                let callee = callee
-                    .map(|callee| self.lower_expression(*callee))
-                    .transpose()?;
+                let callee = callee.map(|callee| self.lower_expression(*callee));
 
-                let args = args
-                    .map(|args| {
-                        args.into_iter()
-                            .map(|arg| arg.map(|arg| self.lower_expression(arg)).transpose())
-                            .collect::<Option<Vec<_>>>()
-                    })
-                    .transpose()?;
+                let args = args.map(|args| {
+                    args.into_iter()
+                        .map(|arg| arg.map(|arg| self.lower_expression(arg)))
+                        .collect::<Vec<_>>()
+                });
 
-                match callee.ty.clone() {
+                let ty = match callee.ty.clone() {
                     Type::Function { params, return_ty } => {
                         if args.len() != params.len() {
                             self.errors.push(Error::ArgumentCountMismatch {
@@ -338,31 +302,32 @@ impl Typechecker {
                             }
                         }
 
-                        TypedExpression {
-                            expr: Expression::Call {
-                                callee: callee.boxed(),
-                                args,
-                            },
-                            ty: *return_ty.0,
-                        }
+                        *return_ty.0
                     }
+                    Type::Error => Type::Error,
                     ty => {
                         self.errors.push(Error::CantCallType { ty, span: callee.1 });
 
-                        return None;
+                        Type::Error
                     }
+                };
+
+                TypedExpression {
+                    expr: Expression::Call {
+                        callee: callee.boxed(),
+                        args,
+                    },
+                    ty,
                 }
             }
             ast::Expression::Match { expr, arms } => {
-                let expr = expr.map(|expr| self.lower_expression(*expr)).transpose()?;
+                let expr = expr.map(|expr| self.lower_expression(*expr));
 
-                let arms = arms
-                    .map(|arms| {
-                        arms.into_iter()
-                            .map(|arm| arm.map(|arm| self.lower_match_arm(arm)).transpose())
-                            .collect::<Option<Vec<_>>>()
-                    })
-                    .transpose()?;
+                let arms = arms.map(|arms| {
+                    arms.into_iter()
+                        .map(|arm| arm.map(|arm| self.lower_match_arm(arm)))
+                        .collect::<Vec<_>>()
+                });
 
                 let ty = self
                     .engine
@@ -415,86 +380,62 @@ impl Typechecker {
                     ty: self.engine.solve(ty).unwrap().0,
                 }
             }
-        })
+        }
     }
 
-    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> Option<MatchArm> {
-        let pattern = arm
-            .pattern
-            .map(|pattern| {
-                let pattern_type = pattern.pattern_type.map(|pattern| match pattern {
-                    ast::PatternType::Variable(identifier) => PatternType::Variable(identifier),
-                    ast::PatternType::Number(value) => PatternType::Number(value),
-                    ast::PatternType::Bool(value) => PatternType::Bool(value),
-                });
+    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> MatchArm {
+        let pattern = arm.pattern.map(|pattern| {
+            let pattern_type = pattern.pattern_type.map(|pattern_type| match pattern_type {
+                ast::PatternType::Variable(identifier) => PatternType::Variable(identifier),
+                ast::PatternType::Number(value) => PatternType::Number(value),
+                ast::PatternType::Bool(value) => PatternType::Bool(value),
+            });
 
-                let condition = match pattern.condition {
-                    Some(condition) => Some(
-                        condition
-                            .map(|condition| self.lower_expression(condition))
-                            .transpose()?,
-                    ),
-                    None => None,
-                };
+            let condition = pattern
+                .condition
+                .map(|condition| condition.map(|condition| self.lower_expression(condition)));
 
-                Some(Pattern {
-                    pattern_type,
-                    condition,
-                })
-            })
-            .transpose()?;
+            Pattern {
+                pattern_type,
+                condition,
+            }
+        });
 
-        let body = arm
-            .body
-            .map(|body| self.lower_expression(body))
-            .transpose()?;
+        let body = arm.body.map(|body| self.lower_expression(body));
 
-        Some(MatchArm { pattern, body })
+        MatchArm { pattern, body }
     }
 
-    fn lower_type(&mut self, ty: &Type<Identifier>) -> Option<Type<Primitive>> {
-        Some(match ty {
-            Type::Primitive(name) => self
-                .types
-                .get(&name.resolve())
-                .or_else(|| {
+    fn lower_type(&mut self, ty: &Type<Identifier>) -> Type<Primitive> {
+        match ty {
+            Type::Error => Type::Error,
+            Type::Primitive(name) => {
+                self.types.get(&name.resolve()).cloned().unwrap_or_else(|| {
                     self.errors.push(Error::UndefinedType {
                         name: name.resolve(),
                         span: name.1,
                     });
 
-                    None
-                })?
-                .clone(),
+                    Type::Error
+                })
+            }
             Type::Tuple(inner) => Type::Tuple(
                 inner
                     .iter()
-                    .map(|ty| ty.as_ref().map(|ty| self.lower_type(ty)).transpose())
-                    .collect::<Option<_>>()?,
+                    .map(|ty| ty.as_ref().map(|ty| self.lower_type(ty)))
+                    .collect(),
             ),
             Type::Never => Type::Never,
             Type::Function { params, return_ty } => Type::Function {
-                params: params
-                    .as_ref()
-                    .map(|params| {
-                        params
-                            .iter()
-                            .map(|param| {
-                                param
-                                    .as_ref()
-                                    .map(|param| self.lower_type(param))
-                                    .transpose()
-                            })
-                            .collect::<Option<_>>()
-                    })
-                    .transpose()?,
-                return_ty: return_ty
-                    .as_ref()
-                    .map(|ty| self.lower_type(ty))
-                    .transpose()?
-                    .boxed(),
+                params: params.as_ref().map(|params| {
+                    params
+                        .iter()
+                        .map(|param| param.as_ref().map(|param| self.lower_type(param)))
+                        .collect()
+                }),
+                return_ty: return_ty.as_ref().map(|ty| self.lower_type(ty)).boxed(),
             },
-        })
+        }
     }
 }
 
@@ -520,6 +461,7 @@ impl Engine {
 
     fn insert_type(&mut self, ty: &Type<Primitive>, span: Span) -> TyVar {
         let info = match ty {
+            Type::Error => TyInfo::Unknown,
             Type::Primitive(primitive) => TyInfo::Primitive(*primitive),
             Type::Tuple(inner) => TyInfo::Tuple(
                 inner

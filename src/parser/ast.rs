@@ -113,6 +113,7 @@ impl core::fmt::Display for UnaryOp {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type<P> {
+    Error,
     Primitive(P),
     Tuple(Vec<Spanned<Type<P>>>),
     Never,
@@ -125,6 +126,7 @@ pub enum Type<P> {
 impl<P: core::fmt::Display> core::fmt::Display for Type<P> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::Error => write!(f, "<error>"),
             Self::Primitive(primitive) => write!(f, "{primitive}"),
             Self::Tuple(inner) => {
                 write!(f, "(")?;
