@@ -359,15 +359,7 @@ impl Typechecker {
                 let arms = arms
                     .map(|arms| {
                         arms.into_iter()
-                            .map(|arm| {
-                                arm.map(|arm| {
-                                    self.lower_match_arm(
-                                        arm,
-                                        expr.as_ref().map(|expr| expr.ty.clone()),
-                                    )
-                                })
-                                .transpose()
-                            })
+                            .map(|arm| arm.map(|arm| self.lower_match_arm(arm)).transpose())
                             .collect::<Option<Vec<_>>>()
                     })
                     .transpose()?;
@@ -390,6 +382,29 @@ impl Typechecker {
                             whole_span: expr.1.union(arms.1),
                         });
                     }
+
+                    let pattern_ty =
+                        arm.pattern
+                            .pattern_type
+                            .as_ref()
+                            .map(|pattern_type| match pattern_type {
+                                PatternType::Variable(_) => expr.ty.clone(),
+                                PatternType::Number(_) => Type::Primitive(Primitive::Number),
+                                PatternType::Bool(_) => Type::Primitive(Primitive::Bool),
+                            });
+
+                    let pattern_ty_var = self.engine.insert_type(&pattern_ty.0, pattern_ty.1);
+
+                    let expr_ty = self.engine.insert_type(&expr.ty, expr.1);
+
+                    if self.engine.unify(pattern_ty_var, expr_ty).is_err() {
+                        self.errors.push(Error::PatternTypeMismatch {
+                            expected: expr.ty.clone(),
+                            pattern: pattern_ty.0,
+                            expected_span: expr.1,
+                            pattern_span: pattern_ty.1,
+                        });
+                    }
                 }
 
                 TypedExpression {
@@ -403,11 +418,7 @@ impl Typechecker {
         })
     }
 
-    fn lower_match_arm(
-        &mut self,
-        arm: ast::MatchArm,
-        expected_pattern_type: Spanned<Type<Primitive>>,
-    ) -> Option<MatchArm> {
+    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> Option<MatchArm> {
         let pattern = arm
             .pattern
             .map(|pattern| {
@@ -416,40 +427,6 @@ impl Typechecker {
                     ast::PatternType::Number(value) => PatternType::Number(value),
                     ast::PatternType::Bool(value) => PatternType::Bool(value),
                 });
-
-                let pattern_ty = match pattern_type.0 {
-                    PatternType::Variable(identifier) => {
-                        self.names.insert(
-                            identifier.resolve(),
-                            expected_pattern_type.clone().map_span(|_| pattern_type.1),
-                        );
-
-                        expected_pattern_type.0.clone()
-                    }
-                    PatternType::Number(_) => Type::Primitive(Primitive::Number),
-                    PatternType::Bool(_) => Type::Primitive(Primitive::Bool),
-                };
-
-                let pattern_ty_var = self.engine.insert_type(&pattern_ty, pattern_type.1);
-
-                let expected_pattern_ty_var = self
-                    .engine
-                    .insert_type(&expected_pattern_type.0, expected_pattern_type.1);
-
-                if self
-                    .engine
-                    .unify(pattern_ty_var, expected_pattern_ty_var)
-                    .is_err()
-                {
-                    self.errors.push(Error::PatternTypeMismatch {
-                        expected: expected_pattern_type.0,
-                        found: pattern_ty,
-                        expected_span: expected_pattern_type.1,
-                        found_span: pattern_type.1,
-                    });
-
-                    return None;
-                }
 
                 let condition = match pattern.condition {
                     Some(condition) => Some(

@@ -87,9 +87,9 @@ pub enum Error {
     },
     PatternTypeMismatch {
         expected: Type<Primitive>,
-        found: Type<Primitive>,
+        pattern: Type<Primitive>,
         expected_span: Span,
-        found_span: Span,
+        pattern_span: Span,
     },
     UnderscoreVariable {
         span: Span,
@@ -226,13 +226,13 @@ impl Diag for Error {
             }
             Self::PatternTypeMismatch {
                 expected,
-                found,
+                pattern,
                 expected_span: _,
-                found_span: _,
+                pattern_span: _,
             } => format!(
-                "Expected a pattern of type {}, but found {}",
+                "Matching over a value of type {}, but the pattern is of type {}",
                 expected.yellow(),
-                found.yellow()
+                pattern.yellow()
             )
             .into(),
             Self::UnderscoreVariable { span: _ } => {
@@ -373,18 +373,15 @@ impl Diag for Error {
             )],
             Self::PatternTypeMismatch {
                 expected,
-                found,
+                pattern,
                 expected_span,
-                found_span,
+                pattern_span: found_span,
             } => vec![
                 ErrorSpan::primary_message(
-                    format!("This expression is of type: {expected}"),
+                    format!("Matching over a value of type: {expected}"),
                     *expected_span,
                 ),
-                ErrorSpan::primary_message(
-                    format!("This pattern is of type: {found}"),
-                    *found_span,
-                ),
+                ErrorSpan::primary_message(format!("Pattern is of type: {pattern}"), *found_span),
             ],
             Self::UnderscoreVariable { span } => vec![ErrorSpan::primary(*span)],
         }
