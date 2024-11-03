@@ -45,12 +45,19 @@ fn function_parser<'src: 'tok, 'tok>(
         .allow_trailing()
         .collect()
         .parenthesized()
-        .with_span();
+        .with_span()
+        .boxed()
+        .labelled("function parameters");
 
-    let return_ty =
-        just(Token::Simple(SimpleToken::Punc(Punc::Arrow))).ignore_then(type_parser().with_span());
+    let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
+        .ignore_then(type_parser().with_span())
+        .boxed()
+        .labelled("return type");
 
-    let body = expression_parser().with_span();
+    let body = expression_parser()
+        .with_span()
+        .boxed()
+        .labelled("function body");
 
     just(Token::Simple(SimpleToken::Kw(Kw::Func)))
         .ignore_then(name)
@@ -65,6 +72,7 @@ fn function_parser<'src: 'tok, 'tok>(
             body,
         })
         .boxed()
+        .labelled("function")
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(
@@ -75,6 +83,7 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .then(type_parser().with_span())
         .map(|(name, ty)| FunctionParam { name, ty })
         .boxed()
+        .labelled("function parameter")
 }
 
 macro_rules! unary_op {
@@ -142,15 +151,20 @@ fn expression_parser<'src: 'tok, 'tok>(
             Token::Simple(SimpleToken::Number(num)) => num,
         }
         .map(Expression::Number)
-        .boxed();
+        .boxed()
+        .labelled("number");
 
         let bool = select! {
             Token::Simple(SimpleToken::Boolean(bool)) => bool,
         }
         .map(Expression::Bool)
-        .boxed();
+        .boxed()
+        .labelled("boolean");
 
-        let variable = ident_parser().map(Expression::Variable).boxed();
+        let variable = ident_parser()
+            .map(Expression::Variable)
+            .boxed()
+            .labelled("variable");
 
         let call_args = expression
             .clone()
@@ -160,7 +174,8 @@ fn expression_parser<'src: 'tok, 'tok>(
             .collect()
             .parenthesized()
             .with_span()
-            .boxed();
+            .boxed()
+            .labelled("call arguments");
 
         let call = choice((variable.clone(), expression.clone().parenthesized()))
             .with_span()
@@ -169,7 +184,8 @@ fn expression_parser<'src: 'tok, 'tok>(
                 callee: callee.boxed(),
                 args,
             })
-            .boxed();
+            .boxed()
+            .labelled("function call");
 
         let pattern = choice((
             just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
@@ -187,7 +203,9 @@ fn expression_parser<'src: 'tok, 'tok>(
             pattern_type,
             condition,
         })
-        .with_span();
+        .with_span()
+        .boxed()
+        .labelled("pattern");
 
         let match_arm = just(Token::Simple(SimpleToken::Punc(Punc::Pipe)))
             .ignore_then(pattern)
@@ -195,7 +213,8 @@ fn expression_parser<'src: 'tok, 'tok>(
             .then(expression.clone().with_span())
             .map(|(pattern, body)| MatchArm { pattern, body })
             .with_span()
-            .boxed();
+            .boxed()
+            .labelled("match arm");
 
         let match_ = just(Token::Simple(SimpleToken::Kw(Kw::Match)))
             .ignore_then(expression.clone().with_span())
@@ -203,13 +222,16 @@ fn expression_parser<'src: 'tok, 'tok>(
             .map(|(expr, arms)| Expression::Match {
                 expr: expr.boxed(),
                 arms,
-            });
+            })
+            .boxed()
+            .labelled("match expression");
 
         let parenthesized = expression
             .with_span()
             .parenthesized()
             .map(|expr| expr.0)
-            .boxed();
+            .boxed()
+            .labelled("parenthesized expression");
 
         let atom = choice((parenthesized, match_, call, number, bool, variable)).boxed();
 
@@ -218,7 +240,8 @@ fn expression_parser<'src: 'tok, 'tok>(
             Punc::Minus => UnaryOp::Neg,
             Punc::Bang => UnaryOp::Not,
         )
-        .boxed();
+        .boxed()
+        .labelled("unary expression");
 
         let equality = binary_op!(
             unary,
@@ -251,6 +274,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         .boxed()
     })
     .boxed()
+    .labelled("expression")
 }
 
 fn ident_parser<'src: 'tok, 'tok>(
@@ -259,16 +283,21 @@ fn ident_parser<'src: 'tok, 'tok>(
         Token::Simple(SimpleToken::Identifier(ident)) => ident
     }
     .boxed()
+    .labelled("identifier")
 }
 
 fn type_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Type<Identifier>, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
-        let prim = ident_parser().map(Type::Primitive).boxed();
+        let prim = ident_parser()
+            .map(Type::Primitive)
+            .boxed()
+            .labelled("primitive type");
 
         let never = just(Token::Simple(SimpleToken::Punc(Punc::Bang)))
             .to(Type::Never)
-            .boxed();
+            .boxed()
+            .labelled("never type");
 
         let function = {
             let params = type_
@@ -288,14 +317,16 @@ fn type_parser<'src: 'tok, 'tok>(
             just(Token::Simple(SimpleToken::Kw(Kw::Func)))
                 .ignore_then(params)
                 .then(return_ty)
+                .boxed()
         }
         .map(|(params, return_ty)| Type::Function {
             params,
             return_ty: return_ty.boxed(),
         })
-        .boxed();
+        .boxed()
+        .labelled("function type");
 
-        choice((prim, never, function)).boxed()
+        choice((prim, never, function)).boxed().labelled("type")
     })
 }
 

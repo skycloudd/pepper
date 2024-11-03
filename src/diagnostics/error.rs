@@ -94,18 +94,31 @@ pub enum Error {
 }
 
 impl Diag for Error {
-    #[allow(clippy::too_many_lines)]
     fn message(&self) -> Cow<str> {
         match self {
             Self::ExpectedFound {
                 expected,
                 found,
                 span: _,
-            } => format!(
-                "Expected one of {}, but found {}",
-                expected.join(", "),
-                found.as_deref().unwrap_or("end of file")
-            )
+            } => if expected.is_empty() {
+                "Unexpected end of file".to_string()
+            } else if expected.len() == 1 {
+                format!(
+                    "Expected {}, but found {}",
+                    expected[0].green(),
+                    found.as_deref().unwrap_or("something else")
+                )
+            } else {
+                format!(
+                    "Expected one of {}, but found {}",
+                    expected
+                        .iter()
+                        .map(|expected| expected.green().to_string())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    found.as_deref().unwrap_or("something else")
+                )
+            }
             .into(),
             Self::Custom { message, span: _ } => message.into(),
             Self::FunctionRedefinition {
@@ -235,7 +248,6 @@ impl Diag for Error {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     fn spans(&self) -> Vec<ErrorSpan> {
         #[allow(clippy::match_same_arms)]
         match self {
@@ -243,10 +255,10 @@ impl Diag for Error {
                 expected: _,
                 found,
                 span,
-            } => vec![ErrorSpan::primary_message(
-                format!("Found {}", found.as_deref().unwrap_or("end of file")),
-                *span,
-            )],
+            } => found.as_ref().map_or_else(
+                || vec![ErrorSpan::primary(*span)],
+                |found| vec![ErrorSpan::primary_message(format!("Found {found}"), *span)],
+            ),
             Self::Custom { message: _, span } | Self::UndefinedVariable { name: _, span } => {
                 vec![ErrorSpan::primary(*span)]
             }

@@ -150,7 +150,6 @@ impl Typechecker {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     fn lower_expression(&mut self, expr: ast::Expression) -> TypedExpression {
         match expr {
             ast::Expression::Number(value) => TypedExpression {
