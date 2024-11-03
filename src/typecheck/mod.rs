@@ -24,6 +24,7 @@ struct Typechecker {
     functions: Scopes<&'static str, Spanned<FunctionSignature>>,
     types: Scopes<&'static str, Type<Primitive>>,
     engine: Engine,
+    found_main: bool,
 }
 
 impl Typechecker {
@@ -34,6 +35,10 @@ impl Typechecker {
             match &toplevel.0 {
                 ast::TopLevel::Function(function) => self.insert_function_signature(function),
             }
+        }
+
+        if !self.found_main {
+            self.errors.push(Error::MainNotFound);
         }
 
         (
@@ -57,6 +62,24 @@ impl Typechecker {
         let function_type = function
             .as_ref()
             .map(|function| self.function_signature(function));
+
+        if function.name.resolve() == "main" {
+            self.found_main = true;
+
+            let params_wrong = !function_type.params.is_empty();
+            let return_ty_wrong = function_type.return_ty.0 != Type::Primitive(Primitive::Number);
+
+            if params_wrong || return_ty_wrong {
+                self.errors.push(Error::MainSignatureMismatch {
+                    num_params: function_type.params.0.len(),
+                    return_ty: function_type.return_ty.0.clone(),
+                    params_spans: function_type.params.1,
+                    return_ty_span: function_type.return_ty.1,
+                    params_wrong,
+                    return_ty_wrong,
+                });
+            }
+        }
 
         let ty = Type::Function {
             params: function_type

@@ -91,6 +91,15 @@ pub enum Error {
         expected_span: Span,
         pattern_span: Span,
     },
+    MainNotFound,
+    MainSignatureMismatch {
+        num_params: usize,
+        return_ty: Type<Primitive>,
+        params_spans: Span,
+        return_ty_span: Span,
+        params_wrong: bool,
+        return_ty_wrong: bool,
+    },
 }
 
 impl Diag for Error {
@@ -245,6 +254,15 @@ impl Diag for Error {
                 pattern.yellow()
             )
             .into(),
+            Self::MainNotFound => "No main function is defined".into(),
+            Self::MainSignatureMismatch {
+                num_params: _,
+                return_ty: _,
+                params_spans: _,
+                return_ty_span: _,
+                params_wrong: _,
+                return_ty_wrong: _,
+            } => "Wrong signature for the main function".into(),
         }
     }
 
@@ -389,6 +407,36 @@ impl Diag for Error {
                 ),
                 ErrorSpan::primary_message(format!("Pattern is of type: {pattern}"), *found_span),
             ],
+            Self::MainNotFound => vec![],
+            Self::MainSignatureMismatch {
+                num_params,
+                return_ty,
+                params_spans,
+                return_ty_span,
+                params_wrong,
+                return_ty_wrong,
+            } => {
+                let mut spans = vec![];
+
+                if *params_wrong {
+                    spans.push(ErrorSpan::primary_message(
+                        format!(
+                            "{num_params} parameter{} defined here, but the main function should have none",
+                            if *num_params == 1 { " is" } else { "s are" }
+                        ),
+                        *params_spans,
+                    ));
+                }
+
+                if *return_ty_wrong {
+                    spans.push(ErrorSpan::primary_message(
+                        format!("The return type is {return_ty}, but it should be number"),
+                        *return_ty_span,
+                    ));
+                }
+
+                spans
+            }
         }
     }
 
@@ -402,6 +450,19 @@ impl Diag for Error {
                     "Outputs of match expressions must all evaluate to the same type"
                 )]
             }
+            Self::MainNotFound => {
+                vec![
+                    format!("The main function is the entry point of the program"),
+                    format!(
+                        "It must have the following signature: {}",
+                        "func main() -> number".yellow()
+                    ),
+                ]
+            }
+            Self::MainSignatureMismatch { .. } => vec![format!(
+                "The main function should have the following signature: {}",
+                "func main() -> number".yellow()
+            )],
             Self::ExpectedFound { .. }
             | Self::Custom { .. }
             | Self::UndefinedVariable { .. }
