@@ -166,27 +166,6 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("variable");
 
-        let call_args = expression
-            .clone()
-            .with_span()
-            .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
-            .allow_trailing()
-            .collect()
-            .parenthesized()
-            .with_span()
-            .boxed()
-            .labelled("call arguments");
-
-        let call = choice((variable.clone(), expression.clone().parenthesized()))
-            .with_span()
-            .then(call_args)
-            .map(|(callee, args)| Expression::Call {
-                callee: callee.boxed(),
-                args,
-            })
-            .boxed()
-            .labelled("function call");
-
         let pattern = choice((
             just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
@@ -227,16 +206,45 @@ fn expression_parser<'src: 'tok, 'tok>(
             .labelled("match expression");
 
         let parenthesized = expression
+            .clone()
             .with_span()
             .parenthesized()
             .map(|expr| expr.0)
             .boxed()
             .labelled("parenthesized expression");
 
-        let atom = choice((parenthesized, match_, call, number, bool, variable)).boxed();
+        let atom = choice((parenthesized, match_, number, bool, variable)).boxed();
+
+        let call_args = expression
+            .clone()
+            .with_span()
+            .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+            .allow_trailing()
+            .collect()
+            .parenthesized()
+            .with_span()
+            .boxed()
+            .labelled("call arguments");
+
+        let call = atom
+            .with_span()
+            .foldl(call_args.repeated(), |callee, args| {
+                let span = callee.1.union(args.1);
+
+                Spanned::new(
+                    Expression::Call {
+                        callee: callee.boxed(),
+                        args,
+                    },
+                    span,
+                )
+            })
+            .map(|expr| expr.0)
+            .boxed()
+            .labelled("function call");
 
         let unary = unary_op!(
-            atom,
+            call,
             Punc::Minus => UnaryOp::Neg,
             Punc::Bang => UnaryOp::Not,
         )
