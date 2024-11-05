@@ -19,7 +19,12 @@ func fib(n: number) -> number =
     | n where n < 2 => n
     | _ => fib(n - 1) + fib(n - 2)
 
-func bool_to_number(b: bool) -> number =
+func b_to_n(b: bool) -> number =
     match b
     | true => 1
     | false => 0
+
+func n_to_b(n: number) -> bool =
+    match n
+    | 0 => false
+    | _ => true
