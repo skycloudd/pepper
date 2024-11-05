@@ -1,12 +1,12 @@
 use crate::{
     lexer::tokens::Identifier,
-    parser::ast,
+    parser::ast::{self, BinaryOp},
     scopes::Scopes,
     typecheck::typed_ast::{self, TypedAst},
 };
 use mir::{
-    Expression, FuncParam, Function, MatchArm, Mir, Name, Pattern, PatternType, Primitive, Type,
-    TypedExpression,
+    Expression, FuncParam, Function, Intrinsic, MatchArm, Mir, Name, Pattern, PatternType,
+    Primitive, Type, TypedExpression,
 };
 
 pub mod mir;
@@ -80,15 +80,40 @@ impl Lower {
                 typed_ast::Expression::Variable(identifier) => {
                     Expression::Variable(self.get_name(&identifier))
                 }
-                typed_ast::Expression::BinaryOp { op, lhs, rhs } => Expression::BinaryOp {
-                    op: op.0,
-                    lhs: Box::new(self.lower_expression(*lhs.0)),
-                    rhs: Box::new(self.lower_expression(*rhs.0)),
-                },
-                typed_ast::Expression::UnaryOp { op, expr } => Expression::UnaryOp {
-                    op: op.0,
-                    expr: Box::new(self.lower_expression(*expr.0)),
-                },
+                typed_ast::Expression::BinaryOp { op, lhs, rhs } => {
+                    let lhs = self.lower_expression(*lhs.0);
+                    let rhs = self.lower_expression(*rhs.0);
+
+                    Expression::Intrinsic(Box::new(bin_op_intrinsics! {
+                        op.0, &lhs.ty, &rhs.ty,
+                        Add, Number => Intrinsic::add_numbers(lhs, rhs),
+                        Sub, Number => Intrinsic::sub_numbers(lhs, rhs),
+                        Mul, Number => Intrinsic::mul_numbers(lhs, rhs),
+                        Div, Number => Intrinsic::div_numbers(lhs, rhs),
+                        LessEquals, Number => Intrinsic::lte_numbers(lhs, rhs),
+                        GreaterEquals, Number => Intrinsic::gte_numbers(lhs, rhs),
+                        Less, Number => Intrinsic::lt_numbers(lhs, rhs),
+                        Greater, Number => Intrinsic::gt_numbers(lhs, rhs),
+                        Equals, Number => Intrinsic::eq_numbers(lhs, rhs),
+                        NotEquals, Number => Intrinsic::neq_numbers(lhs, rhs),
+                        Equals, Bool => Intrinsic::eq_bools(lhs, rhs),
+                        NotEquals, Bool => Intrinsic::neq_bools(lhs, rhs),
+                    }))
+                }
+                typed_ast::Expression::UnaryOp { op, expr } => {
+                    let expr = self.lower_expression(*expr.0);
+
+                    Expression::Intrinsic(Box::new(match (&expr.ty, op.0) {
+                        (Type::Primitive(Primitive::Number), ast::UnaryOp::Neg) => {
+                            Intrinsic::neg_number(expr)
+                        }
+                        (Type::Primitive(Primitive::Bool), ast::UnaryOp::Not) => {
+                            Intrinsic::not_bool(expr)
+                        }
+
+                        _ => unreachable!(),
+                    }))
+                }
                 typed_ast::Expression::Call { callee, args } => Expression::Call {
                     callee: Box::new(self.lower_expression(*callee.0)),
                     args: args
@@ -180,3 +205,18 @@ impl Lower {
         Name::new(counter)
     }
 }
+
+macro_rules! bin_op_intrinsics {
+    (
+        $op:expr, $lhs_ty:expr, $rhs_ty:expr,
+        $($op_name:ident, $ty_name:ident => $intrinsic:expr,)* $(,)?
+    ) => {
+        match ($op, $lhs_ty, $rhs_ty) {
+            $(
+                (BinaryOp::$op_name, Type::Primitive(Primitive::$ty_name), Type::Primitive(Primitive::$ty_name)) => $intrinsic,
+            )*
+            _ => unreachable!(),
+        }
+    };
+}
+use bin_op_intrinsics;

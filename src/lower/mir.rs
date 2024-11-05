@@ -1,4 +1,4 @@
-use crate::parser::ast::{BinaryOp, UnaryOp};
+#![allow(dead_code)]
 
 #[derive(Clone, Debug)]
 pub struct Mir {
@@ -30,15 +30,7 @@ pub enum Expression {
     Number(f64),
     Bool(bool),
     Variable(Name),
-    BinaryOp {
-        op: BinaryOp,
-        lhs: Box<TypedExpression>,
-        rhs: Box<TypedExpression>,
-    },
-    UnaryOp {
-        op: UnaryOp,
-        expr: Box<TypedExpression>,
-    },
+    Intrinsic(Box<Intrinsic>),
     Call {
         callee: Box<TypedExpression>,
         args: Vec<TypedExpression>,
@@ -69,7 +61,7 @@ pub enum PatternType {
     Bool(bool),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type<P> {
     Error,
     Primitive(P),
@@ -81,7 +73,7 @@ pub enum Type<P> {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Primitive {
     Number,
     Bool,
@@ -95,3 +87,64 @@ impl Name {
         Self(id)
     }
 }
+
+bin_op_intrinsics! {
+    AddNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    SubNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    MulNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    DivNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    EqNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    NeqNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    LtNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    LteNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    GtNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    GteNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
+    NegNumber { expr }, Type::Primitive(Primitive::Number),
+    EqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
+    NeqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
+    NotBool { expr }, Type::Primitive(Primitive::Bool),
+}
+
+macro_rules! bin_op_intrinsics {
+    (
+        $(
+            $name:ident { $($field:ident),* $(,)? },
+            $sub_expr_ty:expr,
+        )* $(,)?
+    ) => {
+        #[derive(Clone, Debug)]
+        pub enum Intrinsic {
+            $(
+                $name($name),
+            )*
+        }
+
+        $(
+            #[derive(Clone, Debug)]
+            pub struct $name {
+                $(pub $field: TypedExpression,)*
+            }
+
+            impl $name {
+                pub fn new($($field: TypedExpression,)*) -> Self {
+                    $(
+                        assert_eq!($field.ty, $sub_expr_ty);
+                    )*
+
+                    Self { $($field,)* }
+                }
+            }
+        )*
+
+        paste::paste! {
+            impl Intrinsic {
+                $(
+                    pub fn [<$name:snake>]($($field: TypedExpression,)*) -> Self {
+                        Self::$name($name::new($($field,)*))
+                    }
+                )*
+            }
+        }
+    };
+}
+use bin_op_intrinsics;

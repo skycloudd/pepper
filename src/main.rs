@@ -10,6 +10,7 @@ use codespan_reporting::{
 };
 use diagnostics::{error::convert, report::report};
 use lasso::ThreadedRodeo;
+use lower::mir::Mir;
 use span::{FileId, Span};
 use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
 
@@ -31,6 +32,16 @@ struct Args {
 fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     let args = Args::parse();
 
+    run_mir(&args)?.map_or_else(
+        || Ok(ExitCode::FAILURE),
+        |mir| {
+            println!("{mir:#?}");
+            Ok(ExitCode::SUCCESS)
+        },
+    )
+}
+
+fn run_mir(args: &Args) -> Result<Option<Mir>, Box<dyn core::error::Error>> {
     if !args.filename.is_file() {
         return Err(format!("'{}' is not a file", args.filename).into());
     }
@@ -86,10 +97,8 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     if errors.is_empty() {
         let mir = lower::lower(typed_ast.unwrap());
 
-        println!("{mir:#?}");
-
-        Ok(ExitCode::SUCCESS)
+        Ok(Some(mir))
     } else {
-        Ok(ExitCode::FAILURE)
+        Ok(None)
     }
 }
