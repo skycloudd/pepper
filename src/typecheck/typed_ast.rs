@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::{
     lexer::tokens::Identifier,
     parser::ast::{BinaryOp, Type, UnaryOp},

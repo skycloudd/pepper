@@ -15,6 +15,7 @@ use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
 
 pub mod diagnostics;
 mod lexer;
+mod lower;
 mod parser;
 pub mod scopes;
 pub mod span;
@@ -63,7 +64,7 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
 
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
-    let (_typed_ast, typecheck_errors) = ast.map_or_else(
+    let (typed_ast, typecheck_errors) = ast.map_or_else(
         || (None, vec![]),
         |ast| {
             let (typed_ast, errors) = typecheck::typecheck(ast);
@@ -83,6 +84,10 @@ fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
     }
 
     if errors.is_empty() {
+        let mir = lower::lower(typed_ast.unwrap());
+
+        println!("{mir:#?}");
+
         Ok(ExitCode::SUCCESS)
     } else {
         Ok(ExitCode::FAILURE)
