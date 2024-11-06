@@ -1,0 +1,11 @@
+func main() -> number =
+    num(boolean(numm(1)))
+
+func numm(a: number) -> number =
+    a
+
+func boolean(a: number) -> number =
+    a
+
+func num(a: number) -> number =
+    a
