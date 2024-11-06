@@ -1,0 +1,31 @@
+func main() -> number = 0
+
+func add(a: number, b: number) -> number =
+    a + b
+
+func sub(a: number, b: number) -> number =
+    a - b
+
+func mul(a: number, b: number) -> number =
+    a * b
+
+func div(a: number, b: number) -> number =
+    a / b
+
+func eq(a: number, b: number) -> bool =
+    a == b
+
+func ne(a: number, b: number) -> bool =
+    a != b
+
+func lt(a: number, b: number) -> bool =
+    a < b
+
+func lte(a: number, b: number) -> bool =
+    a <= b
+
+func gt(a: number, b: number) -> bool =
+    a > b
+
+func gte(a: number, b: number) -> bool =
+    a >= b

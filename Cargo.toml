@@ -12,6 +12,10 @@ lasso = { version = "0.7.3", features = ["multi-threaded"] }
 owo-colors = "4.1.0"
 paste = "1.0.15"
 rustc-hash = "2.0.0"
+serde = { version = "1.0.214", features = ["derive"] }
+
+[dev-dependencies]
+insta = { version = "1.41.1", features = ["yaml"] }
 
 [lints.rust]
 missing_debug_implementations = "warn"
@@ -25,3 +29,7 @@ std_instead_of_core = "warn"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 too_many_lines = "allow"
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3

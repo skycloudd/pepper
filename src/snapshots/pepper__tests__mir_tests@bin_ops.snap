@@ -1,0 +1,277 @@
+---
+source: src/main.rs
+description: "func main() -> number = 0\n\nfunc add(a: number, b: number) -> number =\n    a + b\n\nfunc sub(a: number, b: number) -> number =\n    a - b\n\nfunc mul(a: number, b: number) -> number =\n    a * b\n\nfunc div(a: number, b: number) -> number =\n    a / b\n\nfunc eq(a: number, b: number) -> bool =\n    a == b\n\nfunc ne(a: number, b: number) -> bool =\n    a != b\n\nfunc lt(a: number, b: number) -> bool =\n    a < b\n\nfunc lte(a: number, b: number) -> bool =\n    a <= b\n\nfunc gt(a: number, b: number) -> bool =\n    a > b\n\nfunc gte(a: number, b: number) -> bool =\n    a >= b"
+expression: mir
+info: tests/mir/bin_ops.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Number: 0
+      ty:
+        Primitive: Number
+  - name: 1
+    params:
+      - name: 11
+        ty:
+          Primitive: Number
+      - name: 12
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Intrinsic:
+          AddNumbers:
+            lhs:
+              expr:
+                Variable: 11
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 12
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 2
+    params:
+      - name: 13
+        ty:
+          Primitive: Number
+      - name: 14
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Intrinsic:
+          SubNumbers:
+            lhs:
+              expr:
+                Variable: 13
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 14
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 3
+    params:
+      - name: 15
+        ty:
+          Primitive: Number
+      - name: 16
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Intrinsic:
+          MulNumbers:
+            lhs:
+              expr:
+                Variable: 15
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 16
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 4
+    params:
+      - name: 17
+        ty:
+          Primitive: Number
+      - name: 18
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Intrinsic:
+          DivNumbers:
+            lhs:
+              expr:
+                Variable: 17
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 18
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 5
+    params:
+      - name: 19
+        ty:
+          Primitive: Number
+      - name: 20
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          EqNumbers:
+            lhs:
+              expr:
+                Variable: 19
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 20
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool
+  - name: 6
+    params:
+      - name: 21
+        ty:
+          Primitive: Number
+      - name: 22
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          NeqNumbers:
+            lhs:
+              expr:
+                Variable: 21
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 22
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool
+  - name: 7
+    params:
+      - name: 23
+        ty:
+          Primitive: Number
+      - name: 24
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LtNumbers:
+            lhs:
+              expr:
+                Variable: 23
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 24
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool
+  - name: 8
+    params:
+      - name: 25
+        ty:
+          Primitive: Number
+      - name: 26
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LteNumbers:
+            lhs:
+              expr:
+                Variable: 25
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 26
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool
+  - name: 9
+    params:
+      - name: 27
+        ty:
+          Primitive: Number
+      - name: 28
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GtNumbers:
+            lhs:
+              expr:
+                Variable: 27
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 28
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool
+  - name: 10
+    params:
+      - name: 29
+        ty:
+          Primitive: Number
+      - name: 30
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GteNumbers:
+            lhs:
+              expr:
+                Variable: 29
+              ty:
+                Primitive: Number
+            rhs:
+              expr:
+                Variable: 30
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Bool

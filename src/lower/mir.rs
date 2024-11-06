@@ -1,11 +1,13 @@
 #![allow(dead_code)]
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct Mir {
     pub functions: Vec<Function>,
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct Function {
     pub name: Name,
     pub params: Vec<FuncParam>,
@@ -14,18 +16,21 @@ pub struct Function {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct FuncParam {
     pub name: Name,
     pub ty: Type<Primitive>,
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct TypedExpression {
     pub expr: Expression,
     pub ty: Type<Primitive>,
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum Expression {
     Number(f64),
     Bool(bool),
@@ -42,18 +47,21 @@ pub enum Expression {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct MatchArm {
     pub pattern: Pattern,
     pub body: TypedExpression,
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct Pattern {
     pub pattern_type: PatternType,
     pub condition: Option<TypedExpression>,
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum PatternType {
     Wildcard,
     Variable(Name),
@@ -62,6 +70,7 @@ pub enum PatternType {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum Type<P> {
     Error,
     Primitive(P),
@@ -74,12 +83,14 @@ pub enum Type<P> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum Primitive {
     Number,
     Bool,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct Name(u32);
 
 impl Name {
@@ -113,6 +124,7 @@ macro_rules! bin_op_intrinsics {
         )* $(,)?
     ) => {
         #[derive(Clone, Debug)]
+        #[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
         pub enum Intrinsic {
             $(
                 $name($name),
@@ -121,6 +133,7 @@ macro_rules! bin_op_intrinsics {
 
         $(
             #[derive(Clone, Debug)]
+            #[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
             pub struct $name {
                 $(pub $field: TypedExpression,)*
             }

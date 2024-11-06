@@ -1,0 +1,3 @@
+func main() -> number = 0
+func yes() -> bool = true
+func no() -> bool = false

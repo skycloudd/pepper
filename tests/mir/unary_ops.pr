@@ -1,0 +1,3 @@
+func main() -> number = 0
+func neg(a: number) -> number = -a
+func not(a: bool) -> bool = !a

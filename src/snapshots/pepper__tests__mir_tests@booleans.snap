@@ -1,0 +1,35 @@
+---
+source: src/main.rs
+description: "func main() -> number = 0\nfunc yes() -> bool = true\nfunc no() -> bool = false"
+expression: mir
+info: tests/mir/booleans.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Number: 0
+      ty:
+        Primitive: Number
+  - name: 1
+    params: []
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Bool: true
+      ty:
+        Primitive: Bool
+  - name: 2
+    params: []
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Bool: false
+      ty:
+        Primitive: Bool

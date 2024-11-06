@@ -102,3 +102,29 @@ fn run_mir(args: &Args) -> Result<Option<Mir>, Box<dyn core::error::Error>> {
         Ok(None)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mir_tests() {
+        for file in std::fs::read_dir("tests/mir").unwrap() {
+            let file = file.unwrap();
+
+            let mir = run_mir(&Args {
+                filename: file.path().try_into().unwrap(),
+            })
+            .unwrap()
+            .unwrap();
+
+            insta::with_settings!({
+                description => std::fs::read_to_string(file.path()).unwrap().trim(),
+                info => &file.path().to_string_lossy(),
+                snapshot_suffix => file.path().file_stem().unwrap().to_string_lossy(),
+            }, {
+                insta::assert_yaml_snapshot!(mir);
+            });
+        }
+    }
+}
