@@ -8,4 +8,10 @@ func boolean(a: number) -> number =
     a
 
 func num(a: number) -> number =
-    a
+    rec_with_args(1, true, numm)
+
+func recursive() -> ! =
+    recursive()
+
+func rec_with_args(a: number, b: bool, c: func (number) -> number) -> number =
+    rec_with_args(a, b, c)

@@ -1,6 +1,6 @@
 ---
 source: src/main.rs
-description: "func main() -> number =\n    num(boolean(numm(1)))\n\nfunc numm(a: number) -> number =\n    a\n\nfunc boolean(a: number) -> number =\n    a\n\nfunc num(a: number) -> number =\n    a"
+description: "func main() -> number =\n    num(boolean(numm(1)))\n\nfunc numm(a: number) -> number =\n    a\n\nfunc boolean(a: number) -> number =\n    a\n\nfunc num(a: number) -> number =\n    rec_with_args(1, true, numm)\n\nfunc recursive() -> ! =\n    recursive()\n\nfunc rec_with_args(a: number, b: bool, c: func (number) -> number) -> number =\n    rec_with_args(a, b, c)"
 expression: mir
 info: tests/mir/function_calls.pr
 snapshot_kind: text
@@ -59,30 +59,6 @@ functions:
         Primitive: Number
   - name: 1
     params:
-      - name: 4
-        ty:
-          Primitive: Number
-    return_ty:
-      Primitive: Number
-    body:
-      expr:
-        Variable: 4
-      ty:
-        Primitive: Number
-  - name: 2
-    params:
-      - name: 5
-        ty:
-          Primitive: Number
-    return_ty:
-      Primitive: Number
-    body:
-      expr:
-        Variable: 5
-      ty:
-        Primitive: Number
-  - name: 3
-    params:
       - name: 6
         ty:
           Primitive: Number
@@ -91,5 +67,130 @@ functions:
     body:
       expr:
         Variable: 6
+      ty:
+        Primitive: Number
+  - name: 2
+    params:
+      - name: 7
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Variable: 7
+      ty:
+        Primitive: Number
+  - name: 3
+    params:
+      - name: 8
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Call:
+          callee:
+            expr:
+              Variable: 5
+            ty:
+              Function:
+                params:
+                  - Primitive: Number
+                  - Primitive: Bool
+                  - Function:
+                      params:
+                        - Primitive: Number
+                      return_ty:
+                        Primitive: Number
+                return_ty:
+                  Primitive: Number
+          args:
+            - expr:
+                Number: 1
+              ty:
+                Primitive: Number
+            - expr:
+                Bool: true
+              ty:
+                Primitive: Bool
+            - expr:
+                Variable: 1
+              ty:
+                Function:
+                  params:
+                    - Primitive: Number
+                  return_ty:
+                    Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 4
+    params: []
+    return_ty: Never
+    body:
+      expr:
+        Call:
+          callee:
+            expr:
+              Variable: 4
+            ty:
+              Function:
+                params: []
+                return_ty: Never
+          args: []
+      ty: Never
+  - name: 5
+    params:
+      - name: 9
+        ty:
+          Primitive: Number
+      - name: 10
+        ty:
+          Primitive: Bool
+      - name: 11
+        ty:
+          Function:
+            params:
+              - Primitive: Number
+            return_ty:
+              Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Call:
+          callee:
+            expr:
+              Variable: 5
+            ty:
+              Function:
+                params:
+                  - Primitive: Number
+                  - Primitive: Bool
+                  - Function:
+                      params:
+                        - Primitive: Number
+                      return_ty:
+                        Primitive: Number
+                return_ty:
+                  Primitive: Number
+          args:
+            - expr:
+                Variable: 9
+              ty:
+                Primitive: Number
+            - expr:
+                Variable: 10
+              ty:
+                Primitive: Bool
+            - expr:
+                Variable: 11
+              ty:
+                Function:
+                  params:
+                    - Primitive: Number
+                  return_ty:
+                    Primitive: Number
       ty:
         Primitive: Number
