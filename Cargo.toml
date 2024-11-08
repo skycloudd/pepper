@@ -12,10 +12,10 @@ lasso = { version = "0.7.3", features = ["multi-threaded"] }
 owo-colors = "4.1.0"
 paste = "1.0.15"
 rustc-hash = "2.0.0"
-serde = { version = "1.0.214", features = ["derive"] }
 
 [dev-dependencies]
 insta = { version = "1.41.1", features = ["yaml"] }
+serde = { version = "1.0.214", features = ["derive"] }
 
 [lints.rust]
 missing_debug_implementations = "warn"
