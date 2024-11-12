@@ -29,16 +29,20 @@ struct Args {
     filename: Utf8PathBuf,
 }
 
-fn main() -> Result<ExitCode, Box<dyn core::error::Error>> {
+fn main() -> ExitCode {
     let args = Args::parse();
 
-    run_mir(&args)?.map_or_else(
-        || Ok(ExitCode::FAILURE),
-        |mir| {
+    match run_mir(&args) {
+        Ok(Some(mir)) => {
             println!("{mir:#?}");
-            Ok(ExitCode::SUCCESS)
-        },
-    )
+            ExitCode::SUCCESS
+        }
+        Ok(None) => ExitCode::FAILURE,
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 fn run_mir(args: &Args) -> Result<Option<Mir>, Box<dyn core::error::Error>> {
@@ -112,11 +116,11 @@ mod tests {
         for file in std::fs::read_dir("tests/mir").unwrap() {
             let file = file.unwrap();
 
-            let mir = run_mir(&Args {
+            let args = Args {
                 filename: file.path().try_into().unwrap(),
-            })
-            .unwrap()
-            .unwrap();
+            };
+
+            let mir = run_mir(&args).unwrap().unwrap();
 
             insta::with_settings!({
                 description => std::fs::read_to_string(file.path()).unwrap().trim(),
