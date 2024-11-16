@@ -113,6 +113,8 @@ bin_op_intrinsics! {
     NegNumber { expr }, Type::Primitive(Primitive::Number),
     EqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
     NeqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
+    AndBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
+    OrBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
     NotBool { expr }, Type::Primitive(Primitive::Bool),
 }
 

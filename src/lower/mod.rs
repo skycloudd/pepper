@@ -17,7 +17,7 @@ pub fn lower(ast: TypedAst) -> Mir {
 
 #[derive(Default)]
 struct Lower {
-    names: Scopes<&'static str, Name>,
+    variables: Scopes<&'static str, Name>,
     counter: u32,
 }
 
@@ -32,7 +32,7 @@ impl Lower {
             .collect::<Vec<_>>();
 
         for function in &functions {
-            self.insert_name(&function.name);
+            self.insert_variable(&function.name);
         }
 
         Mir {
@@ -44,16 +44,16 @@ impl Lower {
     }
 
     fn lower_function(&mut self, function: typed_ast::Function) -> Function {
-        self.names.push_scope();
+        self.variables.push_scope();
 
-        let name = self.get_name(&function.name);
+        let name = self.get_variable(&function.name);
 
         let params = function
             .params
             .0
             .into_iter()
             .map(|parameter| FuncParam {
-                name: self.insert_name(&parameter.name),
+                name: self.insert_variable(&parameter.name),
                 ty: Self::lower_type(parameter.0.ty.0),
             })
             .collect();
@@ -62,7 +62,7 @@ impl Lower {
 
         let body = self.lower_expression(function.body.0);
 
-        self.names.pop_scope();
+        self.variables.pop_scope();
 
         Function {
             name,
@@ -78,7 +78,7 @@ impl Lower {
                 typed_ast::Expression::Number(n) => Expression::Number(n),
                 typed_ast::Expression::Bool(b) => Expression::Bool(b),
                 typed_ast::Expression::Variable(identifier) => {
-                    Expression::Variable(self.get_name(&identifier))
+                    Expression::Variable(self.get_variable(&identifier))
                 }
                 typed_ast::Expression::BinaryOp { op, lhs, rhs } => {
                     let lhs = self.lower_expression(*lhs.0);
@@ -136,12 +136,12 @@ impl Lower {
     }
 
     fn lower_match_arm(&mut self, arm: typed_ast::MatchArm) -> MatchArm {
-        self.names.push_scope();
+        self.variables.push_scope();
 
         let pattern_type = match arm.pattern.pattern_type.0 {
             typed_ast::PatternType::Wildcard => PatternType::Wildcard,
             typed_ast::PatternType::Variable(identifier) => {
-                PatternType::Variable(self.insert_name(&identifier))
+                PatternType::Variable(self.insert_variable(&identifier))
             }
             typed_ast::PatternType::Number(n) => PatternType::Number(n),
             typed_ast::PatternType::Bool(b) => PatternType::Bool(b),
@@ -160,7 +160,7 @@ impl Lower {
 
         let body = self.lower_expression(arm.body.0);
 
-        self.names.pop_scope();
+        self.variables.pop_scope();
 
         MatchArm { pattern, body }
     }
@@ -191,17 +191,22 @@ impl Lower {
         }
     }
 
-    fn get_name(&self, ident: &Identifier) -> Name {
-        self.names
+    fn get_variable(&self, ident: &Identifier) -> Name {
+        self.variables
             .get(&ident.resolve())
             .copied()
             .unwrap_or_else(|| panic!("name not found: {ident:?}"))
     }
 
-    fn insert_name(&mut self, ident: &Identifier) -> Name {
+    fn insert_variable(&mut self, ident: &Identifier) -> Name {
+        let name = self.new_name();
+        self.variables.insert(ident.resolve(), name);
+        name
+    }
+
+    fn new_name(&mut self) -> Name {
         let counter = self.counter;
         self.counter = self.counter.checked_add(1).unwrap();
-        self.names.insert(ident.resolve(), Name::new(counter));
         Name::new(counter)
     }
 }
