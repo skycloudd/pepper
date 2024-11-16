@@ -1,0 +1,142 @@
+---
+source: src/main.rs
+description: "func main() -> number =\n    fib(10)\n\nfunc fib(n: number) -> number =\n    match n\n    | x where x < 2 => x\n    | _ => fib(n - 1) + fib(n - 2)"
+expression: mir
+info: tests/mir/fib.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Call:
+          callee:
+            expr:
+              Variable: 1
+            ty:
+              Function:
+                params:
+                  - Primitive: Number
+                return_ty:
+                  Primitive: Number
+          args:
+            - expr:
+                Number: 10
+              ty:
+                Primitive: Number
+      ty:
+        Primitive: Number
+  - name: 1
+    params:
+      - name: 2
+        ty:
+          Primitive: Number
+    return_ty:
+      Primitive: Number
+    body:
+      expr:
+        Match:
+          expr:
+            expr:
+              Variable: 2
+            ty:
+              Primitive: Number
+          arms:
+            - pattern:
+                pattern_type:
+                  Variable: 3
+                condition:
+                  expr:
+                    Intrinsic:
+                      LtNumbers:
+                        lhs:
+                          expr:
+                            Variable: 3
+                          ty:
+                            Primitive: Number
+                        rhs:
+                          expr:
+                            Number: 2
+                          ty:
+                            Primitive: Number
+                  ty:
+                    Primitive: Bool
+              body:
+                expr:
+                  Variable: 3
+                ty:
+                  Primitive: Number
+            - pattern:
+                pattern_type: Wildcard
+                condition: ~
+              body:
+                expr:
+                  Intrinsic:
+                    AddNumbers:
+                      lhs:
+                        expr:
+                          Call:
+                            callee:
+                              expr:
+                                Variable: 1
+                              ty:
+                                Function:
+                                  params:
+                                    - Primitive: Number
+                                  return_ty:
+                                    Primitive: Number
+                            args:
+                              - expr:
+                                  Intrinsic:
+                                    SubNumbers:
+                                      lhs:
+                                        expr:
+                                          Variable: 2
+                                        ty:
+                                          Primitive: Number
+                                      rhs:
+                                        expr:
+                                          Number: 1
+                                        ty:
+                                          Primitive: Number
+                                ty:
+                                  Primitive: Number
+                        ty:
+                          Primitive: Number
+                      rhs:
+                        expr:
+                          Call:
+                            callee:
+                              expr:
+                                Variable: 1
+                              ty:
+                                Function:
+                                  params:
+                                    - Primitive: Number
+                                  return_ty:
+                                    Primitive: Number
+                            args:
+                              - expr:
+                                  Intrinsic:
+                                    SubNumbers:
+                                      lhs:
+                                        expr:
+                                          Variable: 2
+                                        ty:
+                                          Primitive: Number
+                                      rhs:
+                                        expr:
+                                          Number: 2
+                                        ty:
+                                          Primitive: Number
+                                ty:
+                                  Primitive: Number
+                        ty:
+                          Primitive: Number
+                ty:
+                  Primitive: Number
+      ty:
+        Primitive: Number
