@@ -75,7 +75,8 @@ impl Lower {
     fn lower_expression(&mut self, expr: typed_ast::TypedExpression) -> TypedExpression {
         TypedExpression {
             expr: match expr.expr {
-                typed_ast::Expression::Number(n) => Expression::Number(n),
+                typed_ast::Expression::Int(n) => Expression::Int(n),
+                typed_ast::Expression::Float(n) => Expression::Float(n),
                 typed_ast::Expression::Bool(b) => Expression::Bool(b),
                 typed_ast::Expression::Variable(identifier) => {
                     Expression::Variable(self.get_variable(&identifier))
@@ -86,16 +87,26 @@ impl Lower {
 
                     Expression::Intrinsic(Box::new(bin_op_intrinsics! {
                         op.0, &lhs.ty, &rhs.ty,
-                        Add, Number => Intrinsic::add_numbers(lhs, rhs),
-                        Sub, Number => Intrinsic::sub_numbers(lhs, rhs),
-                        Mul, Number => Intrinsic::mul_numbers(lhs, rhs),
-                        Div, Number => Intrinsic::div_numbers(lhs, rhs),
-                        LessEquals, Number => Intrinsic::lte_numbers(lhs, rhs),
-                        GreaterEquals, Number => Intrinsic::gte_numbers(lhs, rhs),
-                        Less, Number => Intrinsic::lt_numbers(lhs, rhs),
-                        Greater, Number => Intrinsic::gt_numbers(lhs, rhs),
-                        Equals, Number => Intrinsic::eq_numbers(lhs, rhs),
-                        NotEquals, Number => Intrinsic::neq_numbers(lhs, rhs),
+                        Add, Int => Intrinsic::add_ints(lhs, rhs),
+                        Sub, Int => Intrinsic::sub_ints(lhs, rhs),
+                        Mul, Int => Intrinsic::mul_ints(lhs, rhs),
+                        Div, Int => Intrinsic::div_ints(lhs, rhs),
+                        LessEquals, Int => Intrinsic::lte_ints(lhs, rhs),
+                        GreaterEquals, Int => Intrinsic::gte_ints(lhs, rhs),
+                        Less, Int => Intrinsic::lt_ints(lhs, rhs),
+                        Greater, Int => Intrinsic::gt_ints(lhs, rhs),
+                        Equals, Int => Intrinsic::eq_ints(lhs, rhs),
+                        NotEquals, Int => Intrinsic::neq_ints(lhs, rhs),
+                        Add, Float => Intrinsic::add_floats(lhs, rhs),
+                        Sub, Float => Intrinsic::sub_floats(lhs, rhs),
+                        Mul, Float => Intrinsic::mul_floats(lhs, rhs),
+                        Div, Float => Intrinsic::div_floats(lhs, rhs),
+                        LessEquals, Float => Intrinsic::lte_floats(lhs, rhs),
+                        GreaterEquals, Float => Intrinsic::gte_floats(lhs, rhs),
+                        Less, Float => Intrinsic::lt_floats(lhs, rhs),
+                        Greater, Float => Intrinsic::gt_floats(lhs, rhs),
+                        Equals, Float => Intrinsic::eq_floats(lhs, rhs),
+                        NotEquals, Float => Intrinsic::neq_floats(lhs, rhs),
                         Equals, Bool => Intrinsic::eq_bools(lhs, rhs),
                         NotEquals, Bool => Intrinsic::neq_bools(lhs, rhs),
                     }))
@@ -104,8 +115,11 @@ impl Lower {
                     let expr = self.lower_expression(*expr.0);
 
                     Expression::Intrinsic(Box::new(match (&expr.ty, op.0) {
-                        (Type::Primitive(Primitive::Number), ast::UnaryOp::Neg) => {
-                            Intrinsic::neg_number(expr)
+                        (Type::Primitive(Primitive::Int), ast::UnaryOp::Neg) => {
+                            Intrinsic::neg_int(expr)
+                        }
+                        (Type::Primitive(Primitive::Float), ast::UnaryOp::Neg) => {
+                            Intrinsic::neg_float(expr)
                         }
                         (Type::Primitive(Primitive::Bool), ast::UnaryOp::Not) => {
                             Intrinsic::not_bool(expr)
@@ -143,7 +157,8 @@ impl Lower {
             typed_ast::PatternType::Variable(identifier) => {
                 PatternType::Variable(self.insert_variable(&identifier))
             }
-            typed_ast::PatternType::Number(n) => PatternType::Number(n),
+            typed_ast::PatternType::Int(n) => PatternType::Int(n),
+            typed_ast::PatternType::Float(n) => PatternType::Float(n),
             typed_ast::PatternType::Bool(b) => PatternType::Bool(b),
         };
 
@@ -186,7 +201,8 @@ impl Lower {
 
     const fn lower_primitive(primitive: typed_ast::Primitive) -> Primitive {
         match primitive {
-            typed_ast::Primitive::Number => Primitive::Number,
+            typed_ast::Primitive::Int => Primitive::Int,
+            typed_ast::Primitive::Float => Primitive::Float,
             typed_ast::Primitive::Bool => Primitive::Bool,
         }
     }

@@ -1,4 +1,4 @@
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
@@ -8,7 +8,10 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use diagnostics::{error::convert, report::report};
+use diagnostics::{
+    error::{convert, Error},
+    report::report,
+};
 use lasso::ThreadedRodeo;
 use lower::mir::Mir;
 use span::{FileId, Span};
@@ -32,27 +35,41 @@ struct Args {
 fn main() -> ExitCode {
     let args = Args::parse();
 
-    match run_mir(&args) {
-        Ok(Some(mir)) => {
+    let mut files = SimpleFiles::new();
+
+    match run_mir(&args, &mut files) {
+        Ok(mir) => {
             println!("{mir:#?}");
             ExitCode::SUCCESS
         }
-        Ok(None) => ExitCode::FAILURE,
-        Err(error) => {
-            eprintln!("{error}");
+        Err(errors) => {
+            let writer = StandardStream::stderr(ColorChoice::Auto);
+            let term_config = term::Config::default();
+
+            for error in &errors {
+                let diagnostic = report(error);
+
+                term::emit(&mut writer.lock(), &term_config, &files, &diagnostic).unwrap();
+            }
+
             ExitCode::FAILURE
         }
     }
 }
 
-fn run_mir(args: &Args) -> Result<Option<Mir>, Box<dyn core::error::Error>> {
+fn run_mir<'path>(
+    args: &'path Args,
+    files: &mut SimpleFiles<&'path Utf8Path, String>,
+) -> Result<Mir, Vec<Error>> {
     if !args.filename.is_file() {
-        return Err(format!("'{}' is not a file", args.filename).into());
+        return Err(vec![Error::Ice(format!(
+            "'{}' is not a file",
+            args.filename
+        ))]);
     }
 
-    let mut files = SimpleFiles::new();
-
-    let source = read_to_string(&args.filename)?;
+    let source =
+        read_to_string(&args.filename).map_err(|error| vec![Error::Ice(error.to_string())])?;
 
     let file_id = FileId::new(files.add(&args.filename, source.to_string()));
 
@@ -89,21 +106,12 @@ fn run_mir(args: &Args) -> Result<Option<Mir>, Box<dyn core::error::Error>> {
 
     errors.extend(typecheck_errors);
 
-    let writer = StandardStream::stderr(ColorChoice::Auto);
-    let term_config = term::Config::default();
-
-    for error in &errors {
-        let diagnostic = report(error);
-
-        term::emit(&mut writer.lock(), &term_config, &files, &diagnostic)?;
-    }
-
     if errors.is_empty() {
         let mir = lower::lower(typed_ast.unwrap());
 
-        Ok(Some(mir))
+        Ok(mir)
     } else {
-        Ok(None)
+        Err(errors)
     }
 }
 
@@ -120,7 +128,9 @@ mod tests {
                 filename: file.path().try_into().unwrap(),
             };
 
-            let mir = run_mir(&args).unwrap().unwrap();
+            let mir = run_mir(&args, &mut SimpleFiles::new())
+                .map_err(|err| (args, err))
+                .unwrap();
 
             insta::with_settings!({
                 description => std::fs::read_to_string(file.path()).unwrap().trim(),

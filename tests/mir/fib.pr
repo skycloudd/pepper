@@ -1,7 +1,7 @@
-func main() -> number =
+func main() -> int =
     fib(10)
 
-func fib(n: number) -> number =
+func fib(n: int) -> int =
     match n
     | x where x < 2 => x
     | _ => fib(n - 1) + fib(n - 2)

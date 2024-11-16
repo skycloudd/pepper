@@ -1,12 +1,12 @@
-func main() -> number =
-    bool_to_number(match_on_number(123) == 2)
+func main() -> int =
+    bool_to_int(match_on_int(123) == 2)
 
-func bool_to_number(b: bool) -> number =
+func bool_to_int(b: bool) -> int =
     match b
     | true => 1
     | false => 0
 
-func match_on_number(x: number) -> number =
+func match_on_int(x: int) -> int =
     match x
     | n where n < 100 => 1
     | x where x < 200 => 2

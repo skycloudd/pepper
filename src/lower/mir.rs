@@ -32,7 +32,8 @@ pub struct TypedExpression {
 #[derive(Clone, Debug)]
 #[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum Expression {
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
     Variable(Name),
     Intrinsic(Box<Intrinsic>),
@@ -65,7 +66,8 @@ pub struct Pattern {
 pub enum PatternType {
     Wildcard,
     Variable(Name),
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
 }
 
@@ -85,7 +87,8 @@ pub enum Type<P> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub enum Primitive {
-    Number,
+    Int,
+    Float,
     Bool,
 }
 
@@ -100,17 +103,28 @@ impl Name {
 }
 
 bin_op_intrinsics! {
-    AddNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    SubNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    MulNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    DivNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    EqNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    NeqNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    LtNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    LteNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    GtNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    GteNumbers { lhs, rhs }, Type::Primitive(Primitive::Number),
-    NegNumber { expr }, Type::Primitive(Primitive::Number),
+    AddInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    SubInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    MulInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    DivInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    EqInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    NeqInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    LtInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    LteInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    GtInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    GteInts { lhs, rhs }, Type::Primitive(Primitive::Int),
+    AddFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    SubFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    MulFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    DivFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    EqFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    NeqFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    LtFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    LteFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    GtFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    GteFloats { lhs, rhs }, Type::Primitive(Primitive::Float),
+    NegInt { expr }, Type::Primitive(Primitive::Int),
+    NegFloat { expr }, Type::Primitive(Primitive::Float),
     EqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
     NeqBools { lhs, rhs }, Type::Primitive(Primitive::Bool),
     AndBools { lhs, rhs }, Type::Primitive(Primitive::Bool),

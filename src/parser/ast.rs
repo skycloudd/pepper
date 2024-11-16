@@ -24,7 +24,8 @@ pub struct FunctionParam {
 
 #[derive(Clone, Debug)]
 pub enum Expression {
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
     Variable(Identifier),
     BinaryOp {
@@ -62,7 +63,8 @@ pub struct Pattern {
 pub enum PatternType {
     Wildcard,
     Variable(Identifier),
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
 }
 

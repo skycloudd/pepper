@@ -1,6 +1,6 @@
 ---
 source: src/main.rs
-description: "func main() -> number =\n    fib(10)\n\nfunc fib(n: number) -> number =\n    match n\n    | x where x < 2 => x\n    | _ => fib(n - 1) + fib(n - 2)"
+description: "func main() -> int =\n    fib(10)\n\nfunc fib(n: int) -> int =\n    match n\n    | x where x < 2 => x\n    | _ => fib(n - 1) + fib(n - 2)"
 expression: mir
 info: tests/mir/fib.pr
 snapshot_kind: text
@@ -9,7 +9,7 @@ functions:
   - name: 0
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Call:
@@ -19,23 +19,23 @@ functions:
             ty:
               Function:
                 params:
-                  - Primitive: Number
+                  - Primitive: Int
                 return_ty:
-                  Primitive: Number
+                  Primitive: Int
           args:
             - expr:
-                Number: 10
+                Int: 10
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 1
     params:
       - name: 2
         ty:
-          Primitive: Number
+          Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Match:
@@ -43,7 +43,7 @@ functions:
             expr:
               Variable: 2
             ty:
-              Primitive: Number
+              Primitive: Int
           arms:
             - pattern:
                 pattern_type:
@@ -51,31 +51,31 @@ functions:
                 condition:
                   expr:
                     Intrinsic:
-                      LtNumbers:
+                      LtInts:
                         lhs:
                           expr:
                             Variable: 3
                           ty:
-                            Primitive: Number
+                            Primitive: Int
                         rhs:
                           expr:
-                            Number: 2
+                            Int: 2
                           ty:
-                            Primitive: Number
+                            Primitive: Int
                   ty:
                     Primitive: Bool
               body:
                 expr:
                   Variable: 3
                 ty:
-                  Primitive: Number
+                  Primitive: Int
             - pattern:
                 pattern_type: Wildcard
                 condition: ~
               body:
                 expr:
                   Intrinsic:
-                    AddNumbers:
+                    AddInts:
                       lhs:
                         expr:
                           Call:
@@ -85,27 +85,27 @@ functions:
                               ty:
                                 Function:
                                   params:
-                                    - Primitive: Number
+                                    - Primitive: Int
                                   return_ty:
-                                    Primitive: Number
+                                    Primitive: Int
                             args:
                               - expr:
                                   Intrinsic:
-                                    SubNumbers:
+                                    SubInts:
                                       lhs:
                                         expr:
                                           Variable: 2
                                         ty:
-                                          Primitive: Number
+                                          Primitive: Int
                                       rhs:
                                         expr:
-                                          Number: 1
+                                          Int: 1
                                         ty:
-                                          Primitive: Number
+                                          Primitive: Int
                                 ty:
-                                  Primitive: Number
+                                  Primitive: Int
                         ty:
-                          Primitive: Number
+                          Primitive: Int
                       rhs:
                         expr:
                           Call:
@@ -115,28 +115,28 @@ functions:
                               ty:
                                 Function:
                                   params:
-                                    - Primitive: Number
+                                    - Primitive: Int
                                   return_ty:
-                                    Primitive: Number
+                                    Primitive: Int
                             args:
                               - expr:
                                   Intrinsic:
-                                    SubNumbers:
+                                    SubInts:
                                       lhs:
                                         expr:
                                           Variable: 2
                                         ty:
-                                          Primitive: Number
+                                          Primitive: Int
                                       rhs:
                                         expr:
-                                          Number: 2
+                                          Int: 2
                                         ty:
-                                          Primitive: Number
+                                          Primitive: Int
                                 ty:
-                                  Primitive: Number
+                                  Primitive: Int
                         ty:
-                          Primitive: Number
+                          Primitive: Int
                 ty:
-                  Primitive: Number
+                  Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int

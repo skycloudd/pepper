@@ -1,6 +1,6 @@
 ---
 source: src/main.rs
-description: "func main() -> number = 0\nfunc one() -> number = 1\nfunc million() -> number = 1000000\nfunc neg_one() -> number = -1\nfunc neg_million() -> number = -1000000"
+description: "func main() -> int = 0\nfunc one() -> int = 1\nfunc million() -> int = 1000000\nfunc neg_one() -> int = -1\nfunc neg_million() -> int = -1000000\nfunc half() -> float = 0.5\nfunc neg_half() -> float = -0.5\nfunc pi_approx() -> float = 3.14159265\nfunc limit_32() -> int = 4294967296"
 expression: mir
 info: tests/mir/numbers.pr
 snapshot_kind: text
@@ -9,57 +9,99 @@ functions:
   - name: 0
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
-        Number: 0
+        Int: 0
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 1
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
-        Number: 1
+        Int: 1
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 2
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
-        Number: 1000000
+        Int: 1000000
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 3
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Intrinsic:
-          NegNumber:
+          NegInt:
             expr:
               expr:
-                Number: 1
+                Int: 1
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 4
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Intrinsic:
-          NegNumber:
+          NegInt:
             expr:
               expr:
-                Number: 1000000
+                Int: 1000000
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
+  - name: 5
+    params: []
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Float: 0.5
+      ty:
+        Primitive: Float
+  - name: 6
+    params: []
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          NegFloat:
+            expr:
+              expr:
+                Float: 0.5
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 7
+    params: []
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Float: 3.14159265
+      ty:
+        Primitive: Float
+  - name: 8
+    params: []
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Int: 4294967296
+      ty:
+        Primitive: Int

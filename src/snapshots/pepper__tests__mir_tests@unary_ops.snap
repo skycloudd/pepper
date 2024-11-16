@@ -1,6 +1,6 @@
 ---
 source: src/main.rs
-description: "func main() -> number = 0\nfunc neg(a: number) -> number = -a\nfunc not(a: bool) -> bool = !a"
+description: "func main() -> int = 0\nfunc neg(a: int) -> int = -a\nfunc negf(a: float) -> float = -a\nfunc not(a: bool) -> bool = !a"
 expression: mir
 info: tests/mir/unary_ops.pr
 snapshot_kind: text
@@ -9,33 +9,51 @@ functions:
   - name: 0
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
-        Number: 0
+        Int: 0
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 1
     params:
-      - name: 3
+      - name: 4
         ty:
-          Primitive: Number
+          Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Intrinsic:
-          NegNumber:
+          NegInt:
             expr:
               expr:
-                Variable: 3
+                Variable: 4
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 2
     params:
-      - name: 4
+      - name: 5
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          NegFloat:
+            expr:
+              expr:
+                Variable: 5
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 3
+    params:
+      - name: 6
         ty:
           Primitive: Bool
     return_ty:
@@ -46,7 +64,7 @@ functions:
           NotBool:
             expr:
               expr:
-                Variable: 4
+                Variable: 6
               ty:
                 Primitive: Bool
       ty:

@@ -24,11 +24,17 @@ pub fn lexer<'src>(
         .map(SimpleToken::Boolean)
         .boxed();
 
-        let number = text::int(10)
-            .then(just('.').ignore_then(text::digits(10).or_not()).or_not())
+        let int = text::int(10)
             .to_slice()
             .map(|num: &str| num.parse().unwrap())
-            .map(SimpleToken::Number)
+            .map(SimpleToken::Int)
+            .boxed();
+
+        let float = text::int(10)
+            .then(just('.').then(text::digits(10).or_not()))
+            .to_slice()
+            .map(|num: &str| num.parse().unwrap())
+            .map(SimpleToken::Float)
             .boxed();
 
         let keyword = choice((
@@ -68,7 +74,7 @@ pub fn lexer<'src>(
             .padded()
             .boxed();
 
-        let simple = choice((keyword, bool, ident, number, punctuation, wildcard))
+        let simple = choice((keyword, bool, ident, float, int, punctuation, wildcard))
             .map(Token::Simple)
             .boxed();
 

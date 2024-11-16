@@ -12,6 +12,7 @@ use std::borrow::Cow;
 
 #[derive(Clone, Debug)]
 pub enum Error {
+    Ice(String),
     ExpectedFound {
         expected: Vec<String>,
         found: Option<String>,
@@ -105,6 +106,7 @@ pub enum Error {
 impl Diag for Error {
     fn message(&self) -> Cow<str> {
         match self {
+            Self::Ice(message) | Self::Custom { message, span: _ } => message.into(),
             Self::ExpectedFound {
                 expected,
                 found,
@@ -129,7 +131,6 @@ impl Diag for Error {
                 )
             }
             .into(),
-            Self::Custom { message, span: _ } => message.into(),
             Self::FunctionRedefinition {
                 name,
                 new_span: _,
@@ -269,6 +270,7 @@ impl Diag for Error {
     fn spans(&self) -> Vec<ErrorSpan> {
         #[allow(clippy::match_same_arms)]
         match self {
+            Self::Ice(_) => vec![],
             Self::ExpectedFound {
                 expected: _,
                 found,
@@ -430,7 +432,7 @@ impl Diag for Error {
 
                 if *return_ty_wrong {
                     spans.push(ErrorSpan::primary_message(
-                        format!("The return type is {return_ty}, but it should be number"),
+                        format!("The return type is {return_ty}, but it should be int"),
                         *return_ty_span,
                     ));
                 }
@@ -442,6 +444,7 @@ impl Diag for Error {
 
     fn notes(&self) -> Vec<String> {
         match self {
+            Self::Ice(_) => vec![],
             Self::FunctionRedefinition { .. } => {
                 vec![format!("Functions must have unique names")]
             }
@@ -455,13 +458,13 @@ impl Diag for Error {
                     format!("The main function is the entry point of the program"),
                     format!(
                         "It must have the following signature: {}",
-                        "func main() -> number".yellow()
+                        "func main() -> int".yellow()
                     ),
                 ]
             }
             Self::MainSignatureMismatch { .. } => vec![format!(
                 "The main function should have the following signature: {}",
-                "func main() -> number".yellow()
+                "func main() -> int".yellow()
             )],
             Self::ExpectedFound { .. }
             | Self::Custom { .. }

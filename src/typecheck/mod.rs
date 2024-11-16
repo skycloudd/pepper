@@ -53,7 +53,11 @@ impl Typechecker {
     }
 
     fn insert_primitive_types(&mut self) {
-        for (name, ty) in &[("number", Primitive::Number), ("bool", Primitive::Bool)] {
+        for (name, ty) in &[
+            ("int", Primitive::Int),
+            ("float", Primitive::Float),
+            ("bool", Primitive::Bool),
+        ] {
             self.types.insert(name, Type::Primitive(*ty));
         }
     }
@@ -67,7 +71,7 @@ impl Typechecker {
             self.found_main = true;
 
             let params_wrong = !function_type.params.is_empty();
-            let return_ty_wrong = function_type.return_ty.0 != Type::Primitive(Primitive::Number);
+            let return_ty_wrong = function_type.return_ty.0 != Type::Primitive(Primitive::Int);
 
             if params_wrong || return_ty_wrong {
                 self.errors.push(Error::MainSignatureMismatch {
@@ -175,9 +179,13 @@ impl Typechecker {
 
     fn lower_expression(&mut self, expr: ast::Expression) -> TypedExpression {
         match expr {
-            ast::Expression::Number(value) => TypedExpression {
-                expr: Expression::Number(value),
-                ty: Type::Primitive(Primitive::Number),
+            ast::Expression::Int(value) => TypedExpression {
+                expr: Expression::Int(value),
+                ty: Type::Primitive(Primitive::Int),
+            },
+            ast::Expression::Float(value) => TypedExpression {
+                expr: Expression::Float(value),
+                ty: Type::Primitive(Primitive::Float),
             },
             ast::Expression::Bool(value) => TypedExpression {
                 expr: Expression::Bool(value),
@@ -219,8 +227,12 @@ impl Typechecker {
                 let ty = match (op.0, (&lhs.ty, &lhs.ty)) {
                     (
                         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div,
-                        (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number)),
-                    ) => Type::Primitive(Primitive::Number),
+                        (Type::Primitive(Primitive::Int), Type::Primitive(Primitive::Int)),
+                    ) => Type::Primitive(Primitive::Int),
+                    (
+                        BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div,
+                        (Type::Primitive(Primitive::Float), Type::Primitive(Primitive::Float)),
+                    ) => Type::Primitive(Primitive::Float),
                     (
                         BinaryOp::LessEquals
                         | BinaryOp::GreaterEquals
@@ -228,7 +240,8 @@ impl Typechecker {
                         | BinaryOp::Greater
                         | BinaryOp::Equals
                         | BinaryOp::NotEquals,
-                        (Type::Primitive(Primitive::Number), Type::Primitive(Primitive::Number))
+                        (Type::Primitive(Primitive::Int), Type::Primitive(Primitive::Int))
+                        | (Type::Primitive(Primitive::Float), Type::Primitive(Primitive::Float))
                         | (Type::Primitive(Primitive::Bool), Type::Primitive(Primitive::Bool)),
                     ) => Type::Primitive(Primitive::Bool),
                     (_, (Type::Error, _) | (_, Type::Error)) => Type::Error,
@@ -259,8 +272,11 @@ impl Typechecker {
                 let expr = expr.map(|expr| self.lower_expression(*expr));
 
                 let ty = match (op.0, &expr.ty) {
-                    (ast::UnaryOp::Neg, Type::Primitive(Primitive::Number)) => {
-                        Type::Primitive(Primitive::Number)
+                    (ast::UnaryOp::Neg, Type::Primitive(Primitive::Int)) => {
+                        Type::Primitive(Primitive::Int)
+                    }
+                    (ast::UnaryOp::Neg, Type::Primitive(Primitive::Float)) => {
+                        Type::Primitive(Primitive::Float)
                     }
                     (ast::UnaryOp::Not, Type::Primitive(Primitive::Bool)) => {
                         Type::Primitive(Primitive::Bool)
@@ -355,7 +371,8 @@ impl Typechecker {
                                         );
                                     }
                                     ast::PatternType::Wildcard
-                                    | ast::PatternType::Number(_)
+                                    | ast::PatternType::Int(_)
+                                    | ast::PatternType::Float(_)
                                     | ast::PatternType::Bool(_) => {}
                                 }
 
@@ -394,7 +411,8 @@ impl Typechecker {
                             .as_ref()
                             .map(|pattern_type| match pattern_type {
                                 PatternType::Wildcard | PatternType::Variable(_) => expr.ty.clone(),
-                                PatternType::Number(_) => Type::Primitive(Primitive::Number),
+                                PatternType::Int(_) => Type::Primitive(Primitive::Int),
+                                PatternType::Float(_) => Type::Primitive(Primitive::Float),
                                 PatternType::Bool(_) => Type::Primitive(Primitive::Bool),
                             });
 
@@ -428,7 +446,8 @@ impl Typechecker {
             let pattern_type = pattern.pattern_type.map(|pattern_type| match pattern_type {
                 ast::PatternType::Wildcard => PatternType::Wildcard,
                 ast::PatternType::Variable(identifier) => PatternType::Variable(identifier),
-                ast::PatternType::Number(value) => PatternType::Number(value),
+                ast::PatternType::Int(value) => PatternType::Int(value),
+                ast::PatternType::Float(value) => PatternType::Float(value),
                 ast::PatternType::Bool(value) => PatternType::Bool(value),
             });
 

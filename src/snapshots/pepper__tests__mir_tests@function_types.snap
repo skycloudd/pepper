@@ -1,6 +1,6 @@
 ---
 source: src/main.rs
-description: "func main() -> number =\n    takes_bin_op(neg, returns_bin_op())\n\nfunc takes_bin_op(un: func (number) -> number, bin: func (number, number) -> number) -> number =\n    bin(takes_un_op(un, 1), takes_un_op(un, 2))\n\nfunc returns_bin_op() -> func (number, number) -> number =\n    multiply\n\nfunc takes_un_op(op: func (number) -> number, n: number) -> number =\n    op(n)\n\nfunc neg(n: number) -> number =\n    -n\n\nfunc multiply(a: number, b: number) -> number =\n    a * b"
+description: "func main() -> int =\n    takes_bin_op(neg, returns_bin_op())\n\nfunc takes_bin_op(un: func (int) -> int, bin: func (int, int) -> int) -> int =\n    bin(takes_un_op(un, 1), takes_un_op(un, 2))\n\nfunc returns_bin_op() -> func (int, int) -> int =\n    multiply\n\nfunc takes_un_op(op: func (int) -> int, n: int) -> int =\n    op(n)\n\nfunc neg(n: int) -> int =\n    -n\n\nfunc multiply(a: int, b: int) -> int =\n    a * b"
 expression: mir
 info: tests/mir/function_types.pr
 snapshot_kind: text
@@ -9,7 +9,7 @@ functions:
   - name: 0
     params: []
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Call:
@@ -21,26 +21,26 @@ functions:
                 params:
                   - Function:
                       params:
-                        - Primitive: Number
+                        - Primitive: Int
                       return_ty:
-                        Primitive: Number
+                        Primitive: Int
                   - Function:
                       params:
-                        - Primitive: Number
-                        - Primitive: Number
+                        - Primitive: Int
+                        - Primitive: Int
                       return_ty:
-                        Primitive: Number
+                        Primitive: Int
                 return_ty:
-                  Primitive: Number
+                  Primitive: Int
           args:
             - expr:
                 Variable: 4
               ty:
                 Function:
                   params:
-                    - Primitive: Number
+                    - Primitive: Int
                   return_ty:
-                    Primitive: Number
+                    Primitive: Int
             - expr:
                 Call:
                   callee:
@@ -52,39 +52,39 @@ functions:
                         return_ty:
                           Function:
                             params:
-                              - Primitive: Number
-                              - Primitive: Number
+                              - Primitive: Int
+                              - Primitive: Int
                             return_ty:
-                              Primitive: Number
+                              Primitive: Int
                   args: []
               ty:
                 Function:
                   params:
-                    - Primitive: Number
-                    - Primitive: Number
+                    - Primitive: Int
+                    - Primitive: Int
                   return_ty:
-                    Primitive: Number
+                    Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 1
     params:
       - name: 6
         ty:
           Function:
             params:
-              - Primitive: Number
+              - Primitive: Int
             return_ty:
-              Primitive: Number
+              Primitive: Int
       - name: 7
         ty:
           Function:
             params:
-              - Primitive: Number
-              - Primitive: Number
+              - Primitive: Int
+              - Primitive: Int
             return_ty:
-              Primitive: Number
+              Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Call:
@@ -94,10 +94,10 @@ functions:
             ty:
               Function:
                 params:
-                  - Primitive: Number
-                  - Primitive: Number
+                  - Primitive: Int
+                  - Primitive: Int
                 return_ty:
-                  Primitive: Number
+                  Primitive: Int
           args:
             - expr:
                 Call:
@@ -109,27 +109,27 @@ functions:
                         params:
                           - Function:
                               params:
-                                - Primitive: Number
+                                - Primitive: Int
                               return_ty:
-                                Primitive: Number
-                          - Primitive: Number
+                                Primitive: Int
+                          - Primitive: Int
                         return_ty:
-                          Primitive: Number
+                          Primitive: Int
                   args:
                     - expr:
                         Variable: 6
                       ty:
                         Function:
                           params:
-                            - Primitive: Number
+                            - Primitive: Int
                           return_ty:
-                            Primitive: Number
+                            Primitive: Int
                     - expr:
-                        Number: 1
+                        Int: 1
                       ty:
-                        Primitive: Number
+                        Primitive: Int
               ty:
-                Primitive: Number
+                Primitive: Int
             - expr:
                 Call:
                   callee:
@@ -140,62 +140,62 @@ functions:
                         params:
                           - Function:
                               params:
-                                - Primitive: Number
+                                - Primitive: Int
                               return_ty:
-                                Primitive: Number
-                          - Primitive: Number
+                                Primitive: Int
+                          - Primitive: Int
                         return_ty:
-                          Primitive: Number
+                          Primitive: Int
                   args:
                     - expr:
                         Variable: 6
                       ty:
                         Function:
                           params:
-                            - Primitive: Number
+                            - Primitive: Int
                           return_ty:
-                            Primitive: Number
+                            Primitive: Int
                     - expr:
-                        Number: 2
+                        Int: 2
                       ty:
-                        Primitive: Number
+                        Primitive: Int
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 2
     params: []
     return_ty:
       Function:
         params:
-          - Primitive: Number
-          - Primitive: Number
+          - Primitive: Int
+          - Primitive: Int
         return_ty:
-          Primitive: Number
+          Primitive: Int
     body:
       expr:
         Variable: 5
       ty:
         Function:
           params:
-            - Primitive: Number
-            - Primitive: Number
+            - Primitive: Int
+            - Primitive: Int
           return_ty:
-            Primitive: Number
+            Primitive: Int
   - name: 3
     params:
       - name: 8
         ty:
           Function:
             params:
-              - Primitive: Number
+              - Primitive: Int
             return_ty:
-              Primitive: Number
+              Primitive: Int
       - name: 9
         ty:
-          Primitive: Number
+          Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Call:
@@ -205,57 +205,57 @@ functions:
             ty:
               Function:
                 params:
-                  - Primitive: Number
+                  - Primitive: Int
                 return_ty:
-                  Primitive: Number
+                  Primitive: Int
           args:
             - expr:
                 Variable: 9
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 4
     params:
       - name: 10
         ty:
-          Primitive: Number
+          Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Intrinsic:
-          NegNumber:
+          NegInt:
             expr:
               expr:
                 Variable: 10
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int
   - name: 5
     params:
       - name: 11
         ty:
-          Primitive: Number
+          Primitive: Int
       - name: 12
         ty:
-          Primitive: Number
+          Primitive: Int
     return_ty:
-      Primitive: Number
+      Primitive: Int
     body:
       expr:
         Intrinsic:
-          MulNumbers:
+          MulInts:
             lhs:
               expr:
                 Variable: 11
               ty:
-                Primitive: Number
+                Primitive: Int
             rhs:
               expr:
                 Variable: 12
               ty:
-                Primitive: Number
+                Primitive: Int
       ty:
-        Primitive: Number
+        Primitive: Int

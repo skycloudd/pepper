@@ -13,7 +13,8 @@ pub enum Token {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SimpleToken {
     Identifier(Identifier),
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Boolean(bool),
     Kw(Kw),
     Punc(Punc),
@@ -84,7 +85,8 @@ impl core::fmt::Display for SimpleToken {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Identifier(name) => write!(f, "{}", name.resolve()),
-            Self::Number(num) => write!(f, "{num}"),
+            Self::Int(num) => write!(f, "{num}"),
+            Self::Float(num) => write!(f, "{num}"),
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),

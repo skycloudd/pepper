@@ -34,7 +34,8 @@ pub struct TypedExpression {
 
 #[derive(Clone, Debug)]
 pub enum Expression {
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
     Variable(Identifier),
     BinaryOp {
@@ -72,20 +73,23 @@ pub struct Pattern {
 pub enum PatternType {
     Wildcard,
     Variable(Identifier),
-    Number(f64),
+    Int(u64),
+    Float(f64),
     Bool(bool),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Primitive {
-    Number,
+    Int,
+    Float,
     Bool,
 }
 
 impl core::fmt::Display for Primitive {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Number => write!(f, "number"),
+            Self::Int => write!(f, "int"),
+            Self::Float => write!(f, "float"),
             Self::Bool => write!(f, "bool"),
         }
     }

@@ -147,12 +147,19 @@ macro_rules! binary_op {
 fn expression_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> {
     recursive(|expression| {
-        let number = select! {
-            Token::Simple(SimpleToken::Number(num)) => num,
+        let int = select! {
+            Token::Simple(SimpleToken::Int(num)) => num,
         }
-        .map(Expression::Number)
+        .map(Expression::Int)
         .boxed()
-        .labelled("number");
+        .labelled("integer");
+
+        let float = select! {
+            Token::Simple(SimpleToken::Float(num)) => num,
+        }
+        .map(Expression::Float)
+        .boxed()
+        .labelled("float");
 
         let bool = select! {
             Token::Simple(SimpleToken::Boolean(bool)) => bool,
@@ -169,7 +176,8 @@ fn expression_parser<'src: 'tok, 'tok>(
         let pattern = choice((
             just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
-            select! { Token::Simple(SimpleToken::Number(num)) => num }.map(PatternType::Number),
+            select! { Token::Simple(SimpleToken::Int(num)) => num }.map(PatternType::Int),
+            select! { Token::Simple(SimpleToken::Float(num)) => num }.map(PatternType::Float),
             select! { Token::Simple(SimpleToken::Boolean(bool)) => bool }.map(PatternType::Bool),
         ))
         .with_span()
@@ -213,7 +221,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("parenthesized expression");
 
-        let atom = choice((parenthesized, match_, number, bool, variable)).boxed();
+        let atom = choice((parenthesized, match_, int, float, bool, variable)).boxed();
 
         let call_args = expression
             .clone()
