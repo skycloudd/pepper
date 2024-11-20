@@ -1,4 +1,3 @@
-use camino::{Utf8Path, Utf8PathBuf};
 use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use clap::Parser;
 use codespan_reporting::{
@@ -13,11 +12,18 @@ use diagnostics::{
     report::report,
 };
 use lasso::ThreadedRodeo;
+use lexer::tokens::Interned;
 use lower::mir::Mir;
+use parser::ast::{Ast, Module};
 use span::{FileId, Span};
-use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+    process::ExitCode,
+    sync::LazyLock,
+};
 
-pub mod diagnostics;
+mod diagnostics;
 mod lexer;
 mod lower;
 mod parser;
@@ -29,7 +35,7 @@ static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[derive(Debug, Parser)]
 struct Args {
-    filename: Utf8PathBuf,
+    directory: PathBuf,
 }
 
 fn main() -> ExitCode {
@@ -37,9 +43,10 @@ fn main() -> ExitCode {
 
     let mut files = SimpleFiles::new();
 
-    match run_mir(&args, &mut files) {
+    match get_mir(&args.directory, &mut files) {
         Ok(mir) => {
             println!("{mir:#?}");
+
             ExitCode::SUCCESS
         }
         Err(errors) => {
@@ -57,22 +64,76 @@ fn main() -> ExitCode {
     }
 }
 
-fn run_mir<'path>(
-    args: &'path Args,
-    files: &mut SimpleFiles<&'path Utf8Path, String>,
-) -> Result<Mir, Vec<Error>> {
-    if !args.filename.is_file() {
-        return Err(vec![Error::Ice(format!(
-            "'{}' is not a file",
-            args.filename
-        ))]);
+fn get_mir(directory: &Path, files: &mut SimpleFiles<String, String>) -> Result<Mir, Vec<Error>> {
+    let (module, mut errors) = get_module_tree(files, directory, true);
+
+    let (typed_ast, type_errors) = typecheck::typecheck(module);
+
+    errors.extend(type_errors);
+
+    let mir = lower::lower(typed_ast);
+
+    if errors.is_empty() {
+        Ok(mir)
+    } else {
+        Err(errors)
+    }
+}
+
+fn get_module_tree(
+    files: &mut SimpleFiles<String, String>,
+    directory: &Path,
+    is_root: bool,
+) -> (Module, Vec<Error>) {
+    let mut errors = vec![];
+
+    let mut base_ast = None;
+    let mut children = vec![];
+
+    let base_filename = if is_root { "main.pr" } else { "mod.pr" };
+
+    for entry in directory.read_dir().unwrap() {
+        let entry = entry.unwrap();
+        let file_type = entry.file_type().unwrap();
+
+        if file_type.is_file() {
+            let path = entry.path();
+            let source = read_to_string(&path).unwrap();
+
+            let file_id = files.add(path.display().to_string(), source.clone());
+            let file_id = FileId::new(file_id);
+
+            let (ast, file_errors) = get_ast(file_id, &source);
+
+            errors.extend(file_errors);
+
+            if path.file_name().unwrap() == base_filename {
+                base_ast = ast;
+            } else if let Some(ast) = ast {
+                children.push(Module {
+                    name: Interned::new(path.file_stem().unwrap().to_string_lossy()),
+                    ast,
+                    children: vec![],
+                });
+            }
+        } else if file_type.is_dir() {
+            let (module, module_errors) = get_module_tree(files, &entry.path(), false);
+
+            children.push(module);
+            errors.extend(module_errors);
+        }
     }
 
-    let source =
-        read_to_string(&args.filename).map_err(|error| vec![Error::Ice(error.to_string())])?;
+    let module = Module {
+        name: Interned::new(directory.file_stem().unwrap().to_string_lossy()),
+        ast: base_ast.unwrap(),
+        children,
+    };
 
-    let file_id = FileId::new(files.add(&args.filename, source.to_string()));
+    (module, errors)
+}
 
+fn get_ast(file_id: FileId, source: &str) -> (Option<Ast>, Vec<Error>) {
     let mut errors = vec![];
 
     let (tokens, lexer_errors) = lexer::lexer()
@@ -96,49 +157,5 @@ fn run_mir<'path>(
 
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
-    let (typed_ast, typecheck_errors) = ast.map_or_else(
-        || (None, vec![]),
-        |ast| {
-            let (typed_ast, errors) = typecheck::typecheck(ast);
-            (Some(typed_ast), errors)
-        },
-    );
-
-    errors.extend(typecheck_errors);
-
-    if errors.is_empty() {
-        let mir = lower::lower(typed_ast.unwrap());
-
-        Ok(mir)
-    } else {
-        Err(errors)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn mir_tests() {
-        for file in std::fs::read_dir("tests/mir").unwrap() {
-            let file = file.unwrap();
-
-            let args = Args {
-                filename: file.path().try_into().unwrap(),
-            };
-
-            let mir = run_mir(&args, &mut SimpleFiles::new())
-                .map_err(|err| (args, err))
-                .unwrap();
-
-            insta::with_settings!({
-                description => std::fs::read_to_string(file.path()).unwrap().trim(),
-                info => &file.path().to_string_lossy(),
-                snapshot_suffix => file.path().file_stem().unwrap().to_string_lossy(),
-            }, {
-                insta::assert_yaml_snapshot!(mir);
-            });
-        }
-    }
+    (ast, errors)
 }

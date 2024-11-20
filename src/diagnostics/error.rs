@@ -12,7 +12,6 @@ use std::borrow::Cow;
 
 #[derive(Clone, Debug)]
 pub enum Error {
-    Ice(String),
     ExpectedFound {
         expected: Vec<String>,
         found: Option<String>,
@@ -106,7 +105,6 @@ pub enum Error {
 impl Diag for Error {
     fn message(&self) -> Cow<str> {
         match self {
-            Self::Ice(message) | Self::Custom { message, span: _ } => message.into(),
             Self::ExpectedFound {
                 expected,
                 found,
@@ -131,6 +129,7 @@ impl Diag for Error {
                 )
             }
             .into(),
+            Self::Custom { message, span: _ } => message.into(),
             Self::FunctionRedefinition {
                 name,
                 new_span: _,
@@ -270,7 +269,6 @@ impl Diag for Error {
     fn spans(&self) -> Vec<ErrorSpan> {
         #[allow(clippy::match_same_arms)]
         match self {
-            Self::Ice(_) => vec![],
             Self::ExpectedFound {
                 expected: _,
                 found,
@@ -444,7 +442,6 @@ impl Diag for Error {
 
     fn notes(&self) -> Vec<String> {
         match self {
-            Self::Ice(_) => vec![],
             Self::FunctionRedefinition { .. } => {
                 vec![format!("Functions must have unique names")]
             }

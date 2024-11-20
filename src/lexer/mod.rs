@@ -1,6 +1,6 @@
-use crate::{span::Span, RODEO};
+use crate::span::Span;
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{Identifier, Kw, Punc, SimpleToken, Token};
+use tokens::{Interned, Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
@@ -13,7 +13,7 @@ pub fn lexer<'src>(
 ) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token<'src>>>, ParserExtra<'src>> {
     recursive(|tokens| {
         let ident = text::unicode::ident()
-            .map_with(|name, e| Identifier::new(RODEO.get_or_intern(name), e.span()))
+            .map(Interned::new)
             .map(SimpleToken::Identifier)
             .boxed();
 

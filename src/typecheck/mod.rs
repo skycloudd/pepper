@@ -1,6 +1,6 @@
 use crate::{
     diagnostics::error::Error,
-    lexer::tokens::Identifier,
+    lexer::tokens::Interned,
     parser::ast::{self, Ast, BinaryOp, Type},
     scopes::Scopes,
     span::{Span, Spanned},
@@ -13,8 +13,8 @@ use typed_ast::{
 
 pub mod typed_ast;
 
-pub fn typecheck(ast: Ast) -> (TypedAst, Vec<Error>) {
-    Typechecker::default().typecheck_ast(ast)
+pub fn typecheck(module: ast::Module) -> (TypedAst, Vec<Error>) {
+    Typechecker::default().typecheck_module(module)
 }
 
 #[derive(Default)]
@@ -28,7 +28,13 @@ struct Typechecker {
 }
 
 impl Typechecker {
-    fn typecheck_ast(mut self, ast: Ast) -> (TypedAst, Vec<Error>) {
+    fn typecheck_module(mut self, module: ast::Module) -> (TypedAst, Vec<Error>) {
+        let typed_ast = self.typecheck_ast(module.ast);
+
+        (typed_ast, self.errors.0)
+    }
+
+    fn typecheck_ast(&mut self, ast: Ast) -> TypedAst {
         self.insert_primitive_types();
 
         for toplevel in &ast.0 {
@@ -73,14 +79,11 @@ impl Typechecker {
             self.errors.push(Error::MainNotFound);
         }
 
-        (
-            TypedAst(
-                ast.0
-                    .into_iter()
-                    .map(|toplevel| toplevel.map(|toplevel| self.typecheck_toplevel(toplevel)))
-                    .collect(),
-            ),
-            self.errors.0,
+        TypedAst(
+            ast.0
+                .into_iter()
+                .map(|toplevel| toplevel.map(|toplevel| self.typecheck_toplevel(toplevel)))
+                .collect(),
         )
     }
 
@@ -96,7 +99,7 @@ impl Typechecker {
 
     fn insert_function_signature(
         &mut self,
-        name: Spanned<Identifier>,
+        name: Spanned<Interned>,
         function_type: Spanned<FunctionSignature>,
     ) {
         let ty = Type::Function {
@@ -143,7 +146,7 @@ impl Typechecker {
         }
     }
 
-    fn typecheck_toplevel<'src>(&mut self, toplevel: ast::TopLevel<'src>) -> TopLevel<'src> {
+    fn typecheck_toplevel(&mut self, toplevel: ast::TopLevel) -> TopLevel {
         match toplevel {
             ast::TopLevel::Function(function) => TopLevel::Function(function.map(|function| {
                 self.names.push_scope();
@@ -165,7 +168,7 @@ impl Typechecker {
         }
     }
 
-    fn typecheck_function<'src>(&mut self, function: ast::Function<'src>) -> Function<'src> {
+    fn typecheck_function(&mut self, function: ast::Function) -> Function {
         let sig = self
             .functions
             .get(&function.name.resolve())
@@ -211,7 +214,7 @@ impl Typechecker {
         }
     }
 
-    fn lower_expression<'src>(&mut self, expr: ast::Expression<'src>) -> TypedExpression<'src> {
+    fn lower_expression(&mut self, expr: ast::Expression) -> TypedExpression {
         match expr {
             ast::Expression::Int(value) => TypedExpression {
                 expr: Expression::Int(value),
@@ -236,7 +239,7 @@ impl Typechecker {
                 });
 
                 TypedExpression {
-                    expr: Expression::Variable(name),
+                    expr: Expression::Variable(*name),
                     ty: ty.0,
                 }
             }
@@ -475,7 +478,7 @@ impl Typechecker {
         }
     }
 
-    fn lower_match_arm<'src>(&mut self, arm: ast::MatchArm<'src>) -> MatchArm<'src> {
+    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> MatchArm {
         let pattern = arm.pattern.map(|pattern| {
             let pattern_type = pattern.pattern_type.map(|pattern_type| match pattern_type {
                 ast::PatternType::Wildcard => PatternType::Wildcard,
@@ -500,7 +503,7 @@ impl Typechecker {
         MatchArm { pattern, body }
     }
 
-    fn lower_type(&mut self, ty: &Type<Identifier>) -> Type<Primitive> {
+    fn lower_type(&mut self, ty: &Type<Spanned<Interned>>) -> Type<Primitive> {
         match ty {
             Type::Error => Type::Error,
             Type::Primitive(name) => {

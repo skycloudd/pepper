@@ -1,5 +1,4 @@
 use crate::{
-    lexer::tokens::Identifier,
     parser::ast::{self, BinaryOp},
     scopes::Scopes,
     typecheck::typed_ast::{self, TypedAst},
@@ -26,16 +25,18 @@ impl Lower {
         for toplevel in &ast.0 {
             match &toplevel.0 {
                 typed_ast::TopLevel::Function(function) => {
-                    self.insert_variable(&function.name);
+                    self.insert_variable(function.name.resolve());
                 }
                 typed_ast::TopLevel::Extern(extern_) => {
-                    self.insert_variable(&extern_.name);
+                    self.insert_variable(extern_.name.resolve());
                 }
+                typed_ast::TopLevel::Module(identifier, vec) => {}
             }
         }
 
         let mut functions = Vec::new();
         let mut externs = Vec::new();
+        let mut modules = Vec::new();
 
         for toplevel in ast.0 {
             match toplevel.0 {
@@ -45,23 +46,30 @@ impl Lower {
                 typed_ast::TopLevel::Extern(extern_function) => {
                     externs.push(self.lower_extern(extern_function.0));
                 }
+                typed_ast::TopLevel::Module(_name, ast) => {
+                    modules.push(self.lower(ast));
+                }
             }
         }
 
-        Mir { functions, externs }
+        Mir {
+            functions,
+            externs,
+            modules,
+        }
     }
 
     fn lower_function(&mut self, function: typed_ast::Function) -> Function {
         self.variables.push_scope();
 
-        let name = self.get_variable(&function.name);
+        let name = self.get_variable(function.name.resolve());
 
         let params = function
             .params
             .0
             .into_iter()
             .map(|parameter| FuncParam {
-                name: self.insert_variable(&parameter.name),
+                name: self.insert_variable(parameter.name.resolve()),
                 ty: Self::lower_type(parameter.0.ty.0),
             })
             .collect();
@@ -81,14 +89,14 @@ impl Lower {
     }
 
     fn lower_extern(&mut self, extern_: typed_ast::Extern) -> Extern {
-        let name = self.get_variable(&extern_.name);
+        let name = self.get_variable(extern_.name.resolve());
 
         let params = extern_
             .params
             .0
             .into_iter()
             .map(|parameter| FuncParam {
-                name: self.insert_variable(&parameter.name),
+                name: self.insert_variable(parameter.name.resolve()),
                 ty: Self::lower_type(parameter.0.ty.0),
             })
             .collect();
@@ -105,11 +113,11 @@ impl Lower {
     fn lower_expression(&mut self, expr: typed_ast::TypedExpression) -> TypedExpression {
         TypedExpression {
             expr: match expr.expr {
-                typed_ast::Expression::Int(n) => Expression::Int(n.parse().unwrap()),
-                typed_ast::Expression::Float(n) => Expression::Float(n.parse().unwrap()),
-                typed_ast::Expression::Bool(b) => Expression::Bool(b.parse().unwrap()),
+                typed_ast::Expression::Int(n) => Expression::Int(n.resolve().parse().unwrap()),
+                typed_ast::Expression::Float(n) => Expression::Float(n.resolve().parse().unwrap()),
+                typed_ast::Expression::Bool(b) => Expression::Bool(b.resolve().parse().unwrap()),
                 typed_ast::Expression::Variable(identifier) => {
-                    Expression::Variable(self.get_variable(&identifier))
+                    Expression::Variable(self.get_variable(identifier.resolve()))
                 }
                 typed_ast::Expression::BinaryOp { op, lhs, rhs } => {
                     let lhs = self.lower_expression(*lhs.0);
@@ -182,14 +190,14 @@ impl Lower {
     fn lower_match_arm(&mut self, arm: typed_ast::MatchArm) -> MatchArm {
         self.variables.push_scope();
 
-        let pattern_type = match arm.pattern.pattern_type.0 {
+        let pattern_type = match &arm.pattern.pattern_type.0 {
             typed_ast::PatternType::Wildcard => PatternType::Wildcard,
             typed_ast::PatternType::Variable(identifier) => {
-                PatternType::Variable(self.insert_variable(&identifier))
+                PatternType::Variable(self.insert_variable(identifier.resolve()))
             }
-            typed_ast::PatternType::Int(n) => PatternType::Int(n.parse().unwrap()),
-            typed_ast::PatternType::Float(n) => PatternType::Float(n.parse().unwrap()),
-            typed_ast::PatternType::Bool(b) => PatternType::Bool(b.parse().unwrap()),
+            typed_ast::PatternType::Int(n) => PatternType::Int(n.resolve().parse().unwrap()),
+            typed_ast::PatternType::Float(n) => PatternType::Float(n.resolve().parse().unwrap()),
+            typed_ast::PatternType::Bool(b) => PatternType::Bool(b.resolve().parse().unwrap()),
         };
 
         let condition = arm
@@ -237,16 +245,16 @@ impl Lower {
         }
     }
 
-    fn get_variable(&self, ident: &Identifier) -> Name {
+    fn get_variable(&self, ident: &'static str) -> Name {
         self.variables
-            .get(&ident.resolve())
+            .get(&ident)
             .copied()
             .unwrap_or_else(|| panic!("name not found: {ident:?}"))
     }
 
-    fn insert_variable(&mut self, ident: &Identifier) -> Name {
+    fn insert_variable(&mut self, ident: &'static str) -> Name {
         let name = self.new_name();
-        self.variables.insert(ident.resolve(), name);
+        self.variables.insert(ident, name);
         name
     }
 

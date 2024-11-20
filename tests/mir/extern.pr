@@ -1,5 +1,0 @@
-func main() -> int = 0
-
-extern malloc(size: int) -> int;
-
-extern free(ptr: int) -> int;
