@@ -75,9 +75,9 @@ impl Lower {
     fn lower_expression(&mut self, expr: typed_ast::TypedExpression) -> TypedExpression {
         TypedExpression {
             expr: match expr.expr {
-                typed_ast::Expression::Int(n) => Expression::Int(n),
-                typed_ast::Expression::Float(n) => Expression::Float(n),
-                typed_ast::Expression::Bool(b) => Expression::Bool(b),
+                typed_ast::Expression::Int(n) => Expression::Int(n.parse().unwrap()),
+                typed_ast::Expression::Float(n) => Expression::Float(n.parse().unwrap()),
+                typed_ast::Expression::Bool(b) => Expression::Bool(b.parse().unwrap()),
                 typed_ast::Expression::Variable(identifier) => {
                     Expression::Variable(self.get_variable(&identifier))
                 }
@@ -157,9 +157,9 @@ impl Lower {
             typed_ast::PatternType::Variable(identifier) => {
                 PatternType::Variable(self.insert_variable(&identifier))
             }
-            typed_ast::PatternType::Int(n) => PatternType::Int(n),
-            typed_ast::PatternType::Float(n) => PatternType::Float(n),
-            typed_ast::PatternType::Bool(b) => PatternType::Bool(b),
+            typed_ast::PatternType::Int(n) => PatternType::Int(n.parse().unwrap()),
+            typed_ast::PatternType::Float(n) => PatternType::Float(n.parse().unwrap()),
+            typed_ast::PatternType::Bool(b) => PatternType::Bool(b.parse().unwrap()),
         };
 
         let condition = arm

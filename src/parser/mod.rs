@@ -10,13 +10,13 @@ use chumsky::{extra, input::SpannedInput, prelude::*};
 
 pub mod ast;
 
-type ParserInput<'tok> = SpannedInput<Token, Span, &'tok [(Token, Span)]>;
+type ParserInput<'src, 'tok> = SpannedInput<Token<'src>, Span, &'tok [(Token<'src>, Span)]>;
 
-type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token, Span, &'src str>>;
+type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src str>>;
 
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast<'src>, ParserExtra<'src, 'tok>> {
     toplevel_parser()
         .with_span()
         .repeated()
@@ -26,7 +26,7 @@ pub fn parser<'src: 'tok, 'tok>(
 }
 
 fn toplevel_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, TopLevel, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, TopLevel<'src>, ParserExtra<'src, 'tok>> {
     let function = function_parser()
         .with_span()
         .map(TopLevel::Function)
@@ -36,7 +36,7 @@ fn toplevel_parser<'src: 'tok, 'tok>(
 }
 
 fn function_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Function, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function<'src>, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span();
 
     let params = function_param_parser()
@@ -76,7 +76,7 @@ fn function_parser<'src: 'tok, 'tok>(
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, FunctionParam, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, FunctionParam, ParserExtra<'src, 'tok>> {
     ident_parser()
         .with_span()
         .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Colon))))
@@ -145,7 +145,7 @@ macro_rules! binary_op {
 }
 
 fn expression_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression<'src>, ParserExtra<'src, 'tok>> {
     recursive(|expression| {
         let int = select! {
             Token::Simple(SimpleToken::Int(num)) => num,
@@ -294,7 +294,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 }
 
 fn ident_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Identifier, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
         Token::Simple(SimpleToken::Identifier(ident)) => ident
     }
@@ -303,7 +303,7 @@ fn ident_parser<'src: 'tok, 'tok>(
 }
 
 fn type_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Type<Identifier>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type<Identifier>, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
         let prim = ident_parser()
             .map(Type::Primitive)
@@ -347,23 +347,28 @@ fn type_parser<'src: 'tok, 'tok>(
 }
 
 trait SpannedExt<'src: 'tok, 'tok, O> {
-    fn with_span(self)
-        -> impl Parser<'tok, ParserInput<'tok>, Spanned<O>, ParserExtra<'src, 'tok>>;
+    fn with_span(
+        self,
+    ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Spanned<O>, ParserExtra<'src, 'tok>>;
 
-    fn parenthesized(self) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>>;
+    fn parenthesized(
+        self,
+    ) -> impl Parser<'tok, ParserInput<'src, 'tok>, O, ParserExtra<'src, 'tok>>;
 }
 
 impl<'src: 'tok, 'tok, P, O> SpannedExt<'src, 'tok, O> for P
 where
-    P: Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>>,
+    P: Parser<'tok, ParserInput<'src, 'tok>, O, ParserExtra<'src, 'tok>>,
 {
     fn with_span(
         self,
-    ) -> impl Parser<'tok, ParserInput<'tok>, Spanned<O>, ParserExtra<'src, 'tok>> {
+    ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Spanned<O>, ParserExtra<'src, 'tok>> {
         self.map_with(|t, e| Spanned::new(t, e.span()))
     }
 
-    fn parenthesized(self) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>> {
+    fn parenthesized(
+        self,
+    ) -> impl Parser<'tok, ParserInput<'src, 'tok>, O, ParserExtra<'src, 'tok>> {
         self.nested_in(select_ref! {
             Token::Parentheses(tokens) = e => tokens.as_slice().spanned(e.span()),
         })

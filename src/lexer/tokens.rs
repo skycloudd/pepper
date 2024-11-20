@@ -4,18 +4,18 @@ use lasso::Spur;
 pub type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    Simple(SimpleToken),
+pub enum Token<'src> {
+    Simple(SimpleToken<'src>),
     Parentheses(Vec<Spanned<Self>>),
     CurlyBraces(Vec<Spanned<Self>>),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SimpleToken {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SimpleToken<'src> {
     Identifier(Identifier),
-    Int(u64),
-    Float(f64),
-    Boolean(bool),
+    Int(&'src str),
+    Float(&'src str),
+    Boolean(&'src str),
     Kw(Kw),
     Punc(Punc),
     Wildcard,
@@ -71,7 +71,7 @@ impl core::fmt::Debug for Identifier {
     }
 }
 
-impl core::fmt::Display for Token {
+impl core::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Simple(simple) => write!(f, "{simple}"),
@@ -81,12 +81,11 @@ impl core::fmt::Display for Token {
     }
 }
 
-impl core::fmt::Display for SimpleToken {
+impl core::fmt::Display for SimpleToken<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Identifier(name) => write!(f, "{}", name.resolve()),
-            Self::Int(num) => write!(f, "{num}"),
-            Self::Float(num) => write!(f, "{num}"),
+            Self::Int(num) | Self::Float(num) => write!(f, "{num}"),
             Self::Boolean(bool) => write!(f, "{bool}"),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),

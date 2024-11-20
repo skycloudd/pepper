@@ -5,19 +5,19 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
-pub struct TypedAst(pub Vec<Spanned<TopLevel>>);
+pub struct TypedAst<'src>(pub Vec<Spanned<TopLevel<'src>>>);
 
 #[derive(Clone, Debug)]
-pub enum TopLevel {
-    Function(Spanned<Function>),
+pub enum TopLevel<'src> {
+    Function(Spanned<Function<'src>>),
 }
 
 #[derive(Clone, Debug)]
-pub struct Function {
+pub struct Function<'src> {
     pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Spanned<Type<Primitive>>,
-    pub body: Spanned<TypedExpression>,
+    pub body: Spanned<TypedExpression<'src>>,
 }
 
 #[derive(Clone, Debug)]
@@ -27,55 +27,55 @@ pub struct FunctionParam {
 }
 
 #[derive(Clone, Debug)]
-pub struct TypedExpression {
-    pub expr: Expression,
+pub struct TypedExpression<'src> {
+    pub expr: Expression<'src>,
     pub ty: Type<Primitive>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Expression {
-    Int(u64),
-    Float(f64),
-    Bool(bool),
+pub enum Expression<'src> {
+    Int(&'src str),
+    Float(&'src str),
+    Bool(&'src str),
     Variable(Identifier),
     BinaryOp {
         op: Spanned<BinaryOp>,
-        lhs: Spanned<Box<TypedExpression>>,
-        rhs: Spanned<Box<TypedExpression>>,
+        lhs: Spanned<Box<TypedExpression<'src>>>,
+        rhs: Spanned<Box<TypedExpression<'src>>>,
     },
     UnaryOp {
         op: Spanned<UnaryOp>,
-        expr: Spanned<Box<TypedExpression>>,
+        expr: Spanned<Box<TypedExpression<'src>>>,
     },
     Call {
-        callee: Spanned<Box<TypedExpression>>,
-        args: Spanned<Vec<Spanned<TypedExpression>>>,
+        callee: Spanned<Box<TypedExpression<'src>>>,
+        args: Spanned<Vec<Spanned<TypedExpression<'src>>>>,
     },
     Match {
-        expr: Spanned<Box<TypedExpression>>,
-        arms: Spanned<Vec<Spanned<MatchArm>>>,
+        expr: Spanned<Box<TypedExpression<'src>>>,
+        arms: Spanned<Vec<Spanned<MatchArm<'src>>>>,
     },
 }
 
 #[derive(Clone, Debug)]
-pub struct MatchArm {
-    pub pattern: Spanned<Pattern>,
-    pub body: Spanned<TypedExpression>,
+pub struct MatchArm<'src> {
+    pub pattern: Spanned<Pattern<'src>>,
+    pub body: Spanned<TypedExpression<'src>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Pattern {
-    pub pattern_type: Spanned<PatternType>,
-    pub condition: Option<Spanned<TypedExpression>>,
+pub struct Pattern<'src> {
+    pub pattern_type: Spanned<PatternType<'src>>,
+    pub condition: Option<Spanned<TypedExpression<'src>>>,
 }
 
 #[derive(Clone, Debug)]
-pub enum PatternType {
+pub enum PatternType<'src> {
     Wildcard,
     Variable(Identifier),
-    Int(u64),
-    Float(f64),
-    Bool(bool),
+    Int(&'src str),
+    Float(&'src str),
+    Bool(&'src str),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

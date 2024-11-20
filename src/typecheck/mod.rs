@@ -119,7 +119,7 @@ impl Typechecker {
         }
     }
 
-    fn typecheck_toplevel(&mut self, toplevel: ast::TopLevel) -> TopLevel {
+    fn typecheck_toplevel<'src>(&mut self, toplevel: ast::TopLevel<'src>) -> TopLevel<'src> {
         match toplevel {
             ast::TopLevel::Function(function) => TopLevel::Function(function.map(|function| {
                 self.names.push_scope();
@@ -131,7 +131,7 @@ impl Typechecker {
         }
     }
 
-    fn typecheck_function(&mut self, function: ast::Function) -> Function {
+    fn typecheck_function<'src>(&mut self, function: ast::Function<'src>) -> Function<'src> {
         let sig = self
             .functions
             .get(&function.name.resolve())
@@ -177,7 +177,7 @@ impl Typechecker {
         }
     }
 
-    fn lower_expression(&mut self, expr: ast::Expression) -> TypedExpression {
+    fn lower_expression<'src>(&mut self, expr: ast::Expression<'src>) -> TypedExpression<'src> {
         match expr {
             ast::Expression::Int(value) => TypedExpression {
                 expr: Expression::Int(value),
@@ -441,7 +441,7 @@ impl Typechecker {
         }
     }
 
-    fn lower_match_arm(&mut self, arm: ast::MatchArm) -> MatchArm {
+    fn lower_match_arm<'src>(&mut self, arm: ast::MatchArm<'src>) -> MatchArm<'src> {
         let pattern = arm.pattern.map(|pattern| {
             let pattern_type = pattern.pattern_type.map(|pattern_type| match pattern_type {
                 ast::PatternType::Wildcard => PatternType::Wildcard,
