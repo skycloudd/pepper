@@ -194,3 +194,4 @@ functions:
                     Primitive: Int
       ty:
         Primitive: Int
+externs: []

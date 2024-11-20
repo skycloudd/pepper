@@ -5,7 +5,7 @@ use crate::{
     typecheck::typed_ast::{self, TypedAst},
 };
 use mir::{
-    Expression, FuncParam, Function, Intrinsic, MatchArm, Mir, Name, Pattern, PatternType,
+    Expression, Extern, FuncParam, Function, Intrinsic, MatchArm, Mir, Name, Pattern, PatternType,
     Primitive, Type, TypedExpression,
 };
 
@@ -23,24 +23,32 @@ struct Lower {
 
 impl Lower {
     fn lower(&mut self, ast: TypedAst) -> Mir {
-        let functions = ast
-            .0
-            .into_iter()
-            .map(|toplevel| match toplevel.0 {
-                typed_ast::TopLevel::Function(spanned) => spanned.0,
-            })
-            .collect::<Vec<_>>();
-
-        for function in &functions {
-            self.insert_variable(&function.name);
+        for toplevel in &ast.0 {
+            match &toplevel.0 {
+                typed_ast::TopLevel::Function(function) => {
+                    self.insert_variable(&function.name);
+                }
+                typed_ast::TopLevel::Extern(extern_) => {
+                    self.insert_variable(&extern_.name);
+                }
+            }
         }
 
-        Mir {
-            functions: functions
-                .into_iter()
-                .map(|function| self.lower_function(function))
-                .collect(),
+        let mut functions = Vec::new();
+        let mut externs = Vec::new();
+
+        for toplevel in ast.0 {
+            match toplevel.0 {
+                typed_ast::TopLevel::Function(function) => {
+                    functions.push(self.lower_function(function.0));
+                }
+                typed_ast::TopLevel::Extern(extern_function) => {
+                    externs.push(self.lower_extern(extern_function.0));
+                }
+            }
         }
+
+        Mir { functions, externs }
     }
 
     fn lower_function(&mut self, function: typed_ast::Function) -> Function {
@@ -69,6 +77,28 @@ impl Lower {
             params,
             return_ty,
             body,
+        }
+    }
+
+    fn lower_extern(&mut self, extern_: typed_ast::Extern) -> Extern {
+        let name = self.get_variable(&extern_.name);
+
+        let params = extern_
+            .params
+            .0
+            .into_iter()
+            .map(|parameter| FuncParam {
+                name: self.insert_variable(&parameter.name),
+                ty: Self::lower_type(parameter.0.ty.0),
+            })
+            .collect();
+
+        let return_ty = Self::lower_type(extern_.return_ty.0);
+
+        Extern {
+            name,
+            params,
+            return_ty,
         }
     }
 

@@ -4,6 +4,7 @@
 #[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
 pub struct Mir {
     pub functions: Vec<Function>,
+    pub externs: Vec<Extern>,
 }
 
 #[derive(Clone, Debug)]
@@ -13,6 +14,14 @@ pub struct Function {
     pub params: Vec<FuncParam>,
     pub return_ty: Type<Primitive>,
     pub body: TypedExpression,
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(test, derive(serde::Deserialize, serde::Serialize))]
+pub struct Extern {
+    pub name: Name,
+    pub params: Vec<FuncParam>,
+    pub return_ty: Type<Primitive>,
 }
 
 #[derive(Clone, Debug)]

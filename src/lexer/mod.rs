@@ -32,6 +32,7 @@ pub fn lexer<'src>(
 
         let keyword = choice((
             text::keyword("func").to(Kw::Func),
+            text::keyword("extern").to(Kw::Extern),
             text::keyword("match").to(Kw::Match),
             text::keyword("where").to(Kw::Where),
         ))
@@ -56,6 +57,7 @@ pub fn lexer<'src>(
             just('<').to(Punc::Less),
             just('>').to(Punc::Greater),
             just('|').to(Punc::Pipe),
+            just(';').to(Punc::Semicolon),
         ))
         .map(SimpleToken::Punc)
         .boxed();

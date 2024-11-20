@@ -10,6 +10,7 @@ pub struct TypedAst<'src>(pub Vec<Spanned<TopLevel<'src>>>);
 #[derive(Clone, Debug)]
 pub enum TopLevel<'src> {
     Function(Spanned<Function<'src>>),
+    Extern(Spanned<Extern>),
 }
 
 #[derive(Clone, Debug)]
@@ -18,6 +19,13 @@ pub struct Function<'src> {
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Spanned<Type<Primitive>>,
     pub body: Spanned<TypedExpression<'src>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Extern {
+    pub name: Spanned<Identifier>,
+    pub params: Spanned<Vec<Spanned<FunctionParam>>>,
+    pub return_ty: Spanned<Type<Primitive>>,
 }
 
 #[derive(Clone, Debug)]

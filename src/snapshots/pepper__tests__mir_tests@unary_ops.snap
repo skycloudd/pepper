@@ -69,3 +69,4 @@ functions:
                 Primitive: Bool
       ty:
         Primitive: Bool
+externs: []

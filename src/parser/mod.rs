@@ -3,8 +3,8 @@ use crate::{
     span::{Span, Spanned},
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, TopLevel,
-    Type, UnaryOp,
+    Ast, BinaryOp, Expression, Extern, Function, FunctionParam, MatchArm, Pattern, PatternType,
+    TopLevel, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -32,11 +32,56 @@ fn toplevel_parser<'src: 'tok, 'tok>(
         .map(TopLevel::Function)
         .boxed();
 
-    choice((function,)).boxed()
+    let extern_ = extern_parser().with_span().map(TopLevel::Extern).boxed();
+
+    choice((function, extern_)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function<'src>, ParserExtra<'src, 'tok>> {
+    let body = expression_parser()
+        .with_span()
+        .boxed()
+        .labelled("function body");
+
+    just(Token::Simple(SimpleToken::Kw(Kw::Func)))
+        .ignore_then(function_signature_parser())
+        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Equals))))
+        .then(body)
+        .map(|((name, params, return_ty), body)| Function {
+            name,
+            params,
+            return_ty,
+            body,
+        })
+        .boxed()
+        .labelled("function")
+}
+
+fn extern_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Extern, ParserExtra<'src, 'tok>> {
+    just(Token::Simple(SimpleToken::Kw(Kw::Extern)))
+        .ignore_then(function_signature_parser())
+        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))).or_not())
+        .map(|(name, params, return_ty)| Extern {
+            name,
+            params,
+            return_ty,
+        })
+        .boxed()
+        .labelled("extern function")
+}
+
+fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
+    'tok,
+    ParserInput<'src, 'tok>,
+    (
+        Spanned<Identifier>,
+        Spanned<Vec<Spanned<FunctionParam>>>,
+        Spanned<Type<Identifier>>,
+    ),
+    ParserExtra<'src, 'tok>,
+> {
     let name = ident_parser().with_span();
 
     let params = function_param_parser()
@@ -54,25 +99,10 @@ fn function_parser<'src: 'tok, 'tok>(
         .boxed()
         .labelled("return type");
 
-    let body = expression_parser()
-        .with_span()
-        .boxed()
-        .labelled("function body");
-
-    just(Token::Simple(SimpleToken::Kw(Kw::Func)))
-        .ignore_then(name)
-        .then(params)
+    name.then(params)
         .then(return_ty)
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Equals))))
-        .then(body)
-        .map(|(((name, params), return_ty), body)| Function {
-            name,
-            params,
-            return_ty,
-            body,
-        })
+        .map(|((name, params), return_ty)| (name, params, return_ty))
         .boxed()
-        .labelled("function")
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(

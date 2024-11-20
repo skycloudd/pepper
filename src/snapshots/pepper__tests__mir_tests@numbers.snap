@@ -105,3 +105,4 @@ functions:
         Int: 4294967296
       ty:
         Primitive: Int
+externs: []

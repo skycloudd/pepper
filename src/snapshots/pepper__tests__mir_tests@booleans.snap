@@ -33,3 +33,4 @@ functions:
         Bool: false
       ty:
         Primitive: Bool
+externs: []

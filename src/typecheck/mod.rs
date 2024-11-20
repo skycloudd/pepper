@@ -7,8 +7,8 @@ use crate::{
 };
 use chumsky::span::Span as _;
 use typed_ast::{
-    Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, Primitive, TopLevel,
-    TypedAst, TypedExpression,
+    Expression, Extern, Function, FunctionParam, MatchArm, Pattern, PatternType, Primitive,
+    TopLevel, TypedAst, TypedExpression,
 };
 
 pub mod typed_ast;
@@ -33,7 +33,39 @@ impl Typechecker {
 
         for toplevel in &ast.0 {
             match &toplevel.0 {
-                ast::TopLevel::Function(function) => self.insert_function_signature(function),
+                ast::TopLevel::Function(function) => {
+                    let function_type = function
+                        .as_ref()
+                        .map(|function| self.function_signature(function));
+
+                    if function.name.resolve() == "main" {
+                        self.found_main = true;
+
+                        let params_wrong = !function_type.params.is_empty();
+                        let return_ty_wrong =
+                            function_type.return_ty.0 != Type::Primitive(Primitive::Int);
+
+                        if params_wrong || return_ty_wrong {
+                            self.errors.push(Error::MainSignatureMismatch {
+                                num_params: function_type.params.0.len(),
+                                return_ty: function_type.return_ty.0.clone(),
+                                params_spans: function_type.params.1,
+                                return_ty_span: function_type.return_ty.1,
+                                params_wrong,
+                                return_ty_wrong,
+                            });
+                        }
+                    }
+
+                    self.insert_function_signature(function.name, function_type);
+                }
+                ast::TopLevel::Extern(extern_) => {
+                    let function_type = extern_
+                        .as_ref()
+                        .map(|extern_| self.extern_signature(extern_));
+
+                    self.insert_function_signature(extern_.name, function_type);
+                }
             }
         }
 
@@ -62,29 +94,11 @@ impl Typechecker {
         }
     }
 
-    fn insert_function_signature(&mut self, function: &Spanned<ast::Function>) {
-        let function_type = function
-            .as_ref()
-            .map(|function| self.function_signature(function));
-
-        if function.name.resolve() == "main" {
-            self.found_main = true;
-
-            let params_wrong = !function_type.params.is_empty();
-            let return_ty_wrong = function_type.return_ty.0 != Type::Primitive(Primitive::Int);
-
-            if params_wrong || return_ty_wrong {
-                self.errors.push(Error::MainSignatureMismatch {
-                    num_params: function_type.params.0.len(),
-                    return_ty: function_type.return_ty.0.clone(),
-                    params_spans: function_type.params.1,
-                    return_ty_span: function_type.return_ty.1,
-                    params_wrong,
-                    return_ty_wrong,
-                });
-            }
-        }
-
+    fn insert_function_signature(
+        &mut self,
+        name: Spanned<Identifier>,
+        function_type: Spanned<FunctionSignature>,
+    ) {
         let ty = Type::Function {
             params: function_type
                 .params
@@ -94,14 +108,12 @@ impl Typechecker {
         };
 
         self.names
-            .insert(function.name.resolve(), Spanned::new(ty, function_type.1));
+            .insert(name.resolve(), Spanned::new(ty, function_type.1));
 
-        let name = function.name.map(Identifier::resolve);
-
-        if let Some(previous) = self.functions.insert(name.0, function_type) {
+        if let Some(previous) = self.functions.insert(name.resolve(), function_type) {
             self.errors.push(Error::FunctionRedefinition {
-                name: name.0,
-                new_span: function.name.1,
+                name: name.resolve(),
+                new_span: name.1,
                 previous_span: previous.1,
             });
         }
@@ -119,6 +131,18 @@ impl Typechecker {
         }
     }
 
+    fn extern_signature(&mut self, extern_: &ast::Extern) -> FunctionSignature {
+        FunctionSignature {
+            params: extern_.params.as_ref().map(|params| {
+                params
+                    .iter()
+                    .map(|param| param.as_ref().map(|param| self.lower_function_param(param)))
+                    .collect()
+            }),
+            return_ty: extern_.return_ty.as_ref().map(|ty| self.lower_type(ty)),
+        }
+    }
+
     fn typecheck_toplevel<'src>(&mut self, toplevel: ast::TopLevel<'src>) -> TopLevel<'src> {
         match toplevel {
             ast::TopLevel::Function(function) => TopLevel::Function(function.map(|function| {
@@ -127,6 +151,16 @@ impl Typechecker {
                 self.names.pop_scope();
 
                 function
+            })),
+            ast::TopLevel::Extern(extern_) => TopLevel::Extern(extern_.map(|extern_| Extern {
+                name: extern_.name,
+                params: extern_.params.map(|params| {
+                    params
+                        .into_iter()
+                        .map(|param| param.map(|param| self.lower_function_param(&param)))
+                        .collect()
+                }),
+                return_ty: extern_.return_ty.map(|ty| self.lower_type(&ty)),
             })),
         }
     }
