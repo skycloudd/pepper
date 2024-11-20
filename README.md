@@ -12,7 +12,7 @@ This project is very early in development.
 
 ```sh
 # compile the example program
-cargo run -- examples/main.pr
+cargo run -- examples
 ```
 
 ## MSRV
