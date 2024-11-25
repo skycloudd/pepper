@@ -1,30 +1,7 @@
-func main() -> int =
-    apply_bin_op_fn(add, 1, 2)
+func main() -> Int32 {
+    var numbers = [1, 2, 3];
 
-func add(x: int, y: int) -> int =
-    x + y
-
-func apply_bin_op_fn(
-    f: func (int, int) -> int,
-    a: int,
-    b: int
-) -> int =
-    f(a, b)
-
-func never_returns() -> ! =
-    never_returns()
-
-func fib(n: int) -> int =
-    match n
-    | n where n < 2 => n
-    | _ => fib(n - 1) + fib(n - 2)
-
-func b_to_n(b: bool) -> int =
-    match b
-    | true => 1
-    | false => 0
-
-func n_to_b(n: int) -> bool =
-    match n
-    | 0 => false
-    | _ => true
+    //for planet in planets {
+    //    print(planet);
+    //}
+}

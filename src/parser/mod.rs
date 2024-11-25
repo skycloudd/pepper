@@ -3,7 +3,7 @@ use crate::{
     span::{Span, Spanned},
 };
 use ast::{
-    Ast, BinaryOp, Expression, Extern, Function, FunctionParam, MatchArm, Pattern, PatternType,
+    Ast, BinaryOp, Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, Statement,
     TopLevel, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
@@ -32,56 +32,11 @@ fn toplevel_parser<'src: 'tok, 'tok>(
         .map(TopLevel::Function)
         .boxed();
 
-    let extern_ = extern_parser().with_span().map(TopLevel::Extern).boxed();
-
-    choice((function, extern_)).boxed()
+    choice((function,)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function, ParserExtra<'src, 'tok>> {
-    let body = expression_parser()
-        .with_span()
-        .boxed()
-        .labelled("function body");
-
-    just(TokenTree::Token(Token::Kw(Kw::Func)))
-        .ignore_then(function_signature_parser())
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
-        .then(body)
-        .map(|((name, params, return_ty), body)| Function {
-            name,
-            params,
-            return_ty,
-            body,
-        })
-        .boxed()
-        .labelled("function")
-}
-
-fn extern_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Extern, ParserExtra<'src, 'tok>> {
-    just(TokenTree::Token(Token::Kw(Kw::Extern)))
-        .ignore_then(function_signature_parser())
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))).or_not())
-        .map(|(name, params, return_ty)| Extern {
-            name,
-            params,
-            return_ty,
-        })
-        .boxed()
-        .labelled("extern function")
-}
-
-fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
-    'tok,
-    ParserInput<'tok>,
-    (
-        Spanned<Interned>,
-        Spanned<Vec<Spanned<FunctionParam>>>,
-        Spanned<Type<Interned>>,
-    ),
-    ParserExtra<'src, 'tok>,
-> {
     let name = ident_parser().with_span();
 
     let params = function_param_parser()
@@ -89,7 +44,7 @@ fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
         .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
         .allow_trailing()
         .collect()
-        .parenthesized()
+        .delim(Delim::Paren)
         .with_span()
         .boxed()
         .labelled("function parameters");
@@ -99,10 +54,28 @@ fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
         .boxed()
         .labelled("return type");
 
-    name.then(params)
-        .then(return_ty)
-        .map(|((name, params), return_ty)| (name, params, return_ty))
+    let body = statement_parser()
+        .with_span()
+        .repeated()
+        .collect()
+        .with_span()
+        .delim(Delim::Brace)
         .boxed()
+        .labelled("function body");
+
+    just(TokenTree::Token(Token::Kw(Kw::Func)))
+        .ignore_then(name)
+        .then(params)
+        .then(return_ty)
+        .then(body)
+        .map(|(((name, params), return_ty), body)| Function {
+            name,
+            params,
+            return_ty,
+            body,
+        })
+        .boxed()
+        .labelled("function")
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(
@@ -114,6 +87,30 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .map(|(name, ty)| FunctionParam { name, ty })
         .boxed()
         .labelled("function parameter")
+}
+
+fn statement_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, Statement, ParserExtra<'src, 'tok>> {
+    let expr = expression_parser()
+        .with_span()
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(Statement::Expression)
+        .boxed();
+
+    let var_decl = just(TokenTree::Token(Token::Kw(Kw::Var)))
+        .ignore_then(ident_parser().with_span())
+        .then(
+            just(TokenTree::Token(Token::Punc(Punc::Colon)))
+                .ignore_then(type_parser().with_span())
+                .or_not(),
+        )
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
+        .then(expression_parser().with_span())
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(|((name, ty), value)| Statement::VarDecl { name, ty, value })
+        .boxed();
+
+    choice((expr, var_decl)).boxed()
 }
 
 macro_rules! unary_op {
@@ -229,19 +226,16 @@ fn expression_parser<'src: 'tok, 'tok>(
             .labelled("match arm");
 
         let match_ = just(TokenTree::Token(Token::Kw(Kw::Match)))
-            .ignore_then(expression.clone().with_span())
+            .ignore_then(expression.clone().map(Box::new).with_span())
             .then(match_arm.repeated().collect().with_span())
-            .map(|(expr, arms)| Expression::Match {
-                expr: expr.boxed(),
-                arms,
-            })
+            .map(|(expr, arms)| Expression::Match { expr, arms })
             .boxed()
             .labelled("match expression");
 
         let parenthesized = expression
             .clone()
             .with_span()
-            .parenthesized()
+            .delim(Delim::Paren)
             .map(|expr| expr.0)
             .boxed()
             .labelled("parenthesized expression");
@@ -254,7 +248,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
             .allow_trailing()
             .collect()
-            .parenthesized()
+            .delim(Delim::Paren)
             .with_span()
             .boxed()
             .labelled("call arguments");
@@ -355,7 +349,7 @@ fn type_parser<'src: 'tok, 'tok>(
                 .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
                 .allow_trailing()
                 .collect()
-                .parenthesized()
+                .delim(Delim::Paren)
                 .with_span()
                 .boxed();
 
@@ -383,7 +377,10 @@ trait SpannedExt<'src: 'tok, 'tok, O> {
     fn with_span(self)
         -> impl Parser<'tok, ParserInput<'tok>, Spanned<O>, ParserExtra<'src, 'tok>>;
 
-    fn parenthesized(self) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>>;
+    fn delim(
+        self,
+        delim: Delim,
+    ) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>>;
 }
 
 impl<'src: 'tok, 'tok, P, O> SpannedExt<'src, 'tok, O> for P
@@ -396,9 +393,12 @@ where
         self.map_with(|t, e| Spanned::new(t, e.span()))
     }
 
-    fn parenthesized(self) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>> {
+    fn delim(
+        self,
+        delim: Delim,
+    ) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>> {
         self.nested_in(select_ref! {
-            TokenTree::Tree(Delim::Paren, tokens) = e => tokens.as_slice().spanned(e.span()),
+            TokenTree::Tree(d, tokens) = e if *d == delim => tokens.as_slice().spanned(e.span()),
         })
     }
 }

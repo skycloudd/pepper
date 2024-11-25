@@ -6,7 +6,6 @@ pub struct Ast(pub Vec<Spanned<TopLevel>>);
 #[derive(Clone, Debug)]
 pub enum TopLevel {
     Function(Spanned<Function>),
-    Extern(Spanned<Extern>),
 }
 
 #[derive(Clone, Debug)]
@@ -14,20 +13,23 @@ pub struct Function {
     pub name: Spanned<Interned>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Spanned<Type<Interned>>,
-    pub body: Spanned<Expression>,
-}
-
-#[derive(Clone, Debug)]
-pub struct Extern {
-    pub name: Spanned<Interned>,
-    pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Spanned<Type<Interned>>,
+    pub body: Spanned<Vec<Spanned<Statement>>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam {
     pub name: Spanned<Interned>,
     pub ty: Spanned<Type<Interned>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum Statement {
+    Expression(Spanned<Expression>),
+    VarDecl {
+        name: Spanned<Interned>,
+        ty: Option<Spanned<Type<Interned>>>,
+        value: Spanned<Expression>,
+    },
 }
 
 #[derive(Clone, Debug)]

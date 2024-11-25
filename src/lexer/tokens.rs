@@ -30,7 +30,9 @@ pub enum Token {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kw {
     Func,
-    Extern,
+    Var,
+    For,
+    In,
     Match,
     Where,
 }
@@ -114,7 +116,9 @@ impl core::fmt::Display for Kw {
             "{}",
             match self {
                 Self::Func => "func",
-                Self::Extern => "extern",
+                Self::Var => "var",
+                Self::For => "for",
+                Self::In => "in",
                 Self::Match => "match",
                 Self::Where => "where",
             }

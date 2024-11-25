@@ -38,7 +38,9 @@ pub fn lexer<'src>(
 
         let keyword = choice((
             text::keyword("func").to(Kw::Func),
-            text::keyword("extern").to(Kw::Extern),
+            text::keyword("var").to(Kw::Var),
+            text::keyword("for").to(Kw::For),
+            text::keyword("in").to(Kw::In),
             text::keyword("match").to(Kw::Match),
             text::keyword("where").to(Kw::Where),
         ))
@@ -98,11 +100,16 @@ pub fn lexer<'src>(
 
         let token = choice((simple, parenthesised, curly_braces, square_brackets))
             .map_with(|token, e| (token, e.span()))
-            .padded_by(comment.repeated())
-            .padded()
             .boxed();
 
-        token.repeated().collect().padded().boxed()
+        token
+            .padded_by(comment.clone().repeated())
+            .padded()
+            .repeated()
+            .collect()
+            .padded_by(comment.repeated())
+            .padded()
+            .boxed()
     })
     .then_ignore(end())
     .boxed()
