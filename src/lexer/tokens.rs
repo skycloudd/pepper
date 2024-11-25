@@ -4,18 +4,18 @@ use lasso::Spur;
 pub type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Token<'src> {
-    Simple(SimpleToken<'src>),
+pub enum Token {
+    Simple(SimpleToken),
     Parentheses(Vec<Spanned<Self>>),
     CurlyBraces(Vec<Spanned<Self>>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SimpleToken<'src> {
-    Identifier(Identifier),
-    Int(&'src str),
-    Float(&'src str),
-    Boolean(&'src str),
+pub enum SimpleToken {
+    Identifier(Interned),
+    Int(Interned),
+    Float(Interned),
+    Boolean(Interned),
     Kw(Kw),
     Punc(Punc),
     Wildcard,
@@ -51,12 +51,16 @@ pub enum Punc {
     Semicolon,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Identifier(Spur, pub Span);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Interned(Spur);
 
-impl Identifier {
-    pub const fn new(name: Spur, span: Span) -> Self {
-        Self(name, span)
+impl Interned {
+    pub const fn new(name: Spur) -> Self {
+        Self(name)
+    }
+
+    pub fn get_or_intern(val: impl AsRef<str>) -> Self {
+        Self::new(RODEO.get_or_intern(val))
     }
 
     pub fn resolve(self) -> &'static str {
@@ -64,16 +68,7 @@ impl Identifier {
     }
 }
 
-impl core::fmt::Debug for Identifier {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Identifier")
-            .field(&self.resolve())
-            .field(&self.1)
-            .finish()
-    }
-}
-
-impl core::fmt::Display for Token<'_> {
+impl core::fmt::Display for Token {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Simple(simple) => write!(f, "{simple}"),
@@ -83,12 +78,13 @@ impl core::fmt::Display for Token<'_> {
     }
 }
 
-impl core::fmt::Display for SimpleToken<'_> {
+impl core::fmt::Display for SimpleToken {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Identifier(name) => write!(f, "{}", name.resolve()),
-            Self::Int(num) | Self::Float(num) => write!(f, "{num}"),
-            Self::Boolean(bool) => write!(f, "{bool}"),
+            Self::Identifier(interned)
+            | Self::Int(interned)
+            | Self::Float(interned)
+            | Self::Boolean(interned) => write!(f, "{}", interned.resolve()),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
             Self::Wildcard => write!(f, "_"),

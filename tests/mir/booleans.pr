@@ -1,3 +1,0 @@
-func main() -> int = 0
-func yes() -> bool = true
-func no() -> bool = false

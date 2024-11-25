@@ -1,6 +1,6 @@
 use crate::{span::Span, RODEO};
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{Identifier, Kw, Punc, SimpleToken, Token};
+use tokens::{Interned, Kw, Punc, SimpleToken, Token};
 
 pub mod tokens;
 
@@ -10,23 +10,29 @@ type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 
 #[must_use]
 pub fn lexer<'src>(
-) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token<'src>>>, ParserExtra<'src>> {
+) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token>>, ParserExtra<'src>> {
     recursive(|tokens| {
         let ident = text::unicode::ident()
-            .map_with(|name, e| Identifier::new(RODEO.get_or_intern(name), e.span()))
+            .map(|name| Interned::new(RODEO.get_or_intern(name)))
             .map(SimpleToken::Identifier)
             .boxed();
 
         let bool = choice((text::keyword("true"), text::keyword("false")))
             .to_slice()
+            .map(Interned::get_or_intern)
             .map(SimpleToken::Boolean)
             .boxed();
 
-        let int = text::int(10).to_slice().map(SimpleToken::Int).boxed();
+        let int = text::int(10)
+            .to_slice()
+            .map(Interned::get_or_intern)
+            .map(SimpleToken::Int)
+            .boxed();
 
         let float = text::int(10)
             .then(just('.').then(text::digits(10).or_not()))
             .to_slice()
+            .map(Interned::get_or_intern)
             .map(SimpleToken::Float)
             .boxed();
 

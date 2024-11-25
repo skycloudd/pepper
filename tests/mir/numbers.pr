@@ -1,9 +1,0 @@
-func main() -> int = 0
-func one() -> int = 1
-func million() -> int = 1000000
-func neg_one() -> int = -1
-func neg_million() -> int = -1000000
-func half() -> float = 0.5
-func neg_half() -> float = -0.5
-func pi_approx() -> float = 3.14159265
-func limit_32() -> int = 4294967296
