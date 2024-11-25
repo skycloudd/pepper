@@ -54,13 +54,8 @@ fn function_parser<'src: 'tok, 'tok>(
         .boxed()
         .labelled("return type");
 
-    let body = statement_parser()
+    let body = block_parser(statement_parser())
         .with_span()
-        .repeated()
-        .collect()
-        .with_span()
-        .delim(Delim::Brace)
-        .boxed()
         .labelled("function body");
 
     just(TokenTree::Token(Token::Kw(Kw::Func)))
@@ -91,26 +86,49 @@ fn function_param_parser<'src: 'tok, 'tok>(
 
 fn statement_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Statement, ParserExtra<'src, 'tok>> {
-    let expr = expression_parser()
+    recursive(|statement| {
+        let expr = expression_parser()
+            .with_span()
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+            .map(Statement::Expression)
+            .boxed();
+
+        let block = block_parser(statement);
+
+        let var_decl = just(TokenTree::Token(Token::Kw(Kw::Var)))
+            .ignore_then(ident_parser().with_span())
+            .then(
+                just(TokenTree::Token(Token::Punc(Punc::Colon)))
+                    .ignore_then(type_parser().with_span())
+                    .or_not(),
+            )
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
+            .then(expression_parser().with_span())
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+            .map(|((name, ty), value)| Statement::VarDecl { name, ty, value })
+            .boxed();
+
+        let for_loop = just(TokenTree::Token(Token::Kw(Kw::For)))
+            .ignore_then(pattern_type_parser().with_span())
+            .then_ignore(just(TokenTree::Token(Token::Kw(Kw::In))))
+            .then(expression_parser().with_span())
+            .then(block.clone().with_span())
+            .map(|((var, iter), body)| Statement::For { var, iter, body });
+
+        choice((expr, block.map(Statement::Block), var_decl, for_loop)).boxed()
+    })
+}
+
+fn block_parser<'src: 'tok, 'tok>(
+    statement: impl Parser<'tok, ParserInput<'tok>, Statement, ParserExtra<'src, 'tok>> + 'tok,
+) -> impl Parser<'tok, ParserInput<'tok>, Vec<Spanned<Statement>>, ParserExtra<'src, 'tok>> + Clone
+{
+    statement
         .with_span()
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-        .map(Statement::Expression)
-        .boxed();
-
-    let var_decl = just(TokenTree::Token(Token::Kw(Kw::Var)))
-        .ignore_then(ident_parser().with_span())
-        .then(
-            just(TokenTree::Token(Token::Punc(Punc::Colon)))
-                .ignore_then(type_parser().with_span())
-                .or_not(),
-        )
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
-        .then(expression_parser().with_span())
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-        .map(|((name, ty), value)| Statement::VarDecl { name, ty, value })
-        .boxed();
-
-    choice((expr, var_decl)).boxed()
+        .repeated()
+        .collect()
+        .delim(Delim::Brace)
+        .boxed()
 }
 
 macro_rules! unary_op {
@@ -205,26 +223,20 @@ fn expression_parser<'src: 'tok, 'tok>(
             .map(Expression::List)
             .boxed();
 
-        let pattern = choice((
-            just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
-            ident_parser().map(PatternType::Variable),
-            int_parser().map(PatternType::Int),
-            float_parser().map(PatternType::Float),
-            bool_parser().map(PatternType::Bool),
-        ))
-        .with_span()
-        .then(
-            just(TokenTree::Token(Token::Kw(Kw::Where)))
-                .ignore_then(expression.clone().with_span())
-                .or_not(),
-        )
-        .map(|(pattern_type, condition)| Pattern {
-            pattern_type,
-            condition,
-        })
-        .with_span()
-        .boxed()
-        .labelled("pattern");
+        let pattern = pattern_type_parser()
+            .with_span()
+            .then(
+                just(TokenTree::Token(Token::Kw(Kw::Where)))
+                    .ignore_then(expression.clone().with_span())
+                    .or_not(),
+            )
+            .map(|(pattern_type, condition)| Pattern {
+                pattern_type,
+                condition,
+            })
+            .with_span()
+            .boxed()
+            .labelled("pattern");
 
         let match_arm = just(TokenTree::Token(Token::Punc(Punc::Pipe)))
             .ignore_then(pattern)
@@ -320,6 +332,18 @@ fn expression_parser<'src: 'tok, 'tok>(
     })
     .boxed()
     .labelled("expression")
+}
+
+fn pattern_type_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, PatternType, ParserExtra<'src, 'tok>> {
+    choice((
+        just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
+        ident_parser().map(PatternType::Variable),
+        int_parser().map(PatternType::Int),
+        float_parser().map(PatternType::Float),
+        bool_parser().map(PatternType::Bool),
+    ))
+    .boxed()
 }
 
 macro_rules! interned_parser {

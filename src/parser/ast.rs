@@ -25,10 +25,16 @@ pub struct FunctionParam {
 #[derive(Clone, Debug)]
 pub enum Statement {
     Expression(Spanned<Expression>),
+    Block(Vec<Spanned<Statement>>),
     VarDecl {
         name: Spanned<Interned>,
         ty: Option<Spanned<Type<Interned>>>,
         value: Spanned<Expression>,
+    },
+    For {
+        var: Spanned<PatternType>,
+        iter: Spanned<Expression>,
+        body: Spanned<Vec<Spanned<Statement>>>,
     },
 }
 
