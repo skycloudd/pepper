@@ -195,6 +195,16 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("variable");
 
+        let list = expression
+            .clone()
+            .with_span()
+            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+            .allow_trailing()
+            .collect()
+            .delim(Delim::Bracket)
+            .map(Expression::List)
+            .boxed();
+
         let pattern = choice((
             just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
@@ -240,7 +250,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("parenthesized expression");
 
-        let atom = choice((parenthesized, match_, int, float, bool, variable)).boxed();
+        let atom = choice((parenthesized, list, match_, int, float, bool, variable)).boxed();
 
         let call_args = expression
             .clone()

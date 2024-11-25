@@ -38,6 +38,7 @@ pub enum Expression {
     Float(Interned),
     Bool(Interned),
     Variable(Spanned<Interned>),
+    List(Vec<Spanned<Expression>>),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<Self>>,

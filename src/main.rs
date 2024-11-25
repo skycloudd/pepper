@@ -38,6 +38,8 @@ fn main() -> ExitCode {
 
     let (ast, mut errors) = parse_file(&args.filename, &mut files);
 
+    eprintln!("ast: {ast:#?}");
+
     let (typed_ast, typecheck_errors) = ast.map_or_else(
         || (None, vec![]),
         |ast| {
@@ -50,7 +52,7 @@ fn main() -> ExitCode {
     errors.extend(typecheck_errors);
 
     if errors.is_empty() {
-        println!("{typed_ast:#?}");
+        eprintln!("typed_ast: {typed_ast:#?}");
         ExitCode::SUCCESS
     } else {
         emit_errors(&errors, &files);
