@@ -1,6 +1,6 @@
 use crate::{span::Span, RODEO};
 use chumsky::{input::WithContext, prelude::*};
-use tokens::{Interned, Kw, Punc, SimpleToken, Token};
+use tokens::{Delim, Interned, Kw, Punc, Token, TokenTree};
 
 pub mod tokens;
 
@@ -10,30 +10,30 @@ type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 
 #[must_use]
 pub fn lexer<'src>(
-) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<Token>>, ParserExtra<'src>> {
+) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<TokenTree>>, ParserExtra<'src>> {
     recursive(|tokens| {
         let ident = text::unicode::ident()
             .map(|name| Interned::new(RODEO.get_or_intern(name)))
-            .map(SimpleToken::Identifier)
+            .map(Token::Identifier)
             .boxed();
 
         let bool = choice((text::keyword("true"), text::keyword("false")))
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(SimpleToken::Boolean)
+            .map(Token::Boolean)
             .boxed();
 
         let int = text::int(10)
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(SimpleToken::Int)
+            .map(Token::Int)
             .boxed();
 
         let float = text::int(10)
             .then(just('.').then(text::digits(10).or_not()))
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(SimpleToken::Float)
+            .map(Token::Float)
             .boxed();
 
         let keyword = choice((
@@ -42,7 +42,7 @@ pub fn lexer<'src>(
             text::keyword("match").to(Kw::Match),
             text::keyword("where").to(Kw::Where),
         ))
-        .map(SimpleToken::Kw)
+        .map(Token::Kw)
         .boxed();
 
         let punctuation = choice((
@@ -65,10 +65,10 @@ pub fn lexer<'src>(
             just('|').to(Punc::Pipe),
             just(';').to(Punc::Semicolon),
         ))
-        .map(SimpleToken::Punc)
+        .map(Token::Punc)
         .boxed();
 
-        let wildcard = text::ascii::keyword("_").to(SimpleToken::Wildcard).boxed();
+        let wildcard = text::ascii::keyword("_").to(Token::Wildcard).boxed();
 
         let comment = just("//")
             .then(any().and_is(just('\n').not()).repeated())
@@ -76,21 +76,27 @@ pub fn lexer<'src>(
             .boxed();
 
         let simple = choice((keyword, bool, ident, float, int, punctuation, wildcard))
-            .map(Token::Simple)
+            .map(TokenTree::Token)
             .boxed();
 
         let parenthesised = tokens
             .clone()
             .delimited_by(just('('), just(')'))
-            .map(Token::Parentheses)
+            .map(|tokens| TokenTree::Tree(Delim::Paren, tokens))
             .boxed();
 
         let curly_braces = tokens
+            .clone()
             .delimited_by(just('{'), just('}'))
-            .map(Token::CurlyBraces)
+            .map(|tokens| TokenTree::Tree(Delim::Brace, tokens))
             .boxed();
 
-        let token = choice((simple, parenthesised, curly_braces))
+        let square_brackets = tokens
+            .delimited_by(just('['), just(']'))
+            .map(|tokens| TokenTree::Tree(Delim::Bracket, tokens))
+            .boxed();
+
+        let token = choice((simple, parenthesised, curly_braces, square_brackets))
             .map_with(|token, e| (token, e.span()))
             .padded_by(comment.repeated())
             .padded()

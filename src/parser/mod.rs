@@ -1,5 +1,5 @@
 use crate::{
-    lexer::tokens::{Interned, Kw, Punc, SimpleToken, Token},
+    lexer::tokens::{Delim, Interned, Kw, Punc, Token, TokenTree},
     span::{Span, Spanned},
 };
 use ast::{
@@ -10,9 +10,9 @@ use chumsky::{extra, input::SpannedInput, prelude::*};
 
 pub mod ast;
 
-type ParserInput<'tok> = SpannedInput<Token, Span, &'tok [(Token, Span)]>;
+type ParserInput<'tok> = SpannedInput<TokenTree, Span, &'tok [(TokenTree, Span)]>;
 
-type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token, Span, &'src str>>;
+type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, TokenTree, Span, &'src str>>;
 
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
@@ -44,9 +44,9 @@ fn function_parser<'src: 'tok, 'tok>(
         .boxed()
         .labelled("function body");
 
-    just(Token::Simple(SimpleToken::Kw(Kw::Func)))
+    just(TokenTree::Token(Token::Kw(Kw::Func)))
         .ignore_then(function_signature_parser())
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Equals))))
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
         .then(body)
         .map(|((name, params, return_ty), body)| Function {
             name,
@@ -60,9 +60,9 @@ fn function_parser<'src: 'tok, 'tok>(
 
 fn extern_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Extern, ParserExtra<'src, 'tok>> {
-    just(Token::Simple(SimpleToken::Kw(Kw::Extern)))
+    just(TokenTree::Token(Token::Kw(Kw::Extern)))
         .ignore_then(function_signature_parser())
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Semicolon))).or_not())
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))).or_not())
         .map(|(name, params, return_ty)| Extern {
             name,
             params,
@@ -86,7 +86,7 @@ fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
 
     let params = function_param_parser()
         .with_span()
-        .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
         .allow_trailing()
         .collect()
         .parenthesized()
@@ -94,7 +94,7 @@ fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
         .boxed()
         .labelled("function parameters");
 
-    let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
+    let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
         .ignore_then(type_parser().with_span())
         .boxed()
         .labelled("return type");
@@ -109,7 +109,7 @@ fn function_param_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, FunctionParam, ParserExtra<'src, 'tok>> {
     ident_parser()
         .with_span()
-        .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::Colon))))
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
         .then(type_parser().with_span())
         .map(|(name, ty)| FunctionParam { name, ty })
         .boxed()
@@ -120,7 +120,7 @@ macro_rules! unary_op {
     ($base:expr, $($punc:expr => $to:expr),* $(,)?) => {{
         let ops = choice((
             $(
-                just(Token::Simple(SimpleToken::Punc($punc))).to($to),
+                just(TokenTree::Token(Token::Punc($punc))).to($to),
             )*
         ))
         .with_span()
@@ -148,7 +148,7 @@ macro_rules! binary_op {
     ($base:expr, $($punc:expr => $to:expr),* $(,)?) => {{
         let ops = choice((
             $(
-                just(Token::Simple(SimpleToken::Punc($punc))).to($to),
+                just(TokenTree::Token(Token::Punc($punc))).to($to),
             )*
         ))
         .with_span()
@@ -199,7 +199,7 @@ fn expression_parser<'src: 'tok, 'tok>(
             .labelled("variable");
 
         let pattern = choice((
-            just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
+            just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
             int_parser().map(PatternType::Int),
             float_parser().map(PatternType::Float),
@@ -207,7 +207,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         ))
         .with_span()
         .then(
-            just(Token::Simple(SimpleToken::Kw(Kw::Where)))
+            just(TokenTree::Token(Token::Kw(Kw::Where)))
                 .ignore_then(expression.clone().with_span())
                 .or_not(),
         )
@@ -219,16 +219,16 @@ fn expression_parser<'src: 'tok, 'tok>(
         .boxed()
         .labelled("pattern");
 
-        let match_arm = just(Token::Simple(SimpleToken::Punc(Punc::Pipe)))
+        let match_arm = just(TokenTree::Token(Token::Punc(Punc::Pipe)))
             .ignore_then(pattern)
-            .then_ignore(just(Token::Simple(SimpleToken::Punc(Punc::DoubleArrow))))
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
             .then(expression.clone().with_span())
             .map(|(pattern, body)| MatchArm { pattern, body })
             .with_span()
             .boxed()
             .labelled("match arm");
 
-        let match_ = just(Token::Simple(SimpleToken::Kw(Kw::Match)))
+        let match_ = just(TokenTree::Token(Token::Kw(Kw::Match)))
             .ignore_then(expression.clone().with_span())
             .then(match_arm.repeated().collect().with_span())
             .map(|(expr, arms)| Expression::Match {
@@ -251,7 +251,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         let call_args = expression
             .clone()
             .with_span()
-            .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
             .allow_trailing()
             .collect()
             .parenthesized()
@@ -323,7 +323,7 @@ macro_rules! interned_parser {
         fn $name<'src: 'tok, 'tok>(
         ) -> impl Parser<'tok, ParserInput<'tok>, Interned, ParserExtra<'src, 'tok>> {
             select! {
-                Token::Simple(SimpleToken::$token(ident)) => ident
+                TokenTree::Token(Token::$token(ident)) => ident
             }
         }
     };
@@ -343,7 +343,7 @@ fn type_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("primitive type");
 
-        let never = just(Token::Simple(SimpleToken::Punc(Punc::Bang)))
+        let never = just(TokenTree::Token(Token::Punc(Punc::Bang)))
             .to(Type::Never)
             .boxed()
             .labelled("never type");
@@ -352,18 +352,18 @@ fn type_parser<'src: 'tok, 'tok>(
             let params = type_
                 .clone()
                 .with_span()
-                .separated_by(just(Token::Simple(SimpleToken::Punc(Punc::Comma))))
+                .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
                 .allow_trailing()
                 .collect()
                 .parenthesized()
                 .with_span()
                 .boxed();
 
-            let return_ty = just(Token::Simple(SimpleToken::Punc(Punc::Arrow)))
+            let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
                 .ignore_then(type_.with_span())
                 .boxed();
 
-            just(Token::Simple(SimpleToken::Kw(Kw::Func)))
+            just(TokenTree::Token(Token::Kw(Kw::Func)))
                 .ignore_then(params)
                 .then(return_ty)
                 .boxed()
@@ -398,7 +398,7 @@ where
 
     fn parenthesized(self) -> impl Parser<'tok, ParserInput<'tok>, O, ParserExtra<'src, 'tok>> {
         self.nested_in(select_ref! {
-            Token::Parentheses(tokens) = e => tokens.as_slice().spanned(e.span()),
+            TokenTree::Tree(Delim::Paren, tokens) = e => tokens.as_slice().spanned(e.span()),
         })
     }
 }

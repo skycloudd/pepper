@@ -3,15 +3,21 @@ use lasso::Spur;
 
 pub type Spanned<T> = (T, Span);
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    Simple(SimpleToken),
-    Parentheses(Vec<Spanned<Self>>),
-    CurlyBraces(Vec<Spanned<Self>>),
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TokenTree {
+    Token(Token),
+    Tree(Delim, Vec<Spanned<Self>>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SimpleToken {
+pub enum Delim {
+    Paren,
+    Brace,
+    Bracket,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Token {
     Identifier(Interned),
     Int(Interned),
     Float(Interned),
@@ -68,17 +74,26 @@ impl Interned {
     }
 }
 
-impl core::fmt::Display for Token {
+impl core::fmt::Display for TokenTree {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Simple(simple) => write!(f, "{simple}"),
-            Self::Parentheses(_tokens) => write!(f, "(...)"),
-            Self::CurlyBraces(_tokens) => write!(f, "{{...}}"),
+            Self::Token(token) => write!(f, "{token}"),
+            Self::Tree(delim, _tokens) => write!(f, "{delim}"),
         }
     }
 }
 
-impl core::fmt::Display for SimpleToken {
+impl core::fmt::Display for Delim {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Paren => write!(f, "(...)"),
+            Self::Brace => write!(f, "{{...}}"),
+            Self::Bracket => write!(f, "[...]"),
+        }
+    }
+}
+
+impl core::fmt::Display for Token {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Identifier(interned)
