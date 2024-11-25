@@ -1,0 +1,590 @@
+---
+source: src/main.rs
+description: "func main() -> int = 0\n\nfunc add(a: int, b: int) -> int =\n    a + b\n\nfunc sub(a: int, b: int) -> int =\n    a - b\n\nfunc mul(a: int, b: int) -> int =\n    a * b\n\nfunc div(a: int, b: int) -> int =\n    a / b\n\nfunc eq(a: int, b: int) -> bool =\n    a == b\n\nfunc ne(a: int, b: int) -> bool =\n    a != b\n\nfunc lt(a: int, b: int) -> bool =\n    a < b\n\nfunc lte(a: int, b: int) -> bool =\n    a <= b\n\nfunc gt(a: int, b: int) -> bool =\n    a > b\n\nfunc gte(a: int, b: int) -> bool =\n    a >= b\n\nfunc addf(a: float, b: float) -> float =\n    a + b\n\nfunc subf(a: float, b: float) -> float =\n    a - b\n\nfunc mulf(a: float, b: float) -> float =\n    a * b\n\nfunc divf(a: float, b: float) -> float =\n    a / b\n\nfunc eqf(a: float, b: float) -> bool =\n    a == b\n\nfunc nef(a: float, b: float) -> bool =\n    a != b\n\nfunc ltf(a: float, b: float) -> bool =\n    a < b\n\nfunc ltef(a: float, b: float) -> bool =\n    a <= b\n\nfunc gtf(a: float, b: float) -> bool =\n    a > b\n\nfunc gtef(a: float, b: float) -> bool =\n    a >= b\n\nfunc eqb(a: bool, b: bool) -> bool =\n    a == b\n\nfunc neb(a: bool, b: bool) -> bool =\n    a != b\n\n// func andb(a: bool, b: bool) -> bool =\n//     a && b\n\n// func orb(a: bool, b: bool) -> bool =\n//     a || b"
+expression: mir
+info: tests/mir/bin_ops.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Int: 0
+      ty:
+        Primitive: Int
+  - name: 1
+    params:
+      - name: 23
+        ty:
+          Primitive: Int
+      - name: 24
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Intrinsic:
+          AddInts:
+            lhs:
+              expr:
+                Variable: 23
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 24
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Int
+  - name: 2
+    params:
+      - name: 25
+        ty:
+          Primitive: Int
+      - name: 26
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Intrinsic:
+          SubInts:
+            lhs:
+              expr:
+                Variable: 25
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 26
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Int
+  - name: 3
+    params:
+      - name: 27
+        ty:
+          Primitive: Int
+      - name: 28
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Intrinsic:
+          MulInts:
+            lhs:
+              expr:
+                Variable: 27
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 28
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Int
+  - name: 4
+    params:
+      - name: 29
+        ty:
+          Primitive: Int
+      - name: 30
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Intrinsic:
+          DivInts:
+            lhs:
+              expr:
+                Variable: 29
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 30
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Int
+  - name: 5
+    params:
+      - name: 31
+        ty:
+          Primitive: Int
+      - name: 32
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          EqInts:
+            lhs:
+              expr:
+                Variable: 31
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 32
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 6
+    params:
+      - name: 33
+        ty:
+          Primitive: Int
+      - name: 34
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          NeqInts:
+            lhs:
+              expr:
+                Variable: 33
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 34
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 7
+    params:
+      - name: 35
+        ty:
+          Primitive: Int
+      - name: 36
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LtInts:
+            lhs:
+              expr:
+                Variable: 35
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 36
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 8
+    params:
+      - name: 37
+        ty:
+          Primitive: Int
+      - name: 38
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LteInts:
+            lhs:
+              expr:
+                Variable: 37
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 38
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 9
+    params:
+      - name: 39
+        ty:
+          Primitive: Int
+      - name: 40
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GtInts:
+            lhs:
+              expr:
+                Variable: 39
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 40
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 10
+    params:
+      - name: 41
+        ty:
+          Primitive: Int
+      - name: 42
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GteInts:
+            lhs:
+              expr:
+                Variable: 41
+              ty:
+                Primitive: Int
+            rhs:
+              expr:
+                Variable: 42
+              ty:
+                Primitive: Int
+      ty:
+        Primitive: Bool
+  - name: 11
+    params:
+      - name: 43
+        ty:
+          Primitive: Float
+      - name: 44
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          AddFloats:
+            lhs:
+              expr:
+                Variable: 43
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 44
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 12
+    params:
+      - name: 45
+        ty:
+          Primitive: Float
+      - name: 46
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          SubFloats:
+            lhs:
+              expr:
+                Variable: 45
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 46
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 13
+    params:
+      - name: 47
+        ty:
+          Primitive: Float
+      - name: 48
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          MulFloats:
+            lhs:
+              expr:
+                Variable: 47
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 48
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 14
+    params:
+      - name: 49
+        ty:
+          Primitive: Float
+      - name: 50
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Float
+    body:
+      expr:
+        Intrinsic:
+          DivFloats:
+            lhs:
+              expr:
+                Variable: 49
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 50
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Float
+  - name: 15
+    params:
+      - name: 51
+        ty:
+          Primitive: Float
+      - name: 52
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          EqFloats:
+            lhs:
+              expr:
+                Variable: 51
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 52
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 16
+    params:
+      - name: 53
+        ty:
+          Primitive: Float
+      - name: 54
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          NeqFloats:
+            lhs:
+              expr:
+                Variable: 53
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 54
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 17
+    params:
+      - name: 55
+        ty:
+          Primitive: Float
+      - name: 56
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LtFloats:
+            lhs:
+              expr:
+                Variable: 55
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 56
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 18
+    params:
+      - name: 57
+        ty:
+          Primitive: Float
+      - name: 58
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          LteFloats:
+            lhs:
+              expr:
+                Variable: 57
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 58
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 19
+    params:
+      - name: 59
+        ty:
+          Primitive: Float
+      - name: 60
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GtFloats:
+            lhs:
+              expr:
+                Variable: 59
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 60
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 20
+    params:
+      - name: 61
+        ty:
+          Primitive: Float
+      - name: 62
+        ty:
+          Primitive: Float
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          GteFloats:
+            lhs:
+              expr:
+                Variable: 61
+              ty:
+                Primitive: Float
+            rhs:
+              expr:
+                Variable: 62
+              ty:
+                Primitive: Float
+      ty:
+        Primitive: Bool
+  - name: 21
+    params:
+      - name: 63
+        ty:
+          Primitive: Bool
+      - name: 64
+        ty:
+          Primitive: Bool
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          EqBools:
+            lhs:
+              expr:
+                Variable: 63
+              ty:
+                Primitive: Bool
+            rhs:
+              expr:
+                Variable: 64
+              ty:
+                Primitive: Bool
+      ty:
+        Primitive: Bool
+  - name: 22
+    params:
+      - name: 65
+        ty:
+          Primitive: Bool
+      - name: 66
+        ty:
+          Primitive: Bool
+    return_ty:
+      Primitive: Bool
+    body:
+      expr:
+        Intrinsic:
+          NeqBools:
+            lhs:
+              expr:
+                Variable: 65
+              ty:
+                Primitive: Bool
+            rhs:
+              expr:
+                Variable: 66
+              ty:
+                Primitive: Bool
+      ty:
+        Primitive: Bool
+externs: []

@@ -1,0 +1,32 @@
+---
+source: src/main.rs
+description: "func main() -> int = 0\n\nextern malloc(size: int) -> int;\n\nextern free(ptr: int) -> int;"
+expression: mir
+info: tests/mir/extern.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Int: 0
+      ty:
+        Primitive: Int
+externs:
+  - name: 1
+    params:
+      - name: 3
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+  - name: 2
+    params:
+      - name: 4
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int

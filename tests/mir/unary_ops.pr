@@ -1,0 +1,4 @@
+func main() -> int = 0
+func neg(a: int) -> int = -a
+func negf(a: float) -> float = -a
+func not(a: bool) -> bool = !a

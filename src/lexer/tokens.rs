@@ -12,7 +12,7 @@ pub enum Token<'src> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SimpleToken<'src> {
-    Identifier(Interned),
+    Identifier(Identifier),
     Int(&'src str),
     Float(&'src str),
     Boolean(&'src str),
@@ -52,11 +52,11 @@ pub enum Punc {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Interned(Spur);
+pub struct Identifier(Spur, pub Span);
 
-impl Interned {
-    pub fn new(literal: impl AsRef<str>) -> Self {
-        Self(RODEO.get_or_intern(literal))
+impl Identifier {
+    pub const fn new(name: Spur, span: Span) -> Self {
+        Self(name, span)
     }
 
     pub fn resolve(self) -> &'static str {
@@ -64,9 +64,12 @@ impl Interned {
     }
 }
 
-impl core::fmt::Debug for Interned {
+impl core::fmt::Debug for Identifier {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Interned").field(&self.resolve()).finish()
+        f.debug_tuple("Identifier")
+            .field(&self.resolve())
+            .field(&self.1)
+            .finish()
     }
 }
 

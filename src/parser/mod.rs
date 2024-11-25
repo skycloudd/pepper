@@ -1,5 +1,5 @@
 use crate::{
-    lexer::tokens::{Interned, Kw, Punc, SimpleToken, Token},
+    lexer::tokens::{Identifier, Kw, Punc, SimpleToken, Token},
     span::{Span, Spanned},
 };
 use ast::{
@@ -16,7 +16,7 @@ type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, Token<'src>, Span, &'src st
 
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Ast<'src>, ParserExtra<'src, 'tok>> {
     toplevel_parser()
         .with_span()
         .repeated()
@@ -26,7 +26,7 @@ pub fn parser<'src: 'tok, 'tok>(
 }
 
 fn toplevel_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, TopLevel, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, TopLevel<'src>, ParserExtra<'src, 'tok>> {
     let function = function_parser()
         .with_span()
         .map(TopLevel::Function)
@@ -38,7 +38,7 @@ fn toplevel_parser<'src: 'tok, 'tok>(
 }
 
 fn function_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Function<'src>, ParserExtra<'src, 'tok>> {
     let body = expression_parser()
         .with_span()
         .boxed()
@@ -76,9 +76,9 @@ fn function_signature_parser<'src: 'tok, 'tok>() -> impl Parser<
     'tok,
     ParserInput<'src, 'tok>,
     (
-        Spanned<Interned>,
+        Spanned<Identifier>,
         Spanned<Vec<Spanned<FunctionParam>>>,
-        Spanned<Type<Spanned<Interned>>>,
+        Spanned<Type<Identifier>>,
     ),
     ParserExtra<'src, 'tok>,
 > {
@@ -175,12 +175,11 @@ macro_rules! binary_op {
 }
 
 fn expression_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Expression<'src>, ParserExtra<'src, 'tok>> {
     recursive(|expression| {
         let int = select! {
             Token::Simple(SimpleToken::Int(num)) => num,
         }
-        .map(Interned::new)
         .map(Expression::Int)
         .boxed()
         .labelled("integer");
@@ -188,7 +187,6 @@ fn expression_parser<'src: 'tok, 'tok>(
         let float = select! {
             Token::Simple(SimpleToken::Float(num)) => num,
         }
-        .map(Interned::new)
         .map(Expression::Float)
         .boxed()
         .labelled("float");
@@ -196,13 +194,11 @@ fn expression_parser<'src: 'tok, 'tok>(
         let bool = select! {
             Token::Simple(SimpleToken::Boolean(bool)) => bool,
         }
-        .map(Interned::new)
         .map(Expression::Bool)
         .boxed()
         .labelled("boolean");
 
         let variable = ident_parser()
-            .with_span()
             .map(Expression::Variable)
             .boxed()
             .labelled("variable");
@@ -210,15 +206,9 @@ fn expression_parser<'src: 'tok, 'tok>(
         let pattern = choice((
             just(Token::Simple(SimpleToken::Wildcard)).to(PatternType::Wildcard),
             ident_parser().map(PatternType::Variable),
-            select! { Token::Simple(SimpleToken::Int(num)) => num }
-                .map(Interned::new)
-                .map(PatternType::Int),
-            select! { Token::Simple(SimpleToken::Float(num)) => num }
-                .map(Interned::new)
-                .map(PatternType::Float),
-            select! { Token::Simple(SimpleToken::Boolean(bool)) => bool }
-                .map(Interned::new)
-                .map(PatternType::Bool),
+            select! { Token::Simple(SimpleToken::Int(num)) => num }.map(PatternType::Int),
+            select! { Token::Simple(SimpleToken::Float(num)) => num }.map(PatternType::Float),
+            select! { Token::Simple(SimpleToken::Boolean(bool)) => bool }.map(PatternType::Bool),
         ))
         .with_span()
         .then(
@@ -334,7 +324,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 }
 
 fn ident_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Interned, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Identifier, ParserExtra<'src, 'tok>> {
     select! {
         Token::Simple(SimpleToken::Identifier(ident)) => ident
     }
@@ -343,10 +333,9 @@ fn ident_parser<'src: 'tok, 'tok>(
 }
 
 fn type_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type<Spanned<Interned>>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'src, 'tok>, Type<Identifier>, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
         let prim = ident_parser()
-            .with_span()
             .map(Type::Primitive)
             .boxed()
             .labelled("primitive type");

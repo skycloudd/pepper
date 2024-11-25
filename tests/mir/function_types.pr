@@ -1,0 +1,17 @@
+func main() -> int =
+    takes_bin_op(neg, returns_bin_op())
+
+func takes_bin_op(un: func (int) -> int, bin: func (int, int) -> int) -> int =
+    bin(takes_un_op(un, 1), takes_un_op(un, 2))
+
+func returns_bin_op() -> func (int, int) -> int =
+    multiply
+
+func takes_un_op(op: func (int) -> int, n: int) -> int =
+    op(n)
+
+func neg(n: int) -> int =
+    -n
+
+func multiply(a: int, b: int) -> int =
+    a * b

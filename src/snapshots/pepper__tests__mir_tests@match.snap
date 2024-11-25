@@ -1,0 +1,168 @@
+---
+source: src/main.rs
+description: "func main() -> int =\n    bool_to_int(match_on_int(123) == 2)\n\nfunc bool_to_int(b: bool) -> int =\n    match b\n    | true => 1\n    | false => 0\n\nfunc match_on_int(x: int) -> int =\n    match x\n    | n where n < 100 => 1\n    | x where x < 200 => 2\n    | n => n"
+expression: mir
+info: tests/mir/match.pr
+snapshot_kind: text
+---
+functions:
+  - name: 0
+    params: []
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Call:
+          callee:
+            expr:
+              Variable: 1
+            ty:
+              Function:
+                params:
+                  - Primitive: Bool
+                return_ty:
+                  Primitive: Int
+          args:
+            - expr:
+                Intrinsic:
+                  EqInts:
+                    lhs:
+                      expr:
+                        Call:
+                          callee:
+                            expr:
+                              Variable: 2
+                            ty:
+                              Function:
+                                params:
+                                  - Primitive: Int
+                                return_ty:
+                                  Primitive: Int
+                          args:
+                            - expr:
+                                Int: 123
+                              ty:
+                                Primitive: Int
+                      ty:
+                        Primitive: Int
+                    rhs:
+                      expr:
+                        Int: 2
+                      ty:
+                        Primitive: Int
+              ty:
+                Primitive: Bool
+      ty:
+        Primitive: Int
+  - name: 1
+    params:
+      - name: 3
+        ty:
+          Primitive: Bool
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Match:
+          expr:
+            expr:
+              Variable: 3
+            ty:
+              Primitive: Bool
+          arms:
+            - pattern:
+                pattern_type:
+                  Bool: true
+                condition: ~
+              body:
+                expr:
+                  Int: 1
+                ty:
+                  Primitive: Int
+            - pattern:
+                pattern_type:
+                  Bool: false
+                condition: ~
+              body:
+                expr:
+                  Int: 0
+                ty:
+                  Primitive: Int
+      ty:
+        Primitive: Int
+  - name: 2
+    params:
+      - name: 4
+        ty:
+          Primitive: Int
+    return_ty:
+      Primitive: Int
+    body:
+      expr:
+        Match:
+          expr:
+            expr:
+              Variable: 4
+            ty:
+              Primitive: Int
+          arms:
+            - pattern:
+                pattern_type:
+                  Variable: 5
+                condition:
+                  expr:
+                    Intrinsic:
+                      LtInts:
+                        lhs:
+                          expr:
+                            Variable: 5
+                          ty:
+                            Primitive: Int
+                        rhs:
+                          expr:
+                            Int: 100
+                          ty:
+                            Primitive: Int
+                  ty:
+                    Primitive: Bool
+              body:
+                expr:
+                  Int: 1
+                ty:
+                  Primitive: Int
+            - pattern:
+                pattern_type:
+                  Variable: 6
+                condition:
+                  expr:
+                    Intrinsic:
+                      LtInts:
+                        lhs:
+                          expr:
+                            Variable: 6
+                          ty:
+                            Primitive: Int
+                        rhs:
+                          expr:
+                            Int: 200
+                          ty:
+                            Primitive: Int
+                  ty:
+                    Primitive: Bool
+              body:
+                expr:
+                  Int: 2
+                ty:
+                  Primitive: Int
+            - pattern:
+                pattern_type:
+                  Variable: 7
+                condition: ~
+              body:
+                expr:
+                  Variable: 7
+                ty:
+                  Primitive: Int
+      ty:
+        Primitive: Int
+externs: []

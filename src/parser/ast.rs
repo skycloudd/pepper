@@ -1,48 +1,41 @@
-use crate::{lexer::tokens::Interned, span::Spanned};
+use crate::{lexer::tokens::Identifier, span::Spanned};
 
 #[derive(Clone, Debug)]
-pub struct Module {
-    pub name: Interned,
-    pub ast: Ast,
-    pub children: Vec<Self>,
-}
+pub struct Ast<'src>(pub Vec<Spanned<TopLevel<'src>>>);
 
 #[derive(Clone, Debug)]
-pub struct Ast(pub Vec<Spanned<TopLevel>>);
-
-#[derive(Clone, Debug)]
-pub enum TopLevel {
-    Function(Spanned<Function>),
+pub enum TopLevel<'src> {
+    Function(Spanned<Function<'src>>),
     Extern(Spanned<Extern>),
 }
 
 #[derive(Clone, Debug)]
-pub struct Function {
-    pub name: Spanned<Interned>,
+pub struct Function<'src> {
+    pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Spanned<Type<Spanned<Interned>>>,
-    pub body: Spanned<Expression>,
+    pub return_ty: Spanned<Type<Identifier>>,
+    pub body: Spanned<Expression<'src>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Extern {
-    pub name: Spanned<Interned>,
+    pub name: Spanned<Identifier>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
-    pub return_ty: Spanned<Type<Spanned<Interned>>>,
+    pub return_ty: Spanned<Type<Identifier>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam {
-    pub name: Spanned<Interned>,
-    pub ty: Spanned<Type<Spanned<Interned>>>,
+    pub name: Spanned<Identifier>,
+    pub ty: Spanned<Type<Identifier>>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Expression {
-    Int(Interned),
-    Float(Interned),
-    Bool(Interned),
-    Variable(Spanned<Interned>),
+pub enum Expression<'src> {
+    Int(&'src str),
+    Float(&'src str),
+    Bool(&'src str),
+    Variable(Identifier),
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<Self>>,
@@ -58,29 +51,29 @@ pub enum Expression {
     },
     Match {
         expr: Spanned<Box<Self>>,
-        arms: Spanned<Vec<Spanned<MatchArm>>>,
+        arms: Spanned<Vec<Spanned<MatchArm<'src>>>>,
     },
 }
 
 #[derive(Clone, Debug)]
-pub struct MatchArm {
-    pub pattern: Spanned<Pattern>,
-    pub body: Spanned<Expression>,
+pub struct MatchArm<'src> {
+    pub pattern: Spanned<Pattern<'src>>,
+    pub body: Spanned<Expression<'src>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Pattern {
-    pub pattern_type: Spanned<PatternType>,
-    pub condition: Option<Spanned<Expression>>,
+pub struct Pattern<'src> {
+    pub pattern_type: Spanned<PatternType<'src>>,
+    pub condition: Option<Spanned<Expression<'src>>>,
 }
 
 #[derive(Clone, Debug)]
-pub enum PatternType {
+pub enum PatternType<'src> {
     Wildcard,
-    Variable(Interned),
-    Int(Interned),
-    Float(Interned),
-    Bool(Interned),
+    Variable(Identifier),
+    Int(&'src str),
+    Float(&'src str),
+    Bool(&'src str),
 }
 
 #[derive(Clone, Copy, Debug)]
