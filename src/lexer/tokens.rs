@@ -36,27 +36,28 @@ pub enum Kw {
     In,
     Match,
     Where,
+    Import,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Punc {
     Arrow,
     DoubleArrow,
+    DoubleEquals,
+    NotEquals,
+    LessEquals,
+    GreaterEquals,
     Plus,
     Minus,
     Star,
     Slash,
     Colon,
     Comma,
-    DoubleEquals,
-    NotEquals,
+    Period,
     Equals,
     Bang,
-    LessEquals,
-    GreaterEquals,
     Less,
     Greater,
-    Pipe,
     Semicolon,
 }
 
@@ -129,6 +130,7 @@ impl core::fmt::Display for Kw {
                 Self::In => "in",
                 Self::Match => "match",
                 Self::Where => "where",
+                Self::Import => "import",
             }
         )
     }
@@ -142,21 +144,21 @@ impl core::fmt::Display for Punc {
             match self {
                 Self::Arrow => "->",
                 Self::DoubleArrow => "=>",
+                Self::DoubleEquals => "==",
+                Self::NotEquals => "!=",
+                Self::LessEquals => "<=",
+                Self::GreaterEquals => ">=",
                 Self::Plus => "+",
                 Self::Minus => "-",
                 Self::Star => "*",
                 Self::Slash => "/",
                 Self::Colon => ":",
                 Self::Comma => ",",
-                Self::DoubleEquals => "==",
-                Self::NotEquals => "!=",
+                Self::Period => ".",
                 Self::Equals => "=",
                 Self::Bang => "!",
-                Self::LessEquals => "<=",
-                Self::GreaterEquals => ">=",
                 Self::Less => "<",
                 Self::Greater => ">",
-                Self::Pipe => "|",
                 Self::Semicolon => ";",
             }
         )

@@ -50,6 +50,7 @@ pub fn lexer<'src>(
             text::keyword("in").to(Kw::In),
             text::keyword("match").to(Kw::Match),
             text::keyword("where").to(Kw::Where),
+            text::keyword("import").to(Kw::Import),
         ))
         .map(Token::Kw)
         .boxed();
@@ -57,22 +58,22 @@ pub fn lexer<'src>(
         let punctuation = choice((
             just("->").to(Punc::Arrow),
             just("=>").to(Punc::DoubleArrow),
-            just('+').to(Punc::Plus),
-            just('-').to(Punc::Minus),
-            just('*').to(Punc::Star),
-            just('/').to(Punc::Slash),
-            just(':').to(Punc::Colon),
-            just(',').to(Punc::Comma),
             just("==").to(Punc::DoubleEquals),
             just("!=").to(Punc::NotEquals),
-            just('=').to(Punc::Equals),
-            just('!').to(Punc::Bang),
             just("<=").to(Punc::LessEquals),
             just(">=").to(Punc::GreaterEquals),
-            just('<').to(Punc::Less),
-            just('>').to(Punc::Greater),
-            just('|').to(Punc::Pipe),
-            just(';').to(Punc::Semicolon),
+            just("+").to(Punc::Plus),
+            just("-").to(Punc::Minus),
+            just("*").to(Punc::Star),
+            just("/").to(Punc::Slash),
+            just(":").to(Punc::Colon),
+            just(",").to(Punc::Comma),
+            just(".").to(Punc::Period),
+            just("=").to(Punc::Equals),
+            just("!").to(Punc::Bang),
+            just("<").to(Punc::Less),
+            just(">").to(Punc::Greater),
+            just(";").to(Punc::Semicolon),
         ))
         .map(Token::Punc)
         .boxed();

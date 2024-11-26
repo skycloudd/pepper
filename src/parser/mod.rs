@@ -3,8 +3,8 @@ use crate::{
     span::{Span, Spanned},
 };
 use ast::{
-    Ast, BinaryOp, Expression, Function, FunctionParam, MatchArm, Pattern, PatternType, Statement,
-    TopLevel, Type, UnaryOp,
+    Ast, AstType, BinaryOp, Block, Expression, Function, FunctionParam, Item, MatchArm, Path,
+    Pattern, PatternType, Statement, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -17,7 +17,7 @@ type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, TokenTree, Span, &'src str>
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> {
-    toplevel_parser()
+    item_parser()
         .with_span()
         .repeated()
         .collect()
@@ -25,14 +25,17 @@ pub fn parser<'src: 'tok, 'tok>(
         .boxed()
 }
 
-fn toplevel_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, TopLevel, ParserExtra<'src, 'tok>> {
-    let function = function_parser()
-        .with_span()
-        .map(TopLevel::Function)
+fn item_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, Item, ParserExtra<'src, 'tok>> {
+    let function = function_parser().with_span().map(Item::Function).boxed();
+
+    let import = just(TokenTree::Token(Token::Kw(Kw::Import)))
+        .ignore_then(path_parser().with_span())
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(Item::Import)
         .boxed();
 
-    choice((function,)).boxed()
+    choice((function, import)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -51,10 +54,11 @@ fn function_parser<'src: 'tok, 'tok>(
 
     let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
         .ignore_then(type_parser().with_span())
+        .or_not()
         .boxed()
         .labelled("return type");
 
-    let body = block_parser(statement_parser())
+    let body = block_parser(expression_parser())
         .with_span()
         .labelled("function body");
 
@@ -85,49 +89,44 @@ fn function_param_parser<'src: 'tok, 'tok>(
 }
 
 fn statement_parser<'src: 'tok, 'tok>(
+    expression: impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> + Clone + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, Statement, ParserExtra<'src, 'tok>> {
-    recursive(|statement| {
-        let expr = expression_parser()
-            .with_span()
-            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-            .map(Statement::Expression)
-            .boxed();
+    let expr = expression
+        .clone()
+        .with_span()
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(Statement::Expression)
+        .boxed();
 
-        let block = block_parser(statement);
+    let var_decl = just(TokenTree::Token(Token::Kw(Kw::Var)))
+        .ignore_then(ident_parser().with_span())
+        .then(
+            just(TokenTree::Token(Token::Punc(Punc::Colon)))
+                .ignore_then(type_parser().with_span())
+                .or_not(),
+        )
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
+        .then(expression.with_span())
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(|((name, ty), value)| Statement::VarDecl { name, ty, value })
+        .boxed();
 
-        let var_decl = just(TokenTree::Token(Token::Kw(Kw::Var)))
-            .ignore_then(ident_parser().with_span())
-            .then(
-                just(TokenTree::Token(Token::Punc(Punc::Colon)))
-                    .ignore_then(type_parser().with_span())
-                    .or_not(),
-            )
-            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
-            .then(expression_parser().with_span())
-            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-            .map(|((name, ty), value)| Statement::VarDecl { name, ty, value })
-            .boxed();
-
-        let for_loop = just(TokenTree::Token(Token::Kw(Kw::For)))
-            .ignore_then(pattern_type_parser().with_span())
-            .then_ignore(just(TokenTree::Token(Token::Kw(Kw::In))))
-            .then(expression_parser().with_span())
-            .then(block.clone().with_span())
-            .map(|((var, iter), body)| Statement::For { var, iter, body });
-
-        choice((expr, block.map(Statement::Block), var_decl, for_loop)).boxed()
-    })
+    choice((expr, var_decl)).boxed()
 }
 
 fn block_parser<'src: 'tok, 'tok>(
-    statement: impl Parser<'tok, ParserInput<'tok>, Statement, ParserExtra<'src, 'tok>> + 'tok,
-) -> impl Parser<'tok, ParserInput<'tok>, Vec<Spanned<Statement>>, ParserExtra<'src, 'tok>> + Clone
-{
-    statement
+    expression: impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> + Clone + 'tok,
+) -> impl Parser<'tok, ParserInput<'tok>, Block, ParserExtra<'src, 'tok>> {
+    statement_parser(expression.clone())
         .with_span()
         .repeated()
         .collect()
+        .then(expression.with_span().or_not())
         .delim(Delim::Brace)
+        .map(|(statements, return_expr)| Block {
+            statements,
+            return_expr,
+        })
         .boxed()
 }
 
@@ -190,33 +189,50 @@ macro_rules! binary_op {
 }
 
 fn expression_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> + Clone {
     recursive(|expression| {
         let int = int_parser()
+            .with_span()
             .map(Expression::Int)
             .boxed()
             .labelled("integer");
 
         let float = float_parser()
+            .with_span()
             .map(Expression::Float)
             .boxed()
             .labelled("float");
 
         let bool = bool_parser()
+            .with_span()
             .map(Expression::Bool)
             .boxed()
             .labelled("boolean");
 
         let string = string_parser()
+            .with_span()
             .map(Expression::String)
             .boxed()
             .labelled("string");
 
-        let variable = ident_parser()
+        let name = path_parser()
             .with_span()
-            .map(Expression::Variable)
+            .map(Expression::Name)
             .boxed()
-            .labelled("variable");
+            .labelled("name");
+
+        let block = block_parser(expression.clone())
+            .map(Box::new)
+            .with_span()
+            .map(Expression::Block)
+            .boxed()
+            .labelled("block");
+
+        let tuple = tuple_parser(expression.clone())
+            .with_span()
+            .map(Expression::Tuple)
+            .boxed()
+            .labelled("tuple");
 
         let list = expression
             .clone()
@@ -225,39 +241,52 @@ fn expression_parser<'src: 'tok, 'tok>(
             .allow_trailing()
             .collect()
             .delim(Delim::Bracket)
+            .with_span()
             .map(Expression::List)
             .boxed();
 
-        let pattern = pattern_type_parser()
-            .with_span()
-            .then(
-                just(TokenTree::Token(Token::Kw(Kw::Where)))
-                    .ignore_then(expression.clone().with_span())
-                    .or_not(),
-            )
-            .map(|(pattern_type, condition)| Pattern {
-                pattern_type,
-                condition,
-            })
+        let pattern = pattern_parser(expression.clone())
             .with_span()
             .boxed()
             .labelled("pattern");
 
-        let match_arm = just(TokenTree::Token(Token::Punc(Punc::Pipe)))
-            .ignore_then(pattern)
-            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
-            .then(expression.clone().with_span())
-            .map(|(pattern, body)| MatchArm { pattern, body })
-            .with_span()
-            .boxed()
-            .labelled("match arm");
+        let match_ = {
+            let match_arm = pattern
+                .clone()
+                .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
+                .then(expression.clone().with_span())
+                .map(|(pattern, body)| MatchArm { pattern, body })
+                .with_span()
+                .boxed()
+                .labelled("match arm");
 
-        let match_ = just(TokenTree::Token(Token::Kw(Kw::Match)))
-            .ignore_then(expression.clone().map(Box::new).with_span())
-            .then(match_arm.repeated().collect().with_span())
-            .map(|(expr, arms)| Expression::Match { expr, arms })
+            just(TokenTree::Token(Token::Kw(Kw::Match)))
+                .ignore_then(expression.clone().map(Box::new).with_span())
+                .then(
+                    match_arm
+                        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+                        .allow_trailing()
+                        .collect()
+                        .delim(Delim::Brace)
+                        .with_span(),
+                )
+                .map(|(expr, arms)| Expression::Match { expr, arms })
+                .boxed()
+                .labelled("match expression")
+        };
+
+        let for_ = just(TokenTree::Token(Token::Kw(Kw::For)))
+            .ignore_then(pattern)
+            .then_ignore(just(TokenTree::Token(Token::Kw(Kw::In))))
+            .then(expression.clone().map(Box::new).with_span())
+            .then(block_parser(expression.clone()).map(Box::new).with_span())
+            .map(|((pattern, iter), body)| Expression::For {
+                pattern: pattern.boxed(),
+                iter,
+                body,
+            })
             .boxed()
-            .labelled("match expression");
+            .labelled("for loop");
 
         let parenthesized = expression
             .clone()
@@ -269,43 +298,47 @@ fn expression_parser<'src: 'tok, 'tok>(
 
         let atom = choice((
             parenthesized,
+            block,
+            tuple,
             list,
             match_,
+            for_,
             int,
             float,
             bool,
             string,
-            variable,
+            name,
         ))
         .boxed();
 
-        let call_args = expression
-            .clone()
-            .with_span()
-            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-            .allow_trailing()
-            .collect()
-            .delim(Delim::Paren)
-            .with_span()
-            .boxed()
-            .labelled("call arguments");
+        let call = {
+            let call_args = expression
+                .clone()
+                .with_span()
+                .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+                .allow_trailing()
+                .collect()
+                .delim(Delim::Paren)
+                .with_span()
+                .boxed()
+                .labelled("call arguments");
 
-        let call = atom
-            .with_span()
-            .foldl(call_args.repeated(), |callee, args| {
-                let span = callee.1.union(args.1);
+            atom.with_span()
+                .foldl(call_args.repeated(), |callee, args| {
+                    let span = callee.1.union(args.1);
 
-                Spanned::new(
-                    Expression::Call {
-                        callee: callee.boxed(),
-                        args,
-                    },
-                    span,
-                )
-            })
-            .map(|expr| expr.0)
-            .boxed()
-            .labelled("function call");
+                    Spanned::new(
+                        Expression::Call {
+                            callee: callee.boxed(),
+                            args,
+                        },
+                        span,
+                    )
+                })
+                .map(|expr| expr.0)
+                .boxed()
+                .labelled("function call")
+        };
 
         let unary = unary_op!(
             call,
@@ -349,14 +382,36 @@ fn expression_parser<'src: 'tok, 'tok>(
     .labelled("expression")
 }
 
+fn pattern_parser<'src: 'tok, 'tok>(
+    expression: impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> + 'tok,
+) -> impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> {
+    recursive(|pattern| {
+        pattern_type_parser(pattern)
+            .with_span()
+            .then(
+                just(TokenTree::Token(Token::Kw(Kw::Where)))
+                    .ignore_then(expression.with_span())
+                    .or_not(),
+            )
+            .map(|(pattern_type, condition)| Pattern {
+                pattern_type,
+                condition,
+            })
+            .boxed()
+    })
+}
+
 fn pattern_type_parser<'src: 'tok, 'tok>(
+    pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, PatternType, ParserExtra<'src, 'tok>> {
     choice((
         just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
-        ident_parser().map(PatternType::Variable),
-        int_parser().map(PatternType::Int),
-        float_parser().map(PatternType::Float),
-        bool_parser().map(PatternType::Bool),
+        ident_parser().with_span().map(PatternType::Variable),
+        int_parser().with_span().map(PatternType::Int),
+        float_parser().with_span().map(PatternType::Float),
+        bool_parser().with_span().map(PatternType::Bool),
+        string_parser().with_span().map(PatternType::String),
+        tuple_parser(pattern).with_span().map(PatternType::Tuple),
     ))
     .boxed()
 }
@@ -378,14 +433,38 @@ interned_parser!(bool_parser, Boolean);
 interned_parser!(string_parser, String);
 interned_parser!(ident_parser, Identifier);
 
+fn path_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, Path, ParserExtra<'src, 'tok>> {
+    ident_parser()
+        .with_span()
+        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Period))))
+        .at_least(1)
+        .collect::<Vec<_>>()
+        .map(|segments| {
+            let (base, segments) = segments.split_first().unwrap();
+
+            Path {
+                base: *base,
+                segments: segments.to_vec(),
+            }
+        })
+        .boxed()
+}
+
 fn type_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Type<Interned>, ParserExtra<'src, 'tok>> {
+) -> impl Parser<'tok, ParserInput<'tok>, AstType, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
-        let prim = ident_parser()
+        let prim = path_parser()
             .with_span()
             .map(Type::Primitive)
             .boxed()
             .labelled("primitive type");
+
+        let tuple = tuple_parser(type_.clone())
+            .with_span()
+            .map(Type::Tuple)
+            .labelled("tuple type")
+            .boxed();
 
         let never = just(TokenTree::Token(Token::Punc(Punc::Bang)))
             .to(Type::Never)
@@ -411,16 +490,30 @@ fn type_parser<'src: 'tok, 'tok>(
                 .ignore_then(params)
                 .then(return_ty)
                 .boxed()
-        }
-        .map(|(params, return_ty)| Type::Function {
-            params,
-            return_ty: return_ty.boxed(),
-        })
-        .boxed()
-        .labelled("function type");
+                .map(|(params, return_ty)| Type::Function {
+                    params,
+                    return_ty: return_ty.boxed(),
+                })
+                .boxed()
+                .labelled("function type")
+        };
 
-        choice((prim, never, function)).boxed().labelled("type")
+        choice((prim, tuple, never, function))
+            .boxed()
+            .labelled("type")
     })
+}
+
+fn tuple_parser<'src: 'tok, 'tok, Inner: 'tok>(
+    inner: impl Parser<'tok, ParserInput<'tok>, Inner, ParserExtra<'src, 'tok>> + 'tok,
+) -> impl Parser<'tok, ParserInput<'tok>, Vec<Spanned<Inner>>, ParserExtra<'src, 'tok>> {
+    inner
+        .with_span()
+        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+        .allow_trailing()
+        .collect()
+        .delim(Delim::Paren)
+        .boxed()
 }
 
 trait SpannedExt<'src: 'tok, 'tok, O> {
