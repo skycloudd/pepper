@@ -2,7 +2,6 @@
 source: src/lib.rs
 description: "func empty_function() {}"
 expression: ast.unwrap()
-info: tests/parser/empty_function.pr
 input_file: tests/parser/empty_function.pr
 snapshot_kind: text
 ---
