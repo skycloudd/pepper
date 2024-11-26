@@ -1,0 +1,6 @@
+func simple_float(n: Float32) -> Float32 {
+    match n {
+        2.5 => 1.5,
+        n => n * 3. / 2.,
+    }
+}

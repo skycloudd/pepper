@@ -1,0 +1,85 @@
+---
+source: src/lib.rs
+description: "func fibonacci(n: Int32) -> Int32 {\n    match n {\n        n where n <= 1 => n,\n        n => fibonacci(n - 1) + fibonacci(n - 2),\n    }\n}"
+expression: ast.unwrap()
+input_file: tests/parser/match/fibonacci.pr
+snapshot_kind: text
+---
+- Function:
+    name: fibonacci
+    params:
+      - name: n
+        ty:
+          Primitive:
+            base: Int32
+            segments: []
+    return_ty:
+      Primitive:
+        base: Int32
+        segments: []
+    body:
+      statements: []
+      return_expr:
+        Match:
+          expr:
+            Name:
+              base: n
+              segments: []
+          arms:
+            - pattern:
+                pattern_type:
+                  Name:
+                    base: n
+                    segments: []
+                condition:
+                  BinaryOp:
+                    op: LessEquals
+                    lhs:
+                      Name:
+                        base: n
+                        segments: []
+                    rhs:
+                      Int: "1"
+              body:
+                Name:
+                  base: n
+                  segments: []
+            - pattern:
+                pattern_type:
+                  Name:
+                    base: n
+                    segments: []
+                condition: ~
+              body:
+                BinaryOp:
+                  op: Add
+                  lhs:
+                    Call:
+                      callee:
+                        Name:
+                          base: fibonacci
+                          segments: []
+                      args:
+                        - BinaryOp:
+                            op: Sub
+                            lhs:
+                              Name:
+                                base: n
+                                segments: []
+                            rhs:
+                              Int: "1"
+                  rhs:
+                    Call:
+                      callee:
+                        Name:
+                          base: fibonacci
+                          segments: []
+                      args:
+                        - BinaryOp:
+                            op: Sub
+                            lhs:
+                              Name:
+                                base: n
+                                segments: []
+                            rhs:
+                              Int: "2"

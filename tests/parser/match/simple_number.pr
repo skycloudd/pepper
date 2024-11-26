@@ -1,0 +1,6 @@
+func simple_number(n: Int32) -> Int32 {
+    match n {
+        2 => 2,
+        n => n / 2,
+    }
+}

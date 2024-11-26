@@ -1,0 +1,6 @@
+func fibonacci(n: Int32) -> Int32 {
+    match n {
+        n where n <= 1 => n,
+        n => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}

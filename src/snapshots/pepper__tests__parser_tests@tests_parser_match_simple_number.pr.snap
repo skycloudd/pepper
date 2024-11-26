@@ -1,0 +1,49 @@
+---
+source: src/lib.rs
+description: "func simple_number(n: Int32) -> Int32 {\n    match n {\n        2 => 2,\n        n => n / 2,\n    }\n}"
+expression: ast.unwrap()
+input_file: tests/parser/match/simple_number.pr
+snapshot_kind: text
+---
+- Function:
+    name: simple_number
+    params:
+      - name: n
+        ty:
+          Primitive:
+            base: Int32
+            segments: []
+    return_ty:
+      Primitive:
+        base: Int32
+        segments: []
+    body:
+      statements: []
+      return_expr:
+        Match:
+          expr:
+            Name:
+              base: n
+              segments: []
+          arms:
+            - pattern:
+                pattern_type:
+                  Int: "2"
+                condition: ~
+              body:
+                Int: "2"
+            - pattern:
+                pattern_type:
+                  Name:
+                    base: n
+                    segments: []
+                condition: ~
+              body:
+                BinaryOp:
+                  op: Div
+                  lhs:
+                    Name:
+                      base: n
+                      segments: []
+                  rhs:
+                    Int: "2"

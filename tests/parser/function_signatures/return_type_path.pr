@@ -1,1 +1,1 @@
-func return_type_simple() -> aa.b.Ccc {}
+func return_type_path() -> aa.b.Ccc {}

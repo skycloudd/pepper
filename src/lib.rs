@@ -51,14 +51,12 @@ mod tests {
     #[test]
     fn parser_tests() {
         insta::glob!("../tests/parser", "**/*.pr", |path| {
-            insta::elog!(
-                "{} {} ...",
-                "parsing".cyan(),
-                path.components()
-                    .skip_while(|c| c.as_os_str() != "tests")
-                    .collect::<PathBuf>()
-                    .display()
-            );
+            let short_path = path
+                .components()
+                .skip_while(|c| c.as_os_str() != "tests")
+                .collect::<PathBuf>();
+
+            insta::elog!("{} {} ...", "parsing".cyan(), short_path.display());
 
             let source = read_to_string(path).map_err(|_| path).unwrap();
 
@@ -66,9 +64,15 @@ mod tests {
 
             assert!(errors.is_empty(), "errors: {errors:#?}");
 
+            let snapshot_suffix = short_path
+                .components()
+                .map(|c| c.as_os_str().to_string_lossy().to_string())
+                .collect::<Vec<_>>()
+                .join("_");
+
             insta::with_settings!({
                 description => std::fs::read_to_string(path).unwrap().trim(),
-                snapshot_suffix => path.file_stem().unwrap().to_str().unwrap(),
+                snapshot_suffix => snapshot_suffix,
             }, {
                 insta::assert_yaml_snapshot!(ast.unwrap());
             });

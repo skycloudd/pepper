@@ -1,0 +1,13 @@
+---
+source: src/lib.rs
+description: "enum SimpleEnum {\n    A,\n    B,\n    C,\n}"
+expression: ast.unwrap()
+input_file: tests/parser/types/simple_enum.pr
+snapshot_kind: text
+---
+- Enum:
+    name: SimpleEnum
+    variants:
+      - Unit: A
+      - Unit: B
+      - Unit: C
