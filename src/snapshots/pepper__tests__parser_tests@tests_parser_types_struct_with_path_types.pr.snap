@@ -1,0 +1,31 @@
+---
+source: src/lib.rs
+description: "struct StructWithPathTypes {\n    a: aa.bb.C,\n    b: bb.cc.A,\n    c: cc.aa.B\n}"
+expression: ast.unwrap()
+input_file: tests/parser/types/struct_with_path_types.pr
+snapshot_kind: text
+---
+- Struct:
+    name: StructWithPathTypes
+    fields:
+      - name: a
+        ty:
+          Primitive:
+            base: aa
+            segments:
+              - bb
+              - C
+      - name: b
+        ty:
+          Primitive:
+            base: bb
+            segments:
+              - cc
+              - A
+      - name: c
+        ty:
+          Primitive:
+            base: cc
+            segments:
+              - aa
+              - B

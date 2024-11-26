@@ -66,7 +66,7 @@ mod tests {
 
             let snapshot_suffix = short_path
                 .components()
-                .map(|c| c.as_os_str().to_string_lossy().to_string())
+                .map(|c| c.as_os_str().to_string_lossy())
                 .collect::<Vec<_>>()
                 .join("_");
 
