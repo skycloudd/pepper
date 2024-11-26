@@ -63,7 +63,6 @@ impl FileId {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Spanned<T>(pub T, pub Span);
 
 impl<T> Spanned<T> {
@@ -123,5 +122,15 @@ impl<T> core::ops::Deref for Spanned<T> {
 impl<T> core::ops::DerefMut for Spanned<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+#[cfg(test)]
+impl<T: serde::Serialize> serde::Serialize for Spanned<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.serialize(serializer)
     }
 }

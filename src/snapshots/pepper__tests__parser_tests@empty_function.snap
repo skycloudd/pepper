@@ -1,0 +1,14 @@
+---
+source: src/lib.rs
+description: "func empty_function() {}"
+expression: ast.unwrap()
+info: tests/parser/empty_function.pr
+snapshot_kind: text
+---
+- Function:
+    name: empty_function
+    params: []
+    return_ty: ~
+    body:
+      statements: []
+      return_expr: ~
