@@ -103,7 +103,13 @@ pub enum PatternType {
     Bool(Spanned<Interned>),
     String(Spanned<Interned>),
     Tuple(Spanned<Vec<Spanned<Pattern>>>),
-    List(Spanned<Vec<Spanned<Pattern>>>),
+    List(Spanned<Vec<Spanned<ListPattern>>>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ListPattern {
+    Pattern(Spanned<Pattern>),
+    Rest,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

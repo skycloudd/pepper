@@ -62,6 +62,7 @@ pub fn lexer<'src>(
             just("!=").to(Punc::NotEquals),
             just("<=").to(Punc::LessEquals),
             just(">=").to(Punc::GreaterEquals),
+            just("..").to(Punc::DoublePeriod),
             just("+").to(Punc::Plus),
             just("-").to(Punc::Minus),
             just("*").to(Punc::Star),

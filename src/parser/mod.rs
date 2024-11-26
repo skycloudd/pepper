@@ -3,8 +3,8 @@ use crate::{
     span::{Span, Spanned},
 };
 use ast::{
-    Ast, AstType, BinaryOp, Block, Expression, Function, FunctionParam, Item, MatchArm, Path,
-    Pattern, PatternType, Statement, Type, UnaryOp,
+    Ast, AstType, BinaryOp, Block, Expression, Function, FunctionParam, Item, ListPattern,
+    MatchArm, Path, Pattern, PatternType, Statement, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -402,8 +402,26 @@ fn pattern_parser<'src: 'tok, 'tok>(
 }
 
 fn pattern_type_parser<'src: 'tok, 'tok>(
-    pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + 'tok,
+    pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + Clone + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, PatternType, ParserExtra<'src, 'tok>> {
+    let list_pattern = {
+        let list_pattern = choice((
+            pattern.clone().with_span().map(ListPattern::Pattern),
+            just(TokenTree::Token(Token::Punc(Punc::DoublePeriod))).to(ListPattern::Rest),
+        ))
+        .boxed();
+
+        list_pattern
+            .with_span()
+            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+            .allow_trailing()
+            .collect()
+            .delim(Delim::Bracket)
+            .with_span()
+            .map(PatternType::List)
+            .boxed()
+    };
+
     choice((
         just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
         ident_parser().with_span().map(PatternType::Variable),
@@ -412,6 +430,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         bool_parser().with_span().map(PatternType::Bool),
         string_parser().with_span().map(PatternType::String),
         tuple_parser(pattern).with_span().map(PatternType::Tuple),
+        list_pattern,
     ))
     .boxed()
 }
