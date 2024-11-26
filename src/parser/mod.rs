@@ -4,7 +4,7 @@ use crate::{
 };
 use ast::{
     Ast, AstType, BinaryOp, Block, Enum, EnumVariant, Expression, Function, FunctionParam, Item,
-    ListPattern, MatchArm, Path, Pattern, PatternType, Statement, Struct, StructField,
+    ListPattern, MatchArm, Module, Path, Pattern, PatternType, Statement, Struct, StructField,
     StructPatternField, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
@@ -18,15 +18,18 @@ type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, TokenTree, Span, &'src str>
 #[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> {
-    item_parser()
-        .with_span()
-        .repeated()
-        .collect()
-        .map(Ast)
-        .boxed()
+    recursive(|ast| {
+        item_parser(ast)
+            .with_span()
+            .repeated()
+            .collect()
+            .map(Ast)
+            .boxed()
+    })
 }
 
 fn item_parser<'src: 'tok, 'tok>(
+    ast: impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, Item, ParserExtra<'src, 'tok>> {
     let function = function_parser().with_span().map(Item::Function).boxed();
 
@@ -40,11 +43,25 @@ fn item_parser<'src: 'tok, 'tok>(
 
     let enum_ = enum_parser().with_span().map(Item::Enum).boxed();
 
-    let module = just(TokenTree::Token(Token::Kw(Kw::Module)))
-        .ignore_then(ident_parser().with_span())
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-        .map(Item::Module)
-        .boxed();
+    let module = {
+        let file_module = just(TokenTree::Token(Token::Kw(Kw::Module)))
+            .ignore_then(ident_parser().with_span())
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+            .map(Module::File)
+            .with_span()
+            .map(Item::Module)
+            .boxed();
+
+        let submodule = just(TokenTree::Token(Token::Kw(Kw::Module)))
+            .ignore_then(ident_parser().with_span())
+            .then(ast.delim(Delim::Brace).with_span())
+            .map(|(name, ast)| Module::Submodule { name, ast })
+            .with_span()
+            .map(Item::Module)
+            .boxed();
+
+        choice((file_module, submodule)).boxed()
+    };
 
     choice((function, import, struct_, enum_, module)).boxed()
 }

@@ -11,7 +11,7 @@ pub enum Item {
     Import(Spanned<Path>),
     Struct(Spanned<Struct>),
     Enum(Spanned<Enum>),
-    Module(Spanned<Interned>),
+    Module(Spanned<Module>),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -22,6 +22,16 @@ pub type AstType = Type<Path>;
 pub struct Path {
     pub base: Spanned<Interned>,
     pub segments: Vec<Spanned<Interned>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
+pub enum Module {
+    File(Spanned<Interned>),
+    Submodule {
+        name: Spanned<Interned>,
+        ast: Spanned<Ast>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

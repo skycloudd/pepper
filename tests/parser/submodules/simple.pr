@@ -1,0 +1,9 @@
+module submod {
+    func aaa() -> Int32 {
+        123
+    }
+}
+
+func outer() -> Int32 {
+    submod.aaa()
+}
