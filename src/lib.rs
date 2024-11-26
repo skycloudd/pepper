@@ -45,35 +45,32 @@ pub fn parse_file(file_id: FileId, source: impl AsRef<str>) -> (Option<Ast>, Vec
 #[cfg(test)]
 mod tests {
     use crate::{parse_file, span::FileId};
-    use camino::Utf8PathBuf;
-    use std::fs::read_to_string;
+    use owo_colors::OwoColorize as _;
+    use std::{fs::read_to_string, io::Write as _, path::PathBuf};
 
     #[test]
     fn parser_tests() {
-        for entry in Utf8PathBuf::from("tests/parser").read_dir_utf8().unwrap() {
-            let entry = entry.unwrap();
+        insta::glob!("../tests/parser", "*.pr", |path| {
+            let relative_path = path
+                .components()
+                .skip_while(|c| c.as_os_str() != "tests")
+                .collect::<PathBuf>();
 
-            assert!(entry.path().is_file(), "not a file: {:?}", entry.path());
+            insta::elog!("{} {} ...", "parsing".cyan(), relative_path.display());
 
-            assert!(
-                entry.path().extension().unwrap() == "pr",
-                "not a .pr file: {:?}",
-                entry.path()
-            );
-
-            let source = read_to_string(entry.path()).unwrap();
+            let source = read_to_string(path).map_err(|_| path).unwrap();
 
             let (ast, errors) = parse_file(FileId::new(0), &source);
 
             assert!(errors.is_empty(), "errors: {errors:#?}");
 
             insta::with_settings!({
-                description => std::fs::read_to_string(entry.path()).unwrap().trim(),
-                info => &entry.path().to_string(),
-                snapshot_suffix => entry.path().file_stem().unwrap(),
+                description => std::fs::read_to_string(path).unwrap().trim(),
+                info => &relative_path,
+                snapshot_suffix => path.file_stem().unwrap().to_str().unwrap(),
             }, {
                 insta::assert_yaml_snapshot!(ast.unwrap());
             });
-        }
+        });
     }
 }
