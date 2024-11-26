@@ -37,6 +37,7 @@ pub enum Kw {
     Match,
     Where,
     Import,
+    Struct,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -132,6 +133,7 @@ impl core::fmt::Display for Kw {
                 Self::Match => "match",
                 Self::Where => "where",
                 Self::Import => "import",
+                Self::Struct => "struct",
             }
         )
     }

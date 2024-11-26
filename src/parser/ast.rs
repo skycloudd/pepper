@@ -7,6 +7,7 @@ pub struct Ast(pub Vec<Spanned<Item>>);
 pub enum Item {
     Function(Spanned<Function>),
     Import(Spanned<Path>),
+    Struct(Spanned<Struct>),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -28,6 +29,18 @@ pub struct Function {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam {
+    pub name: Spanned<Interned>,
+    pub ty: Spanned<AstType>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Struct {
+    pub name: Spanned<Interned>,
+    pub fields: Spanned<Vec<Spanned<StructField>>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructField {
     pub name: Spanned<Interned>,
     pub ty: Spanned<AstType>,
 }

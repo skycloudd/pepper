@@ -4,7 +4,7 @@ use crate::{
 };
 use ast::{
     Ast, AstType, BinaryOp, Block, Expression, Function, FunctionParam, Item, ListPattern,
-    MatchArm, Path, Pattern, PatternType, Statement, Type, UnaryOp,
+    MatchArm, Path, Pattern, PatternType, Statement, Struct, StructField, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -35,7 +35,9 @@ fn item_parser<'src: 'tok, 'tok>(
         .map(Item::Import)
         .boxed();
 
-    choice((function, import)).boxed()
+    let struct_ = struct_parser().with_span().map(Item::Struct).boxed();
+
+    choice((function, import, struct_)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -86,6 +88,38 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .map(|(name, ty)| FunctionParam { name, ty })
         .boxed()
         .labelled("function parameter")
+}
+
+fn struct_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, Struct, ParserExtra<'src, 'tok>> {
+    let name = ident_parser().with_span();
+
+    let fields = {
+        let field = ident_parser()
+            .with_span()
+            .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
+            .then(type_parser().with_span())
+            .map(|(name, ty)| StructField { name, ty })
+            .boxed()
+            .labelled("struct field");
+
+        field
+            .with_span()
+            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+            .allow_trailing()
+            .collect()
+            .delim(Delim::Brace)
+            .with_span()
+            .boxed()
+            .labelled("struct fields")
+    };
+
+    just(TokenTree::Token(Token::Kw(Kw::Struct)))
+        .ignore_then(name)
+        .then(fields)
+        .map(|(name, fields)| Struct { name, fields })
+        .boxed()
+        .labelled("struct")
 }
 
 fn statement_parser<'src: 'tok, 'tok>(

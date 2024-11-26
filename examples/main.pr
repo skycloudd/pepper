@@ -14,3 +14,8 @@ func fibonacci(n: Int32) -> Int32 {
         _ => fibonacci(n - 1) + fibonacci(n - 2),
     }
 }
+
+struct Point {
+    x: Int32,
+    y: Int32,
+}
