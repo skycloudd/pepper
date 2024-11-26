@@ -89,6 +89,16 @@ impl core::fmt::Debug for Interned {
     }
 }
 
+#[cfg(test)]
+impl serde::Serialize for Interned {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.resolve().serialize(serializer)
+    }
+}
+
 impl core::fmt::Display for TokenTree {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {

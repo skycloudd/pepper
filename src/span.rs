@@ -1,6 +1,7 @@
 use core::num::NonZeroUsize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Span {
     start: usize,
     end: usize,
@@ -46,6 +47,7 @@ impl chumsky::span::Span for Span {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct FileId(NonZeroUsize);
 
 impl FileId {
@@ -61,6 +63,7 @@ impl FileId {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Spanned<T>(pub T, pub Span);
 
 impl<T> Spanned<T> {

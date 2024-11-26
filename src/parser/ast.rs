@@ -1,9 +1,11 @@
 use crate::{lexer::tokens::Interned, span::Spanned};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Ast(pub Vec<Spanned<Item>>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum Item {
     Function(Spanned<Function>),
     Import(Spanned<Path>),
@@ -16,12 +18,14 @@ pub enum Item {
 pub type AstType = Type<Path>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Path {
     pub base: Spanned<Interned>,
     pub segments: Vec<Spanned<Interned>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Function {
     pub name: Spanned<Interned>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
@@ -30,30 +34,35 @@ pub struct Function {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct FunctionParam {
     pub name: Spanned<Interned>,
     pub ty: Spanned<AstType>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Struct {
     pub name: Spanned<Interned>,
     pub fields: Spanned<Vec<Spanned<StructField>>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct StructField {
     pub name: Spanned<Interned>,
     pub ty: Spanned<AstType>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Enum {
     pub name: Spanned<Interned>,
     pub variants: Spanned<Vec<Spanned<EnumVariant>>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum EnumVariant {
     Unit(Spanned<Interned>),
     Tuple {
@@ -67,6 +76,7 @@ pub enum EnumVariant {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum Statement {
     Expression(Spanned<Expression>),
     VarDecl {
@@ -77,6 +87,7 @@ pub enum Statement {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum Expression {
     Int(Spanned<Interned>),
     Float(Spanned<Interned>),
@@ -111,24 +122,28 @@ pub enum Expression {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Block {
     pub statements: Vec<Spanned<Statement>>,
     pub return_expr: Option<Spanned<Expression>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct MatchArm {
     pub pattern: Spanned<Pattern>,
     pub body: Spanned<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct Pattern {
     pub pattern_type: Spanned<PatternType>,
     pub condition: Option<Spanned<Expression>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum PatternType {
     Wildcard,
     Name(Spanned<Path>),
@@ -149,18 +164,21 @@ pub enum PatternType {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub struct StructPatternField {
     pub name: Spanned<Interned>,
     pub pattern: Option<Spanned<Pattern>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum ListPattern {
     Pattern(Spanned<Pattern>),
     Rest,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -192,6 +210,7 @@ impl core::fmt::Display for BinaryOp {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum UnaryOp {
     Neg,
     Not,
@@ -207,6 +226,7 @@ impl core::fmt::Display for UnaryOp {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Serialize))]
 pub enum Type<P> {
     Primitive(Spanned<P>),
     Tuple(Spanned<Vec<Spanned<Self>>>),

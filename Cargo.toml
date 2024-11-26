@@ -24,3 +24,11 @@ std_instead_of_core = "warn"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 too_many_lines = "allow"
+
+[dev-dependencies]
+insta = { version = "1.41.1", features = ["yaml"] }
+serde = { version = "1.0.215", features = ["derive"] }
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
