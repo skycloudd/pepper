@@ -52,6 +52,7 @@ pub fn lexer<'src>(
             text::keyword("where").to(Kw::Where),
             text::keyword("import").to(Kw::Import),
             text::keyword("struct").to(Kw::Struct),
+            text::keyword("enum").to(Kw::Enum),
         ))
         .map(Token::Kw)
         .boxed();

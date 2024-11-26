@@ -38,6 +38,7 @@ pub enum Kw {
     Where,
     Import,
     Struct,
+    Enum,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -134,6 +135,7 @@ impl core::fmt::Display for Kw {
                 Self::Where => "where",
                 Self::Import => "import",
                 Self::Struct => "struct",
+                Self::Enum => "enum",
             }
         )
     }

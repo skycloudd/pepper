@@ -15,7 +15,13 @@ func fibonacci(n: Int32) -> Int32 {
     }
 }
 
-struct Point {
-    x: Int32,
-    y: Int32,
+struct FullShape {
+    shape: Shape,
+    color: String,
+}
+
+enum Shape {
+    Circle(Int32),
+    Rectangle { width: Int32, height: Int32 },
+    Point,
 }

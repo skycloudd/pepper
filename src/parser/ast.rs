@@ -8,6 +8,7 @@ pub enum Item {
     Function(Spanned<Function>),
     Import(Spanned<Path>),
     Struct(Spanned<Struct>),
+    Enum(Spanned<Enum>),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -43,6 +44,25 @@ pub struct Struct {
 pub struct StructField {
     pub name: Spanned<Interned>,
     pub ty: Spanned<AstType>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Enum {
+    pub name: Spanned<Interned>,
+    pub variants: Spanned<Vec<Spanned<EnumVariant>>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EnumVariant {
+    Unit(Spanned<Interned>),
+    Tuple {
+        name: Spanned<Interned>,
+        fields: Spanned<Vec<Spanned<AstType>>>,
+    },
+    Struct {
+        name: Spanned<Interned>,
+        fields: Spanned<Vec<Spanned<StructField>>>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
