@@ -36,6 +36,13 @@ pub fn lexer<'src>(
             .map(Token::Float)
             .boxed();
 
+        let string = just('"')
+            .ignore_then(none_of('"').repeated().to_slice())
+            .then_ignore(just('"'))
+            .map(Interned::get_or_intern)
+            .map(Token::String)
+            .boxed();
+
         let keyword = choice((
             text::keyword("func").to(Kw::Func),
             text::keyword("var").to(Kw::Var),
@@ -77,9 +84,18 @@ pub fn lexer<'src>(
             .padded()
             .boxed();
 
-        let simple = choice((keyword, bool, ident, float, int, punctuation, wildcard))
-            .map(TokenTree::Token)
-            .boxed();
+        let simple = choice((
+            keyword,
+            bool,
+            ident,
+            float,
+            int,
+            string,
+            punctuation,
+            wildcard,
+        ))
+        .map(TokenTree::Token)
+        .boxed();
 
         let parenthesised = tokens
             .clone()

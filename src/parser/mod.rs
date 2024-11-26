@@ -207,6 +207,11 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("boolean");
 
+        let string = string_parser()
+            .map(Expression::String)
+            .boxed()
+            .labelled("string");
+
         let variable = ident_parser()
             .with_span()
             .map(Expression::Variable)
@@ -262,7 +267,17 @@ fn expression_parser<'src: 'tok, 'tok>(
             .boxed()
             .labelled("parenthesized expression");
 
-        let atom = choice((parenthesized, list, match_, int, float, bool, variable)).boxed();
+        let atom = choice((
+            parenthesized,
+            list,
+            match_,
+            int,
+            float,
+            bool,
+            string,
+            variable,
+        ))
+        .boxed();
 
         let call_args = expression
             .clone()
@@ -360,6 +375,7 @@ macro_rules! interned_parser {
 interned_parser!(int_parser, Int);
 interned_parser!(float_parser, Float);
 interned_parser!(bool_parser, Boolean);
+interned_parser!(string_parser, String);
 interned_parser!(ident_parser, Identifier);
 
 fn type_parser<'src: 'tok, 'tok>(

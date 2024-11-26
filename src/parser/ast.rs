@@ -43,6 +43,7 @@ pub enum Expression {
     Int(Interned),
     Float(Interned),
     Bool(Interned),
+    String(Interned),
     Variable(Spanned<Interned>),
     List(Vec<Spanned<Expression>>),
     BinaryOp {

@@ -16,12 +16,13 @@ pub enum Delim {
     Bracket,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Token {
     Identifier(Interned),
     Int(Interned),
     Float(Interned),
     Boolean(Interned),
+    String(Interned),
     Kw(Kw),
     Punc(Punc),
     Wildcard,
@@ -59,7 +60,7 @@ pub enum Punc {
     Semicolon,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Interned(Spur);
 
 impl Interned {
@@ -73,6 +74,12 @@ impl Interned {
 
     pub fn resolve(self) -> &'static str {
         RODEO.resolve(&self.0)
+    }
+}
+
+impl core::fmt::Debug for Interned {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Interned").field(&self.resolve()).finish()
     }
 }
 
@@ -101,7 +108,8 @@ impl core::fmt::Display for Token {
             Self::Identifier(interned)
             | Self::Int(interned)
             | Self::Float(interned)
-            | Self::Boolean(interned) => write!(f, "{}", interned.resolve()),
+            | Self::Boolean(interned)
+            | Self::String(interned) => write!(f, "{}", interned.resolve()),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
             Self::Wildcard => write!(f, "_"),

@@ -1,7 +1,7 @@
 func main() -> Int32 {
-    var numbers = [1, 2, 3];
+    var planets = ["Venus", "Earth", "Mars"];
 
-    //for planet in planets {
-    //    print(planet);
-    //}
+    for planet in planets {
+        print("planet: $(planet)");
+    }
 }
