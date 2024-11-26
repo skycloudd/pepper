@@ -51,7 +51,6 @@ impl Diag for Error {
     }
 
     fn spans(&self) -> Vec<ErrorSpan> {
-        #[allow(clippy::match_same_arms)]
         match self {
             Self::ExpectedFound {
                 expected: _,

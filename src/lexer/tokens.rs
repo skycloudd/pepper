@@ -69,6 +69,7 @@ pub enum Punc {
 pub struct Interned(Spur);
 
 impl Interned {
+    #[must_use]
     pub const fn new(name: Spur) -> Self {
         Self(name)
     }

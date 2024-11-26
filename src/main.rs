@@ -8,22 +8,16 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use diagnostics::{
-    error::{convert, Error},
-    report::report,
+use pepper::{
+    diagnostics::{
+        error::{convert, Error},
+        report::report,
+    },
+    lexer,
+    parser::{self, ast::Ast},
+    span::{FileId, Span},
 };
-use lasso::ThreadedRodeo;
-use parser::ast::Ast;
-use span::{FileId, Span};
-use std::{fs::read_to_string, process::ExitCode, sync::LazyLock};
-
-pub mod diagnostics;
-mod lexer;
-mod parser;
-pub mod scopes;
-pub mod span;
-
-static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
+use std::{fs::read_to_string, process::ExitCode};
 
 #[derive(Debug, Parser)]
 struct Args {
