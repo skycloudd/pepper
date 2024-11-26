@@ -9,6 +9,7 @@ pub enum Item {
     Import(Spanned<Path>),
     Struct(Spanned<Struct>),
     Enum(Spanned<Enum>),
+    Module(Spanned<Interned>),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -130,13 +131,27 @@ pub struct Pattern {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PatternType {
     Wildcard,
-    Variable(Spanned<Interned>),
+    Name(Spanned<Path>),
     Int(Spanned<Interned>),
     Float(Spanned<Interned>),
     Bool(Spanned<Interned>),
     String(Spanned<Interned>),
     Tuple(Spanned<Vec<Spanned<Pattern>>>),
     List(Spanned<Vec<Spanned<ListPattern>>>),
+    TupleType {
+        name: Spanned<Path>,
+        fields: Spanned<Vec<Spanned<Pattern>>>,
+    },
+    StructType {
+        name: Spanned<Path>,
+        fields: Spanned<Vec<Spanned<StructPatternField>>>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructPatternField {
+    pub name: Spanned<Interned>,
+    pub pattern: Option<Spanned<Pattern>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

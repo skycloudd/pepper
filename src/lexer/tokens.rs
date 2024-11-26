@@ -39,6 +39,7 @@ pub enum Kw {
     Import,
     Struct,
     Enum,
+    Module,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -136,6 +137,7 @@ impl core::fmt::Display for Kw {
                 Self::Import => "import",
                 Self::Struct => "struct",
                 Self::Enum => "enum",
+                Self::Module => "module",
             }
         )
     }

@@ -1,3 +1,5 @@
+module shapes;
+
 func main() {
     var planets = ["Venus", "Earth", "Mars"];
 
@@ -15,13 +17,23 @@ func fibonacci(n: Int32) -> Int32 {
     }
 }
 
-struct FullShape {
-    shape: Shape,
-    color: String,
-}
+func shape_area(shape: shapes.FullShape) -> Int32 {
+    var area = match shape.shape {
+        Shape.Circle(radius) => {
+            println("circle with radius $(radius)");
+            3.14 * radius * radius
+        },
+        Shape.Rectangle { width, height } => {
+            println("$width x $height rectangle");
+            width * height
+        },
+        Shape.Point => {
+            println("point");
+            0
+        },
+    };
 
-enum Shape {
-    Circle(Int32),
-    Rectangle { width: Int32, height: Int32 },
-    Point,
+    println("color: $(shape.color)");
+
+    area
 }

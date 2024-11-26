@@ -1,0 +1,8 @@
+use shape.Shape;
+
+module shape;
+
+struct FullShape {
+    shape: Shape,
+    color: String,
+}

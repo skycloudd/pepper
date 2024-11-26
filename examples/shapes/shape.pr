@@ -1,0 +1,5 @@
+enum Shape {
+    Circle(Int32),
+    Rectangle { width: Int32, height: Int32 },
+    Point,
+}

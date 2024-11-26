@@ -4,8 +4,8 @@ use crate::{
 };
 use ast::{
     Ast, AstType, BinaryOp, Block, Enum, EnumVariant, Expression, Function, FunctionParam, Item,
-    ListPattern, MatchArm, Path, Pattern, PatternType, Statement, Struct, StructField, Type,
-    UnaryOp,
+    ListPattern, MatchArm, Path, Pattern, PatternType, Statement, Struct, StructField,
+    StructPatternField, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -40,7 +40,13 @@ fn item_parser<'src: 'tok, 'tok>(
 
     let enum_ = enum_parser().with_span().map(Item::Enum).boxed();
 
-    choice((function, import, struct_, enum_)).boxed()
+    let module = just(TokenTree::Token(Token::Kw(Kw::Module)))
+        .ignore_then(ident_parser().with_span())
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
+        .map(Item::Module)
+        .boxed();
+
+    choice((function, import, struct_, enum_, module)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
@@ -465,15 +471,49 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
             .boxed()
     };
 
+    let tuple_type_pattern = path_parser()
+        .with_span()
+        .then(tuple_parser(pattern.clone()).with_span())
+        .map(|(name, fields)| PatternType::TupleType { name, fields })
+        .boxed();
+
+    let struct_type_pattern = {
+        let struct_pattern_field = ident_parser()
+            .with_span()
+            .then(
+                just(TokenTree::Token(Token::Punc(Punc::Colon)))
+                    .ignore_then(pattern.clone().with_span())
+                    .or_not(),
+            )
+            .map(|(name, pattern)| StructPatternField { name, pattern })
+            .boxed();
+
+        path_parser()
+            .with_span()
+            .then(
+                struct_pattern_field
+                    .with_span()
+                    .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
+                    .allow_trailing()
+                    .collect()
+                    .delim(Delim::Brace)
+                    .with_span(),
+            )
+            .map(|(name, fields)| PatternType::StructType { name, fields })
+            .boxed()
+    };
+
     choice((
         just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
-        ident_parser().with_span().map(PatternType::Variable),
         int_parser().with_span().map(PatternType::Int),
         float_parser().with_span().map(PatternType::Float),
         bool_parser().with_span().map(PatternType::Bool),
         string_parser().with_span().map(PatternType::String),
         tuple_parser(pattern).with_span().map(PatternType::Tuple),
         list_pattern,
+        tuple_type_pattern,
+        struct_type_pattern,
+        path_parser().with_span().map(PatternType::Name),
     ))
     .boxed()
 }

@@ -22,7 +22,6 @@ mod lexer;
 mod parser;
 pub mod scopes;
 pub mod span;
-mod typecheck;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
@@ -36,23 +35,11 @@ fn main() -> ExitCode {
 
     let mut files = SimpleFiles::new();
 
-    let (ast, mut errors) = parse_file(&args.filename, &mut files);
+    let (ast, errors) = parse_file(&args.filename, &mut files);
 
     eprintln!("ast: {ast:#?}");
 
-    let (typed_ast, typecheck_errors) = ast.map_or_else(
-        || (None, vec![]),
-        |ast| {
-            let (typed_ast, errs) = typecheck::typecheck(ast);
-
-            (Some(typed_ast), errs)
-        },
-    );
-
-    errors.extend(typecheck_errors);
-
     if errors.is_empty() {
-        eprintln!("typed_ast: {typed_ast:#?}");
         ExitCode::SUCCESS
     } else {
         emit_errors(&errors, &files);
