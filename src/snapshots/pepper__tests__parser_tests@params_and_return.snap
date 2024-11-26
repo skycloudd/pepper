@@ -1,0 +1,28 @@
+---
+source: src/lib.rs
+description: "func params_and_return(float_var: Float32, path: abcd.Efgh) -> Int32 {}"
+expression: ast.unwrap()
+input_file: tests/parser/function_signatures/params_and_return.pr
+snapshot_kind: text
+---
+- Function:
+    name: params_and_return
+    params:
+      - name: float_var
+        ty:
+          Primitive:
+            base: Float32
+            segments: []
+      - name: path
+        ty:
+          Primitive:
+            base: abcd
+            segments:
+              - Efgh
+    return_ty:
+      Primitive:
+        base: Int32
+        segments: []
+    body:
+      statements: []
+      return_expr: ~

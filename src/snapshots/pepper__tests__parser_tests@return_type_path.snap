@@ -1,0 +1,19 @@
+---
+source: src/lib.rs
+description: "func return_type_simple() -> aa.b.Ccc {}"
+expression: ast.unwrap()
+input_file: tests/parser/function_signatures/return_type_path.pr
+snapshot_kind: text
+---
+- Function:
+    name: return_type_simple
+    params: []
+    return_ty:
+      Primitive:
+        base: aa
+        segments:
+          - b
+          - Ccc
+    body:
+      statements: []
+      return_expr: ~

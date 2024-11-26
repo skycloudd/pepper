@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn parser_tests() {
-        insta::glob!("../tests/parser", "*.pr", |path| {
+        insta::glob!("../tests/parser", "**/*.pr", |path| {
             insta::elog!(
                 "{} {} ...",
                 "parsing".cyan(),

@@ -1,0 +1,19 @@
+---
+source: src/lib.rs
+description: "func one_param(a: Int32) {}"
+expression: ast.unwrap()
+input_file: tests/parser/function_signatures/one_param.pr
+snapshot_kind: text
+---
+- Function:
+    name: one_param
+    params:
+      - name: a
+        ty:
+          Primitive:
+            base: Int32
+            segments: []
+    return_ty: ~
+    body:
+      statements: []
+      return_expr: ~

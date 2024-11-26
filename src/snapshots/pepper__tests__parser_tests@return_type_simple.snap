@@ -1,0 +1,17 @@
+---
+source: src/lib.rs
+description: "func return_type_simple() -> Int32 {}"
+expression: ast.unwrap()
+input_file: tests/parser/function_signatures/return_type_simple.pr
+snapshot_kind: text
+---
+- Function:
+    name: return_type_simple
+    params: []
+    return_ty:
+      Primitive:
+        base: Int32
+        segments: []
+    body:
+      statements: []
+      return_expr: ~

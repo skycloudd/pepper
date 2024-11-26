@@ -1,0 +1,1 @@
+func multiple_params(a: Int32, bb: Float32, ccc: Bool) {}
