@@ -1,0 +1,180 @@
+---
+source: src/lib.rs
+description: "func type_patterns(aaaa: Aaaa, bbbb: Bbbb) -> Float32 {\n    var _: Float32 = match aaaa {\n        Aaaa { aa: 2.5, bb: 1.5 } => 1.5,\n        Aaaa { aa, bb } => n * m,\n    };\n\n    match bbbb {\n        Bbbb.Cccc(2) => 1.5,\n        Bbbb.Cccc(n) => n * 3. / 2.,\n        Bbbb.Dddd => n * 4. / 2. + 1.,\n    }\n}\n\nstruct Aaaa {\n    aa: Float32,\n    bb: Float32,\n}\n\nenum Bbbb {\n    Cccc(int32),\n    Dddd,\n}"
+expression: ast.unwrap()
+input_file: tests/parser/match/type_patterns.pr
+snapshot_kind: text
+---
+- Function:
+    name: type_patterns
+    params:
+      - name: aaaa
+        ty:
+          Primitive:
+            base: Aaaa
+            segments: []
+      - name: bbbb
+        ty:
+          Primitive:
+            base: Bbbb
+            segments: []
+    return_ty:
+      Primitive:
+        base: Float32
+        segments: []
+    body:
+      statements:
+        - VarDecl:
+            name: _
+            ty:
+              Primitive:
+                base: Float32
+                segments: []
+            value:
+              Match:
+                expr:
+                  Name:
+                    base: aaaa
+                    segments: []
+                arms:
+                  - pattern:
+                      pattern_type:
+                        StructType:
+                          name:
+                            base: Aaaa
+                            segments: []
+                          fields:
+                            - name: aa
+                              pattern:
+                                pattern_type:
+                                  Float: "2.5"
+                                condition: ~
+                            - name: bb
+                              pattern:
+                                pattern_type:
+                                  Float: "1.5"
+                                condition: ~
+                      condition: ~
+                    body:
+                      Float: "1.5"
+                  - pattern:
+                      pattern_type:
+                        StructType:
+                          name:
+                            base: Aaaa
+                            segments: []
+                          fields:
+                            - name: aa
+                              pattern: ~
+                            - name: bb
+                              pattern: ~
+                      condition: ~
+                    body:
+                      BinaryOp:
+                        op: Mul
+                        lhs:
+                          Name:
+                            base: n
+                            segments: []
+                        rhs:
+                          Name:
+                            base: m
+                            segments: []
+      return_expr:
+        Match:
+          expr:
+            Name:
+              base: bbbb
+              segments: []
+          arms:
+            - pattern:
+                pattern_type:
+                  TupleType:
+                    name:
+                      base: Bbbb
+                      segments:
+                        - Cccc
+                    fields:
+                      - pattern_type:
+                          Int: "2"
+                        condition: ~
+                condition: ~
+              body:
+                Float: "1.5"
+            - pattern:
+                pattern_type:
+                  TupleType:
+                    name:
+                      base: Bbbb
+                      segments:
+                        - Cccc
+                    fields:
+                      - pattern_type:
+                          Name:
+                            base: n
+                            segments: []
+                        condition: ~
+                condition: ~
+              body:
+                BinaryOp:
+                  op: Div
+                  lhs:
+                    BinaryOp:
+                      op: Mul
+                      lhs:
+                        Name:
+                          base: n
+                          segments: []
+                      rhs:
+                        Float: "3."
+                  rhs:
+                    Float: "2."
+            - pattern:
+                pattern_type:
+                  Name:
+                    base: Bbbb
+                    segments:
+                      - Dddd
+                condition: ~
+              body:
+                BinaryOp:
+                  op: Add
+                  lhs:
+                    BinaryOp:
+                      op: Div
+                      lhs:
+                        BinaryOp:
+                          op: Mul
+                          lhs:
+                            Name:
+                              base: n
+                              segments: []
+                          rhs:
+                            Float: "4."
+                      rhs:
+                        Float: "2."
+                  rhs:
+                    Float: "1."
+- Struct:
+    name: Aaaa
+    fields:
+      - name: aa
+        ty:
+          Primitive:
+            base: Float32
+            segments: []
+      - name: bb
+        ty:
+          Primitive:
+            base: Float32
+            segments: []
+- Enum:
+    name: Bbbb
+    variants:
+      - Tuple:
+          name: Cccc
+          fields:
+            - Primitive:
+                base: int32
+                segments: []
+      - Unit: Dddd

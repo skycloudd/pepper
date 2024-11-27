@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func fibonacci(n: Int32) -> Int32 {\n    match n {\n        n where n <= 1 => n,\n        n => fibonacci(n - 1) + fibonacci(n - 2),\n    }\n}"
+description: "func fibonacci(n: Int32) -> Int32 {\n    match n {\n        n where n <= 1 => n,\n        _ => fibonacci(n - 1) + fibonacci(n - 2),\n    }\n}"
 expression: ast.unwrap()
 input_file: tests/parser/match/fibonacci.pr
 snapshot_kind: text
@@ -47,7 +47,7 @@ snapshot_kind: text
             - pattern:
                 pattern_type:
                   Name:
-                    base: n
+                    base: _
                     segments: []
                 condition: ~
               body:

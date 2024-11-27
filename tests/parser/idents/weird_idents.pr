@@ -1,0 +1,14 @@
+func __a_A123_1Aa__abhxjjid() {
+    var _a = 3;
+
+    match _a {
+        3 => {
+            var _______ = 3;
+            var _______aaaa = 3;
+            var _ = 3;
+        },
+        _ => {
+            var _ = __123;
+        },
+    }
+}
