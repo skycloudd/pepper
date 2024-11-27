@@ -521,7 +521,6 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
     };
 
     choice((
-        just(TokenTree::Token(Token::Wildcard)).to(PatternType::Wildcard),
         int_parser().with_span().map(PatternType::Int),
         float_parser().with_span().map(PatternType::Float),
         bool_parser().with_span().map(PatternType::Bool),

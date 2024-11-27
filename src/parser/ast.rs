@@ -155,7 +155,6 @@ pub struct Pattern {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(serde::Serialize))]
 pub enum PatternType {
-    Wildcard,
     Name(Spanned<Path>),
     Int(Spanned<Interned>),
     Float(Spanned<Interned>),

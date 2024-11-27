@@ -25,7 +25,6 @@ pub enum Token {
     String(Interned),
     Kw(Kw),
     Punc(Punc),
-    Wildcard,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -128,7 +127,6 @@ impl core::fmt::Display for Token {
             | Self::String(interned) => write!(f, "{}", interned.resolve()),
             Self::Kw(kw) => write!(f, "{kw}"),
             Self::Punc(punc) => write!(f, "{punc}"),
-            Self::Wildcard => write!(f, "_"),
         }
     }
 }

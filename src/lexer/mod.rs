@@ -12,7 +12,7 @@ type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 pub fn lexer<'src>(
 ) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<TokenTree>>, ParserExtra<'src>> {
     recursive(|tokens| {
-        let ident = text::unicode::ident()
+        let ident = choice((text::unicode::ident(), text::ascii::ident()))
             .map(|name| Interned::new(RODEO.get_or_intern(name)))
             .map(Token::Identifier)
             .boxed();
@@ -82,25 +82,14 @@ pub fn lexer<'src>(
         .map(Token::Punc)
         .boxed();
 
-        let wildcard = text::ascii::keyword("_").to(Token::Wildcard).boxed();
-
         let comment = just("//")
             .then(any().and_is(just('\n').not()).repeated())
             .padded()
             .boxed();
 
-        let simple = choice((
-            keyword,
-            bool,
-            ident,
-            float,
-            int,
-            string,
-            punctuation,
-            wildcard,
-        ))
-        .map(TokenTree::Token)
-        .boxed();
+        let simple = choice((keyword, bool, ident, float, int, string, punctuation))
+            .map(TokenTree::Token)
+            .boxed();
 
         let parenthesised = tokens
             .clone()
