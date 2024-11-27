@@ -17,12 +17,15 @@ static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[must_use]
 pub fn parse_file(
-    file_id: FileId,
-    source: impl AsRef<str>,
+    filename: Utf8PathBuf,
+    files: &mut SimpleFiles<Utf8PathBuf, String>,
     errors: &mut Vec<Error>,
 ) -> Option<Ast> {
+    let source = std::fs::read_to_string(&filename).unwrap();
+    let file_id = FileId::new(files.add(filename, source.clone()));
+
     let (tokens, lexer_errors) = lexer::lexer()
-        .parse(source.as_ref().with_context(file_id))
+        .parse(source.with_context(file_id))
         .into_output_errors();
 
     errors.extend(lexer_errors.iter().flat_map(|error| convert(error)));
@@ -56,10 +59,7 @@ pub fn insert_explicit_submodules(
                 Module::File(module_name) => {
                     let filename: Utf8PathBuf = format!("{}.pr", module_name.resolve()).into();
 
-                    let source = std::fs::read_to_string(&filename).unwrap();
-                    let file_id = FileId::new(files.add(filename, source.clone()));
-
-                    let ast = parse_file(file_id, source, errors);
+                    let ast = parse_file(filename, files, errors);
 
                     if let Some(ast) = ast {
                         module.0 = Module::Submodule {
@@ -76,13 +76,17 @@ pub fn insert_explicit_submodules(
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_file, span::FileId};
+    use crate::parse_file;
+    use camino::Utf8PathBuf;
+    use codespan_reporting::files::SimpleFiles;
     use owo_colors::OwoColorize as _;
-    use std::{fs::read_to_string, io::Write as _, path::PathBuf};
+    use std::{io::Write as _, path::PathBuf};
 
     #[test]
     fn parser_tests() {
         insta::glob!("../tests/parser", "**/*.pr", |path| {
+            let path = Utf8PathBuf::from_path_buf(path.to_path_buf()).unwrap();
+
             let short_path = path
                 .components()
                 .skip_while(|c| c.as_os_str() != "tests")
@@ -90,10 +94,9 @@ mod tests {
 
             insta::elog!("{} {} ...", "parsing".cyan(), short_path.display());
 
-            let source = read_to_string(path).map_err(|_| path).unwrap();
-
+            let mut files = SimpleFiles::new();
             let mut errors = vec![];
-            let ast = parse_file(FileId::new(0), &source, &mut errors);
+            let ast = parse_file(path.clone(), &mut files, &mut errors);
 
             assert!(errors.is_empty(), "errors: {errors:#?}");
 

@@ -7,11 +7,8 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use pepper::{
-    diagnostics::{error::Error, report::report},
-    span::FileId,
-};
-use std::{fs::read_to_string, process::ExitCode};
+use pepper::diagnostics::{error::Error, report::report};
+use std::process::ExitCode;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -23,11 +20,8 @@ fn main() -> ExitCode {
 
     let mut files = SimpleFiles::new();
 
-    let source = read_to_string(&args.filename).unwrap();
-    let file_id = FileId::new(files.add(args.filename, source.clone()));
-
     let mut errors = vec![];
-    let mut ast = pepper::parse_file(file_id, source, &mut errors);
+    let mut ast = pepper::parse_file(args.filename, &mut files, &mut errors);
 
     if let Some(ast) = ast.as_mut() {
         pepper::insert_explicit_submodules(ast, &mut files, &mut errors);
