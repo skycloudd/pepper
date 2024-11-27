@@ -54,7 +54,7 @@ fn item_parser<'src: 'tok, 'tok>(
 
         let submodule = just(TokenTree::Token(Token::Kw(Kw::Module)))
             .ignore_then(ident_parser().with_span())
-            .then(ast.delim(Delim::Brace).with_span())
+            .then(ast.delim(Delim::Brace))
             .map(|(name, ast)| Module::Submodule { name, ast })
             .with_span()
             .map(Item::Module)

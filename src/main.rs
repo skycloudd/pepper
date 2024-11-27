@@ -26,7 +26,12 @@ fn main() -> ExitCode {
     let source = read_to_string(&args.filename).unwrap();
     let file_id = FileId::new(files.add(args.filename, source.clone()));
 
-    let (ast, errors) = pepper::parse_file(file_id, source);
+    let mut errors = vec![];
+    let mut ast = pepper::parse_file(file_id, source, &mut errors);
+
+    if let Some(ast) = ast.as_mut() {
+        pepper::insert_explicit_submodules(ast, &mut files, &mut errors);
+    }
 
     eprintln!("ast: {ast:#?}");
 

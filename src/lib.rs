@@ -1,7 +1,9 @@
+use camino::Utf8PathBuf;
 use chumsky::{input::Input as _, span::Span as _, Parser as _};
+use codespan_reporting::files::SimpleFiles;
 use diagnostics::error::{convert, Error};
 use lasso::ThreadedRodeo;
-use parser::ast::Ast;
+use parser::ast::{Ast, Item, Module};
 use span::{FileId, Span};
 use std::sync::LazyLock;
 
@@ -14,15 +16,16 @@ pub mod span;
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[must_use]
-pub fn parse_file(file_id: FileId, source: impl AsRef<str>) -> (Option<Ast>, Vec<Error>) {
+pub fn parse_file(
+    file_id: FileId,
+    source: impl AsRef<str>,
+    errors: &mut Vec<Error>,
+) -> Option<Ast> {
     let (tokens, lexer_errors) = lexer::lexer()
         .parse(source.as_ref().with_context(file_id))
         .into_output_errors();
 
-    let mut errors = lexer_errors
-        .iter()
-        .flat_map(|error| convert(error))
-        .collect::<Vec<_>>();
+    errors.extend(lexer_errors.iter().flat_map(|error| convert(error)));
 
     let (ast, parser_errors) = tokens.as_ref().map_or_else(
         || (None, vec![]),
@@ -39,7 +42,36 @@ pub fn parse_file(file_id: FileId, source: impl AsRef<str>) -> (Option<Ast>, Vec
 
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
-    (ast, errors)
+    ast
+}
+
+pub fn insert_explicit_submodules(
+    ast: &mut Ast,
+    files: &mut SimpleFiles<Utf8PathBuf, String>,
+    errors: &mut Vec<Error>,
+) {
+    for item in &mut ast.0 {
+        if let Item::Module(module) = &mut item.0 {
+            match &module.0 {
+                Module::File(module_name) => {
+                    let filename: Utf8PathBuf = format!("{}.pr", module_name.resolve()).into();
+
+                    let source = std::fs::read_to_string(&filename).unwrap();
+                    let file_id = FileId::new(files.add(filename, source.clone()));
+
+                    let ast = parse_file(file_id, source, errors);
+
+                    if let Some(ast) = ast {
+                        module.0 = Module::Submodule {
+                            name: *module_name,
+                            ast,
+                        };
+                    }
+                }
+                Module::Submodule { .. } => {}
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -60,7 +92,8 @@ mod tests {
 
             let source = read_to_string(path).map_err(|_| path).unwrap();
 
-            let (ast, errors) = parse_file(FileId::new(0), &source);
+            let mut errors = vec![];
+            let ast = parse_file(FileId::new(0), &source, &mut errors);
 
             assert!(errors.is_empty(), "errors: {errors:#?}");
 

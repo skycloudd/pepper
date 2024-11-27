@@ -28,10 +28,7 @@ pub struct Path {
 #[cfg_attr(test, derive(serde::Serialize))]
 pub enum Module {
     File(Spanned<Interned>),
-    Submodule {
-        name: Spanned<Interned>,
-        ast: Spanned<Ast>,
-    },
+    Submodule { name: Spanned<Interned>, ast: Ast },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
