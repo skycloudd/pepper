@@ -29,7 +29,9 @@ jobs:
                   components: clippy
                   override: true
 
-            - uses: taiki-e/install-action@cargo-hack
+            - uses: taiki-e/install-action@v2
+              with:
+                  tool: cargo-hack
 
             - uses: Swatinem/rust-cache@v2
 

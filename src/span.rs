@@ -52,8 +52,8 @@ pub struct FileId(NonZeroUsize);
 
 impl FileId {
     #[must_use]
-    pub fn new(id: usize) -> Self {
-        Self(NonZeroUsize::new(id.checked_add(1).unwrap()).unwrap())
+    pub fn new(id: usize) -> Option<Self> {
+        Some(Self(NonZeroUsize::new(id.checked_add(1)?)?))
     }
 
     #[must_use]

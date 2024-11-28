@@ -22,7 +22,7 @@ pub fn parse_file(
     errors: &mut Vec<Error>,
 ) -> Option<Ast> {
     let source = std::fs::read_to_string(filename).unwrap();
-    let file_id = FileId::new(files.add(filename.to_owned(), source.clone()));
+    let file_id = FileId::new(files.add(filename.to_owned(), source.clone())).unwrap();
 
     let (tokens, lexer_errors) = lexer::lexer()
         .parse(source.with_context(file_id))
