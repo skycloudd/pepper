@@ -90,7 +90,7 @@ pub fn insert_explicit_submodules(
             if existing.next().is_some() {
                 errors.push(Error::AmbiguousModule {
                     module_name: submodule.name.resolve(),
-                    module_name_span: submodule.name.1,
+                    module_name_span: submodule.name.span(),
                     filenames: existing_cloned.map(ToString::to_string).collect(),
                 });
 

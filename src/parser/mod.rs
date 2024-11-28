@@ -245,7 +245,7 @@ macro_rules! unary_op {
         ops
             .repeated()
             .foldr($base.with_span(), |op, expr| {
-                let span = op.1.union(expr.1);
+                let span = op.span().union(expr.span());
 
                 Spanned::new(
                     Expression::UnaryOp {
@@ -274,7 +274,7 @@ macro_rules! binary_op {
             .clone()
             .with_span()
             .foldl(ops.then($base.with_span()).repeated(), |lhs, (op, rhs)| {
-                let span = lhs.1.union(rhs.1);
+                let span = lhs.span().union(rhs.span());
 
                 Spanned::new(
                     Expression::BinaryOp {
@@ -390,14 +390,14 @@ fn expression_parser<'src: 'tok, 'tok>(
                 .with_span()
                 .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
                 .allow_trailing()
-                .collect()
+                .collect::<Vec<_>>()
                 .delim(Delim::Paren)
                 .with_span()
                 .boxed();
 
             atom.with_span()
                 .foldl(call_args.repeated(), |callee, args| {
-                    let span = callee.1.union(args.1);
+                    let span = callee.span().union(args.span());
 
                     Spanned::new(
                         Expression::Call {

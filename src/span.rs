@@ -63,23 +63,27 @@ impl FileId {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Spanned<T>(pub T, pub Span);
+pub struct Spanned<T>(pub T, Span);
 
 impl<T> Spanned<T> {
     pub const fn new(value: T, span: Span) -> Self {
         Self(value, span)
     }
 
+    pub const fn span(&self) -> Span {
+        self.1
+    }
+
     pub fn boxed(self) -> Spanned<Box<T>> {
-        Spanned(Box::new(self.0), self.1)
+        Spanned::new(Box::new(self.0), self.1)
     }
 
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
-        Spanned(f(self.0), self.1)
+        Spanned::new(f(self.0), self.1)
     }
 
     pub fn map_with_span<U>(self, f: impl FnOnce(T, Span) -> U) -> Spanned<U> {
-        Spanned(f(self.0, self.1), self.1)
+        Spanned::new(f(self.0, self.1), self.1)
     }
 
     #[must_use]
@@ -88,20 +92,20 @@ impl<T> Spanned<T> {
     }
 
     pub const fn as_ref(&self) -> Spanned<&T> {
-        Spanned(&self.0, self.1)
+        Spanned::new(&self.0, self.1)
     }
 }
 
 impl<T, E> Spanned<Result<T, E>> {
     pub fn transpose(self) -> Result<Spanned<T>, E> {
-        self.0.map(|value| Spanned(value, self.1))
+        self.0.map(|value| Spanned::new(value, self.1))
     }
 }
 
 impl<T> Spanned<Box<T>> {
     #[must_use]
     pub fn unbox(self) -> Spanned<T> {
-        Spanned(*self.0, self.1)
+        Spanned::new(*self.0, self.1)
     }
 }
 
