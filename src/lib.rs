@@ -3,7 +3,7 @@ use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use codespan_reporting::files::SimpleFiles;
 use diagnostics::error::{convert, Error};
 use lasso::ThreadedRodeo;
-use parser::ast::{Ast, Item, Module};
+use parser::ast::{Ast, Item};
 use span::{FileId, Span};
 use std::sync::LazyLock;
 
@@ -64,23 +64,20 @@ pub fn insert_explicit_submodules(
             Item::Module(submodule) => Some(submodule),
             _ => None,
         })
-        .filter_map(|submodule| match submodule.0 {
-            Module::File(module_name) => Some((submodule, module_name)),
-            Module::Submodule { .. } => None,
-        })
-        .for_each(|(submodule, module_name)| {
+        .filter(|submodule| submodule.ast.is_none())
+        .for_each(|submodule| {
             let filenames = [
-                ast_filename.with_file_name(format!("{}.pr", module_name.resolve())),
+                ast_filename.with_file_name(format!("{}.pr", submodule.name.resolve())),
                 ast_filename
                     .parent()
                     .unwrap()
-                    .join(module_name.resolve())
+                    .join(submodule.name.resolve())
                     .join("mod.pr"),
                 ast_filename
                     .parent()
                     .unwrap()
-                    .join(module_name.resolve())
-                    .join(format!("{}.pr", module_name.resolve())),
+                    .join(submodule.name.resolve())
+                    .join(format!("{}.pr", submodule.name.resolve())),
             ];
 
             let mut existing = filenames.iter().filter(|filename| filename.exists());
@@ -91,8 +88,8 @@ pub fn insert_explicit_submodules(
 
             if existing.next().is_some() {
                 errors.push(Error::AmbiguousModule {
-                    module_name: module_name.resolve(),
-                    module_name_span: module_name.1,
+                    module_name: submodule.name.resolve(),
+                    module_name_span: submodule.name.1,
                     filenames: existing_cloned.map(ToString::to_string).collect(),
                 });
 
@@ -101,12 +98,7 @@ pub fn insert_explicit_submodules(
 
             let ast = parse_file(filename, files, errors);
 
-            if let Some(ast) = ast {
-                submodule.0 = Module::Submodule {
-                    name: module_name,
-                    ast,
-                };
-            }
+            submodule.ast = ast;
         });
 }
 

@@ -47,7 +47,7 @@ fn item_parser<'src: 'tok, 'tok>(
         let file_module = just(TokenTree::Token(Token::Kw(Kw::Module)))
             .ignore_then(ident_parser().with_span())
             .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-            .map(Module::File)
+            .map(|name| Module { name, ast: None })
             .with_span()
             .map(Item::Module)
             .boxed();
@@ -55,7 +55,10 @@ fn item_parser<'src: 'tok, 'tok>(
         let submodule = just(TokenTree::Token(Token::Kw(Kw::Module)))
             .ignore_then(ident_parser().with_span())
             .then(ast.delim(Delim::Brace))
-            .map(|(name, ast)| Module::Submodule { name, ast })
+            .map(|(name, ast)| Module {
+                name,
+                ast: Some(ast),
+            })
             .with_span()
             .map(Item::Module)
             .boxed();

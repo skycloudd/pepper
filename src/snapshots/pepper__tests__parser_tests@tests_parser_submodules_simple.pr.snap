@@ -6,20 +6,19 @@ input_file: tests/parser/submodules/simple.pr
 snapshot_kind: text
 ---
 - Module:
-    Submodule:
-      name: submod
-      ast:
-        - Function:
-            name: aaa
-            params: []
-            return_ty:
-              Primitive:
-                base: Int32
-                segments: []
-            body:
-              statements: []
-              return_expr:
-                Int: "123"
+    name: submod
+    ast:
+      - Function:
+          name: aaa
+          params: []
+          return_ty:
+            Primitive:
+              base: Int32
+              segments: []
+          body:
+            statements: []
+            return_expr:
+              Int: "123"
 - Function:
     name: outer
     params: []
