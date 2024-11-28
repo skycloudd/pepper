@@ -1,0 +1,76 @@
+---
+source: src/lib.rs
+description: "module simple;\nmodule complex;"
+expression: ast.unwrap()
+input_file: tests/parser/submodules/aa.pr
+snapshot_kind: text
+---
+- Module:
+    Submodule:
+      name: simple
+      ast:
+        - Module:
+            Submodule:
+              name: submod
+              ast:
+                - Function:
+                    name: aaa
+                    params: []
+                    return_ty:
+                      Primitive:
+                        base: Int32
+                        segments: []
+                    body:
+                      statements: []
+                      return_expr:
+                        Int: "123"
+        - Function:
+            name: outer
+            params: []
+            return_ty:
+              Primitive:
+                base: Int32
+                segments: []
+            body:
+              statements: []
+              return_expr:
+                Call:
+                  callee:
+                    Name:
+                      base: submod
+                      segments:
+                        - aaa
+                  args: []
+- Module:
+    Submodule:
+      name: complex
+      ast:
+        - Module:
+            Submodule:
+              name: other_submod
+              ast:
+                - Function:
+                    name: function_in_other_submod
+                    params: []
+                    return_ty: ~
+                    body:
+                      statements: []
+                      return_expr: ~
+        - Module:
+            Submodule:
+              name: submod_submod
+              ast:
+                - Function:
+                    name: testytest
+                    params: []
+                    return_ty: ~
+                    body:
+                      statements: []
+                      return_expr: ~
+        - Function:
+            name: aa
+            params: []
+            return_ty: ~
+            body:
+              statements: []
+              return_expr: ~

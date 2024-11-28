@@ -1,0 +1,14 @@
+---
+source: src/lib.rs
+description: "func testytest() {}"
+expression: ast.unwrap()
+input_file: tests/parser/submodules/complex/submod_submod.pr
+snapshot_kind: text
+---
+- Function:
+    name: testytest
+    params: []
+    return_ty: ~
+    body:
+      statements: []
+      return_expr: ~

@@ -1,4 +1,4 @@
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use chumsky::{input::Input as _, span::Span as _, Parser as _};
 use codespan_reporting::files::SimpleFiles;
 use diagnostics::error::{convert, Error};
@@ -17,12 +17,12 @@ static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
 #[must_use]
 pub fn parse_file(
-    filename: Utf8PathBuf,
+    filename: &Utf8Path,
     files: &mut SimpleFiles<Utf8PathBuf, String>,
     errors: &mut Vec<Error>,
 ) -> Option<Ast> {
-    let source = std::fs::read_to_string(&filename).unwrap();
-    let file_id = FileId::new(files.add(filename, source.clone()));
+    let source = std::fs::read_to_string(filename).unwrap();
+    let file_id = FileId::new(files.add(filename.to_owned(), source.clone()));
 
     let (tokens, lexer_errors) = lexer::lexer()
         .parse(source.with_context(file_id))
@@ -30,7 +30,7 @@ pub fn parse_file(
 
     errors.extend(lexer_errors.iter().flat_map(|error| convert(error)));
 
-    let (ast, parser_errors) = tokens.as_ref().map_or_else(
+    let (mut ast, parser_errors) = tokens.as_ref().map_or_else(
         || (None, vec![]),
         |tokens| {
             let eoi = tokens
@@ -45,33 +45,69 @@ pub fn parse_file(
 
     errors.extend(parser_errors.iter().flat_map(|error| convert(error)));
 
+    if let Some(ast) = ast.as_mut() {
+        insert_explicit_submodules(ast, filename, files, errors);
+    }
+
     ast
 }
 
 pub fn insert_explicit_submodules(
     ast: &mut Ast,
+    ast_filename: &Utf8Path,
     files: &mut SimpleFiles<Utf8PathBuf, String>,
     errors: &mut Vec<Error>,
 ) {
-    for item in &mut ast.0 {
-        if let Item::Module(module) = &mut item.0 {
-            match &module.0 {
-                Module::File(module_name) => {
-                    let filename: Utf8PathBuf = format!("{}.pr", module_name.resolve()).into();
+    ast.0
+        .iter_mut()
+        .filter_map(|item| match &mut item.0 {
+            Item::Module(submodule) => Some(submodule),
+            _ => None,
+        })
+        .filter_map(|submodule| match submodule.0 {
+            Module::File(module_name) => Some((submodule, module_name)),
+            Module::Submodule { .. } => None,
+        })
+        .for_each(|(submodule, module_name)| {
+            let filenames = [
+                ast_filename.with_file_name(format!("{}.pr", module_name.resolve())),
+                ast_filename
+                    .parent()
+                    .unwrap()
+                    .join(module_name.resolve())
+                    .join("mod.pr"),
+                ast_filename
+                    .parent()
+                    .unwrap()
+                    .join(module_name.resolve())
+                    .join(format!("{}.pr", module_name.resolve())),
+            ];
 
-                    let ast = parse_file(filename, files, errors);
+            let mut existing = filenames.iter().filter(|filename| filename.exists());
 
-                    if let Some(ast) = ast {
-                        module.0 = Module::Submodule {
-                            name: *module_name,
-                            ast,
-                        };
-                    }
-                }
-                Module::Submodule { .. } => {}
+            let existing_cloned = existing.clone();
+
+            let filename = existing.next().unwrap_or_else(|| todo!());
+
+            if existing.next().is_some() {
+                errors.push(Error::AmbiguousModule {
+                    module_name: module_name.resolve(),
+                    module_name_span: module_name.1,
+                    filenames: existing_cloned.map(ToString::to_string).collect(),
+                });
+
+                return;
             }
-        }
-    }
+
+            let ast = parse_file(filename, files, errors);
+
+            if let Some(ast) = ast {
+                submodule.0 = Module::Submodule {
+                    name: module_name,
+                    ast,
+                };
+            }
+        });
 }
 
 #[cfg(test)]
@@ -96,7 +132,7 @@ mod tests {
 
             let mut files = SimpleFiles::new();
             let mut errors = vec![];
-            let ast = parse_file(path.clone(), &mut files, &mut errors);
+            let ast = parse_file(&path, &mut files, &mut errors);
 
             assert!(errors.is_empty(), "errors: {errors:#?}");
 

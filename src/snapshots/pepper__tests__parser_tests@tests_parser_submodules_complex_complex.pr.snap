@@ -1,0 +1,36 @@
+---
+source: src/lib.rs
+description: "module other_submod;\nmodule submod_submod;\n\nfunc aa() {}"
+expression: ast.unwrap()
+input_file: tests/parser/submodules/complex/complex.pr
+snapshot_kind: text
+---
+- Module:
+    Submodule:
+      name: other_submod
+      ast:
+        - Function:
+            name: function_in_other_submod
+            params: []
+            return_ty: ~
+            body:
+              statements: []
+              return_expr: ~
+- Module:
+    Submodule:
+      name: submod_submod
+      ast:
+        - Function:
+            name: testytest
+            params: []
+            return_ty: ~
+            body:
+              statements: []
+              return_expr: ~
+- Function:
+    name: aa
+    params: []
+    return_ty: ~
+    body:
+      statements: []
+      return_expr: ~

@@ -17,6 +17,11 @@ pub enum Error {
         message: String,
         span: Span,
     },
+    AmbiguousModule {
+        module_name: &'static str,
+        module_name_span: Span,
+        filenames: Vec<String>,
+    },
 }
 
 impl Diag for Error {
@@ -47,6 +52,11 @@ impl Diag for Error {
             }
             .into(),
             Self::Custom { message, span: _ } => message.into(),
+            Self::AmbiguousModule {
+                module_name: _,
+                module_name_span: _,
+                filenames: _,
+            } => "Ambiguous module name".into(),
         }
     }
 
@@ -61,12 +71,41 @@ impl Diag for Error {
                 |found| vec![ErrorSpan::primary_message(format!("Found {found}"), *span)],
             ),
             Self::Custom { message: _, span } => vec![ErrorSpan::primary(*span)],
+            Self::AmbiguousModule {
+                module_name: _,
+                module_name_span,
+                filenames: _,
+            } => vec![ErrorSpan::primary_message(
+                "Declared here",
+                *module_name_span,
+            )],
         }
     }
 
     fn notes(&self) -> Vec<String> {
         match self {
-            Self::ExpectedFound { .. } | Self::Custom { .. } => vec![],
+            Self::AmbiguousModule {
+                module_name,
+                module_name_span: _,
+                filenames,
+            } => {
+                let mut notes = vec![
+                    format!(""),
+                    format!(
+                        "There exist multiple possible files for the module `{}`:",
+                        module_name
+                    ),
+                ];
+
+                for filename in filenames {
+                    notes.push(format!("  - {filename}"));
+                }
+
+                notes
+            }
+            Self::ExpectedFound { .. } | Self::Custom { .. } => {
+                vec![]
+            }
         }
     }
 

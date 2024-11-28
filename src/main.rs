@@ -21,11 +21,7 @@ fn main() -> ExitCode {
     let mut files = SimpleFiles::new();
 
     let mut errors = vec![];
-    let mut ast = pepper::parse_file(args.filename, &mut files, &mut errors);
-
-    if let Some(ast) = ast.as_mut() {
-        pepper::insert_explicit_submodules(ast, &mut files, &mut errors);
-    }
+    let ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
 
     eprintln!("ast: {ast:#?}");
 

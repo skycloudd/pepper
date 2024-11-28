@@ -1,0 +1,14 @@
+---
+source: src/lib.rs
+description: "func function_in_other_submod() {}"
+expression: ast.unwrap()
+input_file: tests/parser/submodules/complex/other_submod/mod.pr
+snapshot_kind: text
+---
+- Function:
+    name: function_in_other_submod
+    params: []
+    return_ty: ~
+    body:
+      statements: []
+      return_expr: ~
