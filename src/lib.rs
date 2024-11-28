@@ -66,19 +66,20 @@ pub fn insert_explicit_submodules(
         })
         .filter(|submodule| submodule.ast.is_none())
         .for_each(|submodule| {
-            let filenames = [
-                ast_filename.with_file_name(format!("{}.pr", submodule.name.resolve())),
-                ast_filename
+            let filenames = {
+                let directory = ast_filename
                     .parent()
                     .unwrap()
-                    .join(submodule.name.resolve())
-                    .join("mod.pr"),
-                ast_filename
-                    .parent()
-                    .unwrap()
-                    .join(submodule.name.resolve())
-                    .join(format!("{}.pr", submodule.name.resolve())),
-            ];
+                    .join(submodule.name.resolve());
+
+                let submodule_filename = format!("{}.pr", submodule.name.resolve());
+
+                [
+                    ast_filename.with_file_name(&submodule_filename),
+                    directory.join("mod.pr"),
+                    directory.join(submodule_filename),
+                ]
+            };
 
             let mut existing = filenames.iter().filter(|filename| filename.exists());
 
