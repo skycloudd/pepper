@@ -26,21 +26,23 @@ pub fn parser<'src: 'tok, 'tok>(
             .map(Ast)
             .boxed()
     })
+    .boxed()
 }
 
 fn item_parser<'src: 'tok, 'tok>(
-    ast: impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>>,
+    ast: impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, Item, ParserExtra<'src, 'tok>> {
-    let function = function_parser().with_span().map(Item::Function);
+    let function = function_parser().with_span().map(Item::Function).boxed();
 
     let import = just(TokenTree::Token(Token::Kw(Kw::Import)))
         .ignore_then(path_parser().with_span())
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
-        .map(Item::Import);
+        .map(Item::Import)
+        .boxed();
 
-    let struct_ = struct_parser().with_span().map(Item::Struct);
+    let struct_ = struct_parser().with_span().map(Item::Struct).boxed();
 
-    let enum_ = enum_parser().with_span().map(Item::Enum);
+    let enum_ = enum_parser().with_span().map(Item::Enum).boxed();
 
     let module = {
         let file_module = just(TokenTree::Token(Token::Kw(Kw::Module)))
@@ -48,7 +50,8 @@ fn item_parser<'src: 'tok, 'tok>(
             .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Semicolon))))
             .map(|name| Module { name, ast: None })
             .with_span()
-            .map(Item::Module);
+            .map(Item::Module)
+            .boxed();
 
         let submodule = just(TokenTree::Token(Token::Kw(Kw::Module)))
             .ignore_then(ident_parser().with_span())
@@ -58,27 +61,31 @@ fn item_parser<'src: 'tok, 'tok>(
                 ast: Some(ast),
             })
             .with_span()
-            .map(Item::Module);
+            .map(Item::Module)
+            .boxed();
 
-        choice((file_module, submodule))
-    };
+        choice((file_module, submodule)).boxed()
+    }
+    .boxed();
 
-    choice((function, import, struct_, enum_, module))
+    choice((function, import, struct_, enum_, module)).boxed()
 }
 
 fn function_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function, ParserExtra<'src, 'tok>> {
-    let name = ident_parser().with_span();
+    let name = ident_parser().with_span().boxed();
 
     let params = comma_separated(function_param_parser())
         .delim(Delim::Paren)
-        .with_span();
+        .with_span()
+        .boxed();
 
     let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
         .ignore_then(type_parser().with_span())
-        .or_not();
+        .or_not()
+        .boxed();
 
-    let body = expression_parser().with_span();
+    let body = expression_parser().with_span().boxed();
 
     just(TokenTree::Token(Token::Kw(Kw::Func)))
         .ignore_then(name)
@@ -92,6 +99,7 @@ fn function_parser<'src: 'tok, 'tok>(
             return_ty,
             body,
         })
+        .boxed()
 }
 
 fn function_param_parser<'src: 'tok, 'tok>(
@@ -101,20 +109,23 @@ fn function_param_parser<'src: 'tok, 'tok>(
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
         .then(type_parser().with_span())
         .map(|(name, ty)| FunctionParam { name, ty })
+        .boxed()
 }
 
 fn struct_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Struct, ParserExtra<'src, 'tok>> {
-    let name = ident_parser().with_span();
+    let name = ident_parser().with_span().boxed();
 
     let fields = comma_separated(struct_field_parser())
         .delim(Delim::Brace)
-        .with_span();
+        .with_span()
+        .boxed();
 
     just(TokenTree::Token(Token::Kw(Kw::Struct)))
         .ignore_then(name)
         .then(fields)
         .map(|(name, fields)| Struct { name, fields })
+        .boxed()
 }
 
 fn struct_field_parser<'src: 'tok, 'tok>(
@@ -124,25 +135,28 @@ fn struct_field_parser<'src: 'tok, 'tok>(
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
         .then(type_parser().with_span())
         .map(|(name, ty)| StructField { name, ty })
+        .boxed()
 }
 
 fn enum_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Enum, ParserExtra<'src, 'tok>> {
-    let name = ident_parser().with_span();
+    let name = ident_parser().with_span().boxed();
 
     let variants = comma_separated(enum_variant_parser())
         .delim(Delim::Brace)
-        .with_span();
+        .with_span()
+        .boxed();
 
     just(TokenTree::Token(Token::Kw(Kw::Enum)))
         .ignore_then(name)
         .then(variants)
         .map(|(name, variants)| Enum { name, variants })
+        .boxed()
 }
 
 fn enum_variant_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, EnumVariant, ParserExtra<'src, 'tok>> {
-    let unit = ident_parser().with_span().map(EnumVariant::Unit);
+    let unit = ident_parser().with_span().map(EnumVariant::Unit).boxed();
 
     let tuple = ident_parser()
         .with_span()
@@ -151,7 +165,8 @@ fn enum_variant_parser<'src: 'tok, 'tok>(
                 .delim(Delim::Paren)
                 .with_span(),
         )
-        .map(|(name, fields)| EnumVariant::Tuple { name, fields });
+        .map(|(name, fields)| EnumVariant::Tuple { name, fields })
+        .boxed();
 
     let struct_ = ident_parser()
         .with_span()
@@ -160,9 +175,10 @@ fn enum_variant_parser<'src: 'tok, 'tok>(
                 .delim(Delim::Brace)
                 .with_span(),
         )
-        .map(|(name, fields)| EnumVariant::Struct { name, fields });
+        .map(|(name, fields)| EnumVariant::Struct { name, fields })
+        .boxed();
 
-    choice((tuple, struct_, unit))
+    choice((tuple, struct_, unit)).boxed()
 }
 
 macro_rules! unary_op {
@@ -173,7 +189,7 @@ macro_rules! unary_op {
             )*
         ))
         .with_span()
-        ;
+        .boxed();
 
         ops
             .repeated()
@@ -189,7 +205,7 @@ macro_rules! unary_op {
                 )
             })
             .map(|expr| expr.0)
-
+            .boxed()
     }};
 }
 
@@ -201,7 +217,7 @@ macro_rules! binary_op {
             )*
         ))
         .with_span()
-        ;
+        .boxed();
 
         $base
             .clone()
@@ -219,32 +235,34 @@ macro_rules! binary_op {
                 )
             })
             .map(|expr| expr.0)
-
+            .boxed()
     }};
 }
 
 fn expression_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Expression, ParserExtra<'src, 'tok>> {
     recursive(|expression| {
-        let int = int_parser().with_span().map(Expression::Int);
+        let int = int_parser().with_span().map(Expression::Int).boxed();
 
-        let float = float_parser().with_span().map(Expression::Float);
+        let float = float_parser().with_span().map(Expression::Float).boxed();
 
-        let bool = bool_parser().with_span().map(Expression::Bool);
+        let bool = bool_parser().with_span().map(Expression::Bool).boxed();
 
-        let string = string_parser().with_span().map(Expression::String);
+        let string = string_parser().with_span().map(Expression::String).boxed();
 
-        let name = path_parser().with_span().map(Expression::Name);
+        let name = path_parser().with_span().map(Expression::Name).boxed();
 
         let tuple = comma_separated(expression.clone())
             .delim(Delim::Paren)
             .with_span()
-            .map(Expression::Tuple);
+            .map(Expression::Tuple)
+            .boxed();
 
         let list = comma_separated(expression.clone())
             .delim(Delim::Bracket)
             .with_span()
-            .map(Expression::List);
+            .map(Expression::List)
+            .boxed();
 
         let pattern = pattern_parser(expression.clone()).with_span().boxed();
 
@@ -253,25 +271,30 @@ fn expression_parser<'src: 'tok, 'tok>(
                 .clone()
                 .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
                 .then(expression.clone().with_span())
-                .map(|(pattern, body)| MatchArm { pattern, body });
+                .map(|(pattern, body)| MatchArm { pattern, body })
+                .boxed();
 
             just(TokenTree::Token(Token::Kw(Kw::Match)))
                 .ignore_then(expression.clone().map(Box::new).with_span())
                 .then(comma_separated(match_arm).delim(Delim::Brace).with_span())
                 .map(|(expr, arms)| Expression::Match { expr, arms })
-        };
+                .boxed()
+        }
+        .boxed();
 
         let binding = {
-            let name = ident_parser().with_span();
+            let name = ident_parser().with_span().boxed();
 
             let ty = just(TokenTree::Token(Token::Punc(Punc::Colon)))
                 .ignore_then(type_parser().with_span())
-                .or_not();
+                .or_not()
+                .boxed();
 
             let value = just(TokenTree::Token(Token::Punc(Punc::Equals)))
-                .ignore_then(expression.clone().map(Box::new).with_span());
+                .ignore_then(expression.clone().map(Box::new).with_span())
+                .boxed();
 
-            let body = expression.clone().map(Box::new).with_span();
+            let body = expression.clone().map(Box::new).with_span().boxed();
 
             just(TokenTree::Token(Token::Kw(Kw::Var)))
                 .ignore_then(name)
@@ -285,13 +308,16 @@ fn expression_parser<'src: 'tok, 'tok>(
                     value,
                     body,
                 })
-        };
+                .boxed()
+        }
+        .boxed();
 
         let parenthesized = expression
             .clone()
             .with_span()
             .delim(Delim::Paren)
-            .map(|expr| expr.0);
+            .map(|expr| expr.0)
+            .boxed();
 
         let atom = choice((
             parenthesized,
@@ -304,12 +330,14 @@ fn expression_parser<'src: 'tok, 'tok>(
             bool,
             string,
             name,
-        ));
+        ))
+        .boxed();
 
         let call = {
             let call_args = comma_separated(expression.clone())
                 .delim(Delim::Paren)
-                .with_span();
+                .with_span()
+                .boxed();
 
             atom.with_span()
                 .foldl(call_args.repeated(), |callee, args| {
@@ -324,7 +352,9 @@ fn expression_parser<'src: 'tok, 'tok>(
                     )
                 })
                 .map(|expr| expr.0)
-        };
+                .boxed()
+        }
+        .boxed();
 
         let unary = unary_op!(
             call,
@@ -382,27 +412,32 @@ fn pattern_parser<'src: 'tok, 'tok>(
             })
             .boxed()
     })
+    .boxed()
 }
 
 fn pattern_type_parser<'src: 'tok, 'tok>(
-    pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + Clone,
+    pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + Clone + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, PatternType, ParserExtra<'src, 'tok>> {
     let tuple_pattern = comma_separated(pattern.clone())
         .delim(Delim::Paren)
         .with_span()
-        .map(PatternType::Tuple);
+        .map(PatternType::Tuple)
+        .boxed();
 
     let list_pattern = {
         let list_pattern = choice((
             pattern.clone().with_span().map(ListPattern::Pattern),
             just(TokenTree::Token(Token::Punc(Punc::DoublePeriod))).to(ListPattern::Rest),
-        ));
+        ))
+        .boxed();
 
         comma_separated(list_pattern)
             .delim(Delim::Bracket)
             .with_span()
             .map(PatternType::List)
-    };
+            .boxed()
+    }
+    .boxed();
 
     let tuple_type_pattern = path_parser()
         .with_span()
@@ -411,7 +446,8 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
                 .delim(Delim::Paren)
                 .with_span(),
         )
-        .map(|(name, fields)| PatternType::TupleType { name, fields });
+        .map(|(name, fields)| PatternType::TupleType { name, fields })
+        .boxed();
 
     let struct_type_pattern = {
         let struct_pattern_field = ident_parser()
@@ -421,7 +457,8 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
                     .ignore_then(pattern.with_span())
                     .or_not(),
             )
-            .map(|(name, pattern)| StructPatternField { name, pattern });
+            .map(|(name, pattern)| StructPatternField { name, pattern })
+            .boxed();
 
         path_parser()
             .with_span()
@@ -431,7 +468,9 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
                     .with_span(),
             )
             .map(|(name, fields)| PatternType::StructType { name, fields })
-    };
+            .boxed()
+    }
+    .boxed();
 
     choice((
         int_parser().with_span().map(PatternType::Int),
@@ -444,6 +483,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         struct_type_pattern,
         path_parser().with_span().map(PatternType::Name),
     ))
+    .boxed()
 }
 
 macro_rules! interned_parser {
@@ -453,6 +493,7 @@ macro_rules! interned_parser {
             select! {
                 TokenTree::Token(Token::$token(ident)) => ident
             }
+            .boxed()
         }
     };
 }
@@ -478,46 +519,55 @@ fn path_parser<'src: 'tok, 'tok>(
                 segments: segments.to_vec(),
             }
         })
+        .boxed()
 }
 
 fn type_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, AstType, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
-        let prim = path_parser().with_span().map(Type::Primitive);
+        let prim = path_parser().with_span().map(Type::Primitive).boxed();
 
         let tuple = comma_separated(type_.clone())
             .delim(Delim::Paren)
             .with_span()
-            .map(Type::Tuple);
+            .map(Type::Tuple)
+            .boxed();
 
-        let never = just(TokenTree::Token(Token::Punc(Punc::Bang))).to(Type::Never);
+        let never = just(TokenTree::Token(Token::Punc(Punc::Bang)))
+            .to(Type::Never)
+            .boxed();
 
         let function = {
             let params = comma_separated(type_.clone())
                 .delim(Delim::Paren)
-                .with_span();
+                .with_span()
+                .boxed();
 
             let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
-                .ignore_then(type_.map(Box::new).with_span());
+                .ignore_then(type_.map(Box::new).with_span())
+                .boxed();
 
             just(TokenTree::Token(Token::Kw(Kw::Func)))
                 .ignore_then(params)
                 .then(return_ty)
                 .map(|(params, return_ty)| Type::Function { params, return_ty })
+                .boxed()
         };
 
         choice((prim, tuple, never, function)).boxed()
     })
+    .boxed()
 }
 
 fn comma_separated<'src: 'tok, 'tok, Inner: 'tok>(
-    inner: impl Parser<'tok, ParserInput<'tok>, Inner, ParserExtra<'src, 'tok>>,
+    inner: impl Parser<'tok, ParserInput<'tok>, Inner, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, Vec<Spanned<Inner>>, ParserExtra<'src, 'tok>> {
     inner
         .with_span()
         .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
         .allow_trailing()
         .collect()
+        .boxed()
 }
 
 trait SpannedExt<'src: 'tok, 'tok, O> {

@@ -14,29 +14,34 @@ pub fn lexer<'src>(
     recursive(|tokens| {
         let ident = choice((text::unicode::ident(), text::ascii::ident()))
             .map(|name| Interned::new(RODEO.get_or_intern(name)))
-            .map(Token::Identifier);
+            .map(Token::Identifier)
+            .boxed();
 
         let bool = choice((text::keyword("true"), text::keyword("false")))
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(Token::Boolean);
+            .map(Token::Boolean)
+            .boxed();
 
         let int = text::int(10)
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(Token::Int);
+            .map(Token::Int)
+            .boxed();
 
         let float = text::int(10)
             .then(just('.').then(text::digits(10).or_not()))
             .to_slice()
             .map(Interned::get_or_intern)
-            .map(Token::Float);
+            .map(Token::Float)
+            .boxed();
 
         let string = just('"')
             .ignore_then(none_of('"').repeated().to_slice())
             .then_ignore(just('"'))
             .map(Interned::get_or_intern)
-            .map(Token::String);
+            .map(Token::String)
+            .boxed();
 
         let keyword = choice((
             text::keyword("func").to(Kw::Func),
@@ -50,7 +55,8 @@ pub fn lexer<'src>(
             text::keyword("enum").to(Kw::Enum),
             text::keyword("module").to(Kw::Module),
         ))
-        .map(Token::Kw);
+        .map(Token::Kw)
+        .boxed();
 
         let punctuation = choice((
             just("->").to(Punc::Arrow),
@@ -73,39 +79,48 @@ pub fn lexer<'src>(
             just(">").to(Punc::Greater),
             just(";").to(Punc::Semicolon),
         ))
-        .map(Token::Punc);
+        .map(Token::Punc)
+        .boxed();
 
         let comment = just("//")
             .then(any().and_is(just('\n').not()).repeated())
-            .padded();
+            .padded()
+            .boxed();
 
-        let simple =
-            choice((keyword, bool, ident, float, int, string, punctuation)).map(TokenTree::Token);
+        let simple = choice((keyword, bool, ident, float, int, string, punctuation))
+            .map(TokenTree::Token)
+            .boxed();
 
         let parenthesised = tokens
             .clone()
             .delimited_by(just('('), just(')'))
-            .map(|tokens| TokenTree::Tree(Delim::Paren, tokens));
+            .map(|tokens| TokenTree::Tree(Delim::Paren, tokens))
+            .boxed();
 
         let curly_braces = tokens
             .clone()
             .delimited_by(just('{'), just('}'))
-            .map(|tokens| TokenTree::Tree(Delim::Brace, tokens));
+            .map(|tokens| TokenTree::Tree(Delim::Brace, tokens))
+            .boxed();
 
         let square_brackets = tokens
             .delimited_by(just('['), just(']'))
-            .map(|tokens| TokenTree::Tree(Delim::Bracket, tokens));
+            .map(|tokens| TokenTree::Tree(Delim::Bracket, tokens))
+            .boxed();
 
         let token = choice((simple, parenthesised, curly_braces, square_brackets))
-            .map_with(|token, e| (token, e.span()));
+            .map_with(|token, e| (token, e.span()))
+            .boxed();
 
         token
-            .padded_by(comment.repeated())
+            .padded_by(comment.clone().repeated())
             .padded()
             .repeated()
             .collect()
             .padded_by(comment.repeated())
             .padded()
+            .boxed()
     })
     .then_ignore(end())
+    .boxed()
 }
