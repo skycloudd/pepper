@@ -13,6 +13,9 @@ use std::process::ExitCode;
 #[derive(Debug, Parser)]
 struct Args {
     filename: Utf8PathBuf,
+
+    #[clap(short, long)]
+    print: Vec<String>,
 }
 
 fn main() -> ExitCode {
@@ -25,10 +28,12 @@ fn run(args: &Args) -> ExitCode {
     let mut files = SimpleFiles::new();
 
     let mut errors = vec![];
-    let _ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
+    let ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
 
     if errors.is_empty() {
-        // eprintln!("ast: {ast:#?}");
+        if args.print.contains(&"ast".into()) {
+            println!("{ast:#?}");
+        }
 
         ExitCode::SUCCESS
     } else {
@@ -68,7 +73,13 @@ mod tests {
 
             insta::elog!("{} {} ...", "running".cyan(), short_filename.display());
 
-            assert_eq!(run(&Args { filename }), ExitCode::SUCCESS);
+            assert_eq!(
+                run(&Args {
+                    filename,
+                    print: vec![]
+                }),
+                ExitCode::SUCCESS
+            );
         });
     }
 }
