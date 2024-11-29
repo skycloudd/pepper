@@ -18,6 +18,10 @@ struct Args {
 fn main() -> ExitCode {
     let args = Args::parse();
 
+    run(&args)
+}
+
+fn run(args: &Args) -> ExitCode {
     let mut files = SimpleFiles::new();
 
     let mut errors = vec![];
@@ -41,5 +45,30 @@ fn emit_errors(errors: &[Error], files: &SimpleFiles<Utf8PathBuf, String>) {
         let diagnostic = report(error);
 
         term::emit(&mut writer.lock(), &term_config, files, &diagnostic).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{run, Args};
+    use camino::Utf8PathBuf;
+    use owo_colors::OwoColorize as _;
+    use std::path::PathBuf;
+    use std::{io::Write as _, process::ExitCode};
+
+    #[test]
+    fn parser_tests() {
+        insta::glob!("../tests/parser", "**/*.pr", |path| {
+            let filename = Utf8PathBuf::from_path_buf(path.to_path_buf()).unwrap();
+
+            let short_filename = filename
+                .components()
+                .skip_while(|c| c.as_os_str() != "tests")
+                .collect::<PathBuf>();
+
+            insta::elog!("{} {} ...", "running".cyan(), short_filename.display());
+
+            assert_eq!(run(&Args { filename }), ExitCode::SUCCESS);
+        });
     }
 }
