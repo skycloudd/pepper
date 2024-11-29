@@ -62,6 +62,7 @@ pub enum Punc {
     Less,
     Greater,
     Semicolon,
+    Pipe,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -177,6 +178,7 @@ impl core::fmt::Display for Punc {
                 Self::Less => "<",
                 Self::Greater => ">",
                 Self::Semicolon => ";",
+                Self::Pipe => "|",
             }
         )
     }

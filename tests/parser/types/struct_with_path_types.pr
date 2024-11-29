@@ -1,5 +1,5 @@
 struct StructWithPathTypes {
-    a: aa.bb.C,
-    b: bb.cc.A,
-    c: cc.aa.B
+    a aa.bb.C,
+    b bb.cc.A,
+    c cc.aa.B
 }

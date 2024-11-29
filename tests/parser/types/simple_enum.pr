@@ -1,5 +1,4 @@
-enum SimpleEnum {
-    A,
-    B,
-    C,
-}
+enum SimpleEnum =
+    | A
+    | B
+    | C

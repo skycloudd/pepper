@@ -1,15 +1,14 @@
 func __a_A123_1Aa__abhxjjid() =
     var _a = 3 in
 
-    match _a {
-        3 => (
-            var _______ = 3 in
-            var _______aaaa = 3 in
-            var _ = 3 in
-            ()
-        ),
-        _ => (
-            var _ = __123 in
-            ()
-        ),
-    }
+    match _a
+    | 3 => (
+        var _______ = 3 in
+        var _______aaaa = 3 in
+        var _ = 3 in
+        ()
+    )
+    | _ => (
+        var _ = __123 in
+        ()
+    )

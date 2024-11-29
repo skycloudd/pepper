@@ -1,21 +1,17 @@
 func type_patterns(aaaa: Aaaa, bbbb: Bbbb) -> Float32 =
-    var _: Float32 = match aaaa {
-        Aaaa { aa: 2.5, bb: 1.5 } => 1.5,
-        Aaaa { aa, bb } => n * m,
-    } in
+    var _: Float32 = match aaaa
+    | Aaaa { aa: 2.5, bb: 1.5 } => 1.5
+    | Aaaa { aa, bb } => n * m
+    in
 
-    match bbbb {
-        Bbbb.Cccc(2) => 1.5,
-        Bbbb.Cccc(n) => n * 3. / 2.,
-        Bbbb.Dddd => n * 4. / 2. + 1.,
-    }
+    match bbbb
+    | Bbbb.Cccc(2) => 1.5
+    | Bbbb.Cccc(n) => n * 3. / 2.
+    | Bbbb.Dddd => n * 4. / 2. + 1.
 
 struct Aaaa {
-    aa: Float32,
-    bb: Float32,
+    aa Float32,
+    bb Float32,
 }
 
-enum Bbbb {
-    Cccc(int32),
-    Dddd,
-}
+enum Bbbb = Cccc(int32) | Dddd

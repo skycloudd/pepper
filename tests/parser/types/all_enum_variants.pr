@@ -1,5 +1,4 @@
-enum AllEnumVariants {
-    Unit,
-    TupleVariant(Int32, String),
-    StructVariant { x: Float64, y: Float64 },
-}
+enum AllEnumVariants =
+    | Unit
+    | TupleVariant(Int32, String)
+    | StructVariant { x Float64, y Float64 }

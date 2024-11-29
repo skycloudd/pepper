@@ -1,5 +1,5 @@
 struct SimpleStruct {
-    aa: Int32,
-    bb: Float64,
-    cc: String,
+    aa Int32,
+    bb Float64,
+    cc String,
 }

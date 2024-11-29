@@ -132,7 +132,6 @@ fn struct_field_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, StructField, ParserExtra<'src, 'tok>> {
     ident_parser()
         .with_span()
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
         .then(type_parser().with_span())
         .map(|(name, ty)| StructField { name, ty })
         .boxed()
@@ -142,13 +141,17 @@ fn enum_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Enum, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span().boxed();
 
-    let variants = comma_separated(enum_variant_parser())
-        .delim(Delim::Brace)
+    let variants = enum_variant_parser()
+        .with_span()
+        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Pipe))))
+        .allow_leading()
+        .collect()
         .with_span()
         .boxed();
 
     just(TokenTree::Token(Token::Kw(Kw::Enum)))
         .ignore_then(name)
+        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
         .then(variants)
         .map(|(name, variants)| Enum { name, variants })
         .boxed()
@@ -267,8 +270,8 @@ fn expression_parser<'src: 'tok, 'tok>(
         let pattern = pattern_parser(expression.clone()).with_span().boxed();
 
         let match_ = {
-            let match_arm = pattern
-                .clone()
+            let match_arm = just(TokenTree::Token(Token::Punc(Punc::Pipe)))
+                .ignore_then(pattern.clone())
                 .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
                 .then(expression.clone().with_span())
                 .map(|(pattern, body)| MatchArm { pattern, body })
@@ -276,7 +279,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 
             just(TokenTree::Token(Token::Kw(Kw::Match)))
                 .ignore_then(expression.clone().map(Box::new).with_span())
-                .then(comma_separated(match_arm).delim(Delim::Brace).with_span())
+                .then(match_arm.with_span().repeated().collect().with_span())
                 .map(|(expr, arms)| Expression::Match { expr, arms })
                 .boxed()
         }
