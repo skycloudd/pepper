@@ -73,11 +73,7 @@ fn function_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span();
 
-    let params = function_param_parser()
-        .with_span()
-        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-        .allow_trailing()
-        .collect()
+    let params = comma_separated(function_param_parser())
         .delim(Delim::Paren)
         .with_span()
         .boxed();
@@ -117,11 +113,7 @@ fn struct_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Struct, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span();
 
-    let fields = struct_field_parser()
-        .with_span()
-        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-        .allow_trailing()
-        .collect()
+    let fields = comma_separated(struct_field_parser())
         .delim(Delim::Brace)
         .with_span()
         .boxed();
@@ -147,11 +139,7 @@ fn enum_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Enum, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span();
 
-    let variants = enum_variant_parser()
-        .with_span()
-        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-        .allow_trailing()
-        .collect()
+    let variants = comma_separated(enum_variant_parser())
         .delim(Delim::Brace)
         .with_span()
         .boxed();
@@ -169,18 +157,18 @@ fn enum_variant_parser<'src: 'tok, 'tok>(
 
     let tuple = ident_parser()
         .with_span()
-        .then(tuple_parser(type_parser()).with_span())
+        .then(
+            comma_separated(type_parser())
+                .delim(Delim::Paren)
+                .with_span(),
+        )
         .map(|(name, fields)| EnumVariant::Tuple { name, fields })
         .boxed();
 
     let struct_ = ident_parser()
         .with_span()
         .then(
-            struct_field_parser()
-                .with_span()
-                .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-                .allow_trailing()
-                .collect()
+            comma_separated(struct_field_parser())
                 .delim(Delim::Brace)
                 .with_span(),
         )
@@ -309,17 +297,13 @@ fn expression_parser<'src: 'tok, 'tok>(
             .map(Expression::Block)
             .boxed();
 
-        let tuple = tuple_parser(expression.clone())
+        let tuple = comma_separated(expression.clone())
+            .delim(Delim::Paren)
             .with_span()
             .map(Expression::Tuple)
             .boxed();
 
-        let list = expression
-            .clone()
-            .with_span()
-            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-            .allow_trailing()
-            .collect()
+        let list = comma_separated(expression.clone())
             .delim(Delim::Bracket)
             .with_span()
             .map(Expression::List)
@@ -333,19 +317,11 @@ fn expression_parser<'src: 'tok, 'tok>(
                 .then_ignore(just(TokenTree::Token(Token::Punc(Punc::DoubleArrow))))
                 .then(expression.clone().with_span())
                 .map(|(pattern, body)| MatchArm { pattern, body })
-                .with_span()
                 .boxed();
 
             just(TokenTree::Token(Token::Kw(Kw::Match)))
                 .ignore_then(expression.clone().map(Box::new).with_span())
-                .then(
-                    match_arm
-                        .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-                        .allow_trailing()
-                        .collect()
-                        .delim(Delim::Brace)
-                        .with_span(),
-                )
+                .then(comma_separated(match_arm).delim(Delim::Brace).with_span())
                 .map(|(expr, arms)| Expression::Match { expr, arms })
                 .boxed()
         };
@@ -385,12 +361,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         .boxed();
 
         let call = {
-            let call_args = expression
-                .clone()
-                .with_span()
-                .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-                .allow_trailing()
-                .collect::<Vec<_>>()
+            let call_args = comma_separated(expression.clone())
                 .delim(Delim::Paren)
                 .with_span()
                 .boxed();
@@ -473,6 +444,12 @@ fn pattern_parser<'src: 'tok, 'tok>(
 fn pattern_type_parser<'src: 'tok, 'tok>(
     pattern: impl Parser<'tok, ParserInput<'tok>, Pattern, ParserExtra<'src, 'tok>> + Clone + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, PatternType, ParserExtra<'src, 'tok>> {
+    let tuple_pattern = comma_separated(pattern.clone())
+        .delim(Delim::Paren)
+        .with_span()
+        .map(PatternType::Tuple)
+        .boxed();
+
     let list_pattern = {
         let list_pattern = choice((
             pattern.clone().with_span().map(ListPattern::Pattern),
@@ -480,11 +457,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         ))
         .boxed();
 
-        list_pattern
-            .with_span()
-            .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-            .allow_trailing()
-            .collect()
+        comma_separated(list_pattern)
             .delim(Delim::Bracket)
             .with_span()
             .map(PatternType::List)
@@ -493,7 +466,11 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
 
     let tuple_type_pattern = path_parser()
         .with_span()
-        .then(tuple_parser(pattern.clone()).with_span())
+        .then(
+            comma_separated(pattern.clone())
+                .delim(Delim::Paren)
+                .with_span(),
+        )
         .map(|(name, fields)| PatternType::TupleType { name, fields })
         .boxed();
 
@@ -502,7 +479,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
             .with_span()
             .then(
                 just(TokenTree::Token(Token::Punc(Punc::Colon)))
-                    .ignore_then(pattern.clone().with_span())
+                    .ignore_then(pattern.with_span())
                     .or_not(),
             )
             .map(|(name, pattern)| StructPatternField { name, pattern })
@@ -511,11 +488,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         path_parser()
             .with_span()
             .then(
-                struct_pattern_field
-                    .with_span()
-                    .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-                    .allow_trailing()
-                    .collect()
+                comma_separated(struct_pattern_field)
                     .delim(Delim::Brace)
                     .with_span(),
             )
@@ -528,7 +501,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         float_parser().with_span().map(PatternType::Float),
         bool_parser().with_span().map(PatternType::Bool),
         string_parser().with_span().map(PatternType::String),
-        tuple_parser(pattern).with_span().map(PatternType::Tuple),
+        tuple_pattern,
         list_pattern,
         tuple_type_pattern,
         struct_type_pattern,
@@ -577,7 +550,8 @@ fn type_parser<'src: 'tok, 'tok>(
     recursive(|type_| {
         let prim = path_parser().with_span().map(Type::Primitive).boxed();
 
-        let tuple = tuple_parser(type_.clone())
+        let tuple = comma_separated(type_.clone())
+            .delim(Delim::Paren)
             .with_span()
             .map(Type::Tuple)
             .boxed();
@@ -587,12 +561,7 @@ fn type_parser<'src: 'tok, 'tok>(
             .boxed();
 
         let function = {
-            let params = type_
-                .clone()
-                .with_span()
-                .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
-                .allow_trailing()
-                .collect()
+            let params = comma_separated(type_.clone())
                 .delim(Delim::Paren)
                 .with_span()
                 .boxed();
@@ -616,7 +585,7 @@ fn type_parser<'src: 'tok, 'tok>(
     })
 }
 
-fn tuple_parser<'src: 'tok, 'tok, Inner: 'tok>(
+fn comma_separated<'src: 'tok, 'tok, Inner: 'tok>(
     inner: impl Parser<'tok, ParserInput<'tok>, Inner, ParserExtra<'src, 'tok>> + 'tok,
 ) -> impl Parser<'tok, ParserInput<'tok>, Vec<Spanned<Inner>>, ParserExtra<'src, 'tok>> {
     inner
@@ -624,7 +593,6 @@ fn tuple_parser<'src: 'tok, 'tok, Inner: 'tok>(
         .separated_by(just(TokenTree::Token(Token::Punc(Punc::Comma))))
         .allow_trailing()
         .collect()
-        .delim(Delim::Paren)
         .boxed()
 }
 
