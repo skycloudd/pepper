@@ -1,4 +1,4 @@
 module other_submod;
 module submod_submod;
 
-func aa() {}
+func aa() = ()

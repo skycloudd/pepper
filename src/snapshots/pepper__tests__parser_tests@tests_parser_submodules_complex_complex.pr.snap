@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "module other_submod;\nmodule submod_submod;\n\nfunc aa() {}"
+description: "module other_submod;\nmodule submod_submod;\n\nfunc aa() = ()"
 expression: ast.unwrap()
 input_file: tests/parser/submodules/complex/complex.pr
 snapshot_kind: text
@@ -13,8 +13,7 @@ snapshot_kind: text
           params: []
           return_ty: ~
           body:
-            statements: []
-            return_expr: ~
+            Tuple: []
 - Module:
     name: submod_submod
     ast:
@@ -23,12 +22,10 @@ snapshot_kind: text
           params: []
           return_ty: ~
           body:
-            statements: []
-            return_expr: ~
+            Tuple: []
 - Function:
     name: aa
     params: []
     return_ty: ~
     body:
-      statements: []
-      return_expr: ~
+      Tuple: []

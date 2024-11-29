@@ -19,9 +19,7 @@ snapshot_kind: text
                     base: Int32
                     segments: []
                 body:
-                  statements: []
-                  return_expr:
-                    Int: "123"
+                  Int: "123"
       - Function:
           name: outer
           params: []
@@ -30,15 +28,13 @@ snapshot_kind: text
               base: Int32
               segments: []
           body:
-            statements: []
-            return_expr:
-              Call:
-                callee:
-                  Name:
-                    base: submod
-                    segments:
-                      - aaa
-                args: []
+            Call:
+              callee:
+                Name:
+                  base: submod
+                  segments:
+                    - aaa
+              args: []
 - Module:
     name: complex
     ast:
@@ -50,8 +46,7 @@ snapshot_kind: text
                 params: []
                 return_ty: ~
                 body:
-                  statements: []
-                  return_expr: ~
+                  Tuple: []
       - Module:
           name: submod_submod
           ast:
@@ -60,12 +55,10 @@ snapshot_kind: text
                 params: []
                 return_ty: ~
                 body:
-                  statements: []
-                  return_expr: ~
+                  Tuple: []
       - Function:
           name: aa
           params: []
           return_ty: ~
           body:
-            statements: []
-            return_expr: ~
+            Tuple: []

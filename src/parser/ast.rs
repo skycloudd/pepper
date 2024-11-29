@@ -37,7 +37,7 @@ pub struct Function {
     pub name: Spanned<Interned>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Option<Spanned<AstType>>,
-    pub body: Spanned<Block>,
+    pub body: Spanned<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -84,31 +84,14 @@ pub enum EnumVariant {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(serde::Serialize))]
-pub enum Statement {
-    Expression(Spanned<Expression>),
-    VarDecl {
-        name: Spanned<Interned>,
-        ty: Option<Spanned<AstType>>,
-        value: Spanned<Expression>,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(test, derive(serde::Serialize))]
 pub enum Expression {
     Int(Spanned<Interned>),
     Float(Spanned<Interned>),
     Bool(Spanned<Interned>),
     String(Spanned<Interned>),
     Name(Spanned<Path>),
-    Block(Spanned<Box<Block>>),
     Tuple(Spanned<Vec<Spanned<Self>>>),
     List(Spanned<Vec<Spanned<Self>>>),
-    For {
-        pattern: Spanned<Box<Pattern>>,
-        iter: Spanned<Box<Self>>,
-        body: Spanned<Box<Block>>,
-    },
     BinaryOp {
         op: Spanned<BinaryOp>,
         lhs: Spanned<Box<Self>>,
@@ -126,13 +109,12 @@ pub enum Expression {
         expr: Spanned<Box<Self>>,
         arms: Spanned<Vec<Spanned<MatchArm>>>,
     },
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(test, derive(serde::Serialize))]
-pub struct Block {
-    pub statements: Vec<Spanned<Statement>>,
-    pub return_expr: Option<Spanned<Expression>>,
+    Binding {
+        name: Spanned<Interned>,
+        ty: Option<Spanned<AstType>>,
+        value: Spanned<Box<Self>>,
+        body: Spanned<Box<Self>>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

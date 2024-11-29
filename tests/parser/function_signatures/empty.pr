@@ -1,1 +1,1 @@
-func empty_function() {}
+func empty_function() = ()

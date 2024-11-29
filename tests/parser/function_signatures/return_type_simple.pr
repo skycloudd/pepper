@@ -1,1 +1,1 @@
-func return_type_simple() -> Int32 {}
+func return_type_simple() -> Int32 = ()

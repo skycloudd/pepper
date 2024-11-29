@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func return_type_path() -> aa.b.Ccc {}"
+description: func return_type_path() -> aa.b.Ccc = ()
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/return_type_path.pr
 snapshot_kind: text
@@ -15,5 +15,4 @@ snapshot_kind: text
           - b
           - Ccc
     body:
-      statements: []
-      return_expr: ~
+      Tuple: []

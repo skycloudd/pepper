@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func __a_A123_1Aa__abhxjjid() {\n    var _a = 3;\n\n    match _a {\n        3 => {\n            var _______ = 3;\n            var _______aaaa = 3;\n            var _ = 3;\n        },\n        _ => {\n            var _ = __123;\n        },\n    }\n}"
+description: "func __a_A123_1Aa__abhxjjid() =\n    var _a = 3 in\n\n    match _a {\n        3 =>\n            var _______ = 3 in\n            var _______aaaa = 3 in\n            var _ = 3 in\n            (),\n        _ =>\n            var _ = __123 in\n            ()\n    }"
 expression: ast.unwrap()
 input_file: tests/parser/idents/weird_idents.pr
 snapshot_kind: text
@@ -10,56 +10,55 @@ snapshot_kind: text
     params: []
     return_ty: ~
     body:
-      statements:
-        - VarDecl:
-            name: _a
-            ty: ~
-            value:
-              Int: "3"
-      return_expr:
-        Match:
-          expr:
-            Name:
-              base: _a
-              segments: []
-          arms:
-            - pattern:
-                pattern_type:
-                  Int: "3"
-                condition: ~
-              body:
-                Block:
-                  statements:
-                    - VarDecl:
-                        name: _______
-                        ty: ~
-                        value:
-                          Int: "3"
-                    - VarDecl:
+      Binding:
+        name: _a
+        ty: ~
+        value:
+          Int: "3"
+        body:
+          Match:
+            expr:
+              Name:
+                base: _a
+                segments: []
+            arms:
+              - pattern:
+                  pattern_type:
+                    Int: "3"
+                  condition: ~
+                body:
+                  Binding:
+                    name: _______
+                    ty: ~
+                    value:
+                      Int: "3"
+                    body:
+                      Binding:
                         name: _______aaaa
                         ty: ~
                         value:
                           Int: "3"
-                    - VarDecl:
-                        name: _
-                        ty: ~
-                        value:
-                          Int: "3"
-                  return_expr: ~
-            - pattern:
-                pattern_type:
-                  Name:
-                    base: _
-                    segments: []
-                condition: ~
-              body:
-                Block:
-                  statements:
-                    - VarDecl:
-                        name: _
-                        ty: ~
-                        value:
-                          Name:
-                            base: __123
-                            segments: []
-                  return_expr: ~
+                        body:
+                          Binding:
+                            name: _
+                            ty: ~
+                            value:
+                              Int: "3"
+                            body:
+                              Tuple: []
+              - pattern:
+                  pattern_type:
+                    Name:
+                      base: _
+                      segments: []
+                  condition: ~
+                body:
+                  Binding:
+                    name: _
+                    ty: ~
+                    value:
+                      Name:
+                        base: __123
+                        segments: []
+                    body:
+                      Tuple: []

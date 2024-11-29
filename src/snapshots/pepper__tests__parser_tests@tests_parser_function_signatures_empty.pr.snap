@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func empty_function() {}"
+description: func empty_function() = ()
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/empty.pr
 snapshot_kind: text
@@ -10,5 +10,4 @@ snapshot_kind: text
     params: []
     return_ty: ~
     body:
-      statements: []
-      return_expr: ~
+      Tuple: []

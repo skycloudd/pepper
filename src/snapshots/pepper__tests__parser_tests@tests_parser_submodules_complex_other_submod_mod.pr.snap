@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func function_in_other_submod() {}"
+description: func function_in_other_submod() = ()
 expression: ast.unwrap()
 input_file: tests/parser/submodules/complex/other_submod/mod.pr
 snapshot_kind: text
@@ -10,5 +10,4 @@ snapshot_kind: text
     params: []
     return_ty: ~
     body:
-      statements: []
-      return_expr: ~
+      Tuple: []

@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "module submod {\n    func aaa() -> Int32 {\n        123\n    }\n}\n\nfunc outer() -> Int32 {\n    submod.aaa()\n}"
+description: "module submod {\n    func aaa() -> Int32 = 123\n}\n\nfunc outer() -> Int32 = submod.aaa()"
 expression: ast.unwrap()
 input_file: tests/parser/submodules/simple.pr
 snapshot_kind: text
@@ -16,9 +16,7 @@ snapshot_kind: text
               base: Int32
               segments: []
           body:
-            statements: []
-            return_expr:
-              Int: "123"
+            Int: "123"
 - Function:
     name: outer
     params: []
@@ -27,12 +25,10 @@ snapshot_kind: text
         base: Int32
         segments: []
     body:
-      statements: []
-      return_expr:
-        Call:
-          callee:
-            Name:
-              base: submod
-              segments:
-                - aaa
-          args: []
+      Call:
+        callee:
+          Name:
+            base: submod
+            segments:
+              - aaa
+        args: []

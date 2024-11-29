@@ -25,11 +25,11 @@ fn run(args: &Args) -> ExitCode {
     let mut files = SimpleFiles::new();
 
     let mut errors = vec![];
-    let ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
-
-    eprintln!("ast: {ast:#?}");
+    let _ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
 
     if errors.is_empty() {
+        // eprintln!("ast: {ast:#?}");
+
         ExitCode::SUCCESS
     } else {
         emit_errors(&errors, &files);

@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func simple_float(n: Float32) -> Float32 {\n    match n {\n        2.5 => 1.5,\n        n => n * 3. / 2.,\n    }\n}"
+description: "func simple_float(n: Float32) -> Float32 =\n    match n {\n        2.5 => 1.5,\n        n => n * 3. / 2.,\n    }"
 expression: ast.unwrap()
 input_file: tests/parser/match/simple_float.pr
 snapshot_kind: text
@@ -18,37 +18,35 @@ snapshot_kind: text
         base: Float32
         segments: []
     body:
-      statements: []
-      return_expr:
-        Match:
-          expr:
-            Name:
-              base: n
-              segments: []
-          arms:
-            - pattern:
-                pattern_type:
-                  Float: "2.5"
-                condition: ~
-              body:
-                Float: "1.5"
-            - pattern:
-                pattern_type:
-                  Name:
-                    base: n
-                    segments: []
-                condition: ~
-              body:
-                BinaryOp:
-                  op: Div
-                  lhs:
-                    BinaryOp:
-                      op: Mul
-                      lhs:
-                        Name:
-                          base: n
-                          segments: []
-                      rhs:
-                        Float: "3."
-                  rhs:
-                    Float: "2."
+      Match:
+        expr:
+          Name:
+            base: n
+            segments: []
+        arms:
+          - pattern:
+              pattern_type:
+                Float: "2.5"
+              condition: ~
+            body:
+              Float: "1.5"
+          - pattern:
+              pattern_type:
+                Name:
+                  base: n
+                  segments: []
+              condition: ~
+            body:
+              BinaryOp:
+                op: Div
+                lhs:
+                  BinaryOp:
+                    op: Mul
+                    lhs:
+                      Name:
+                        base: n
+                        segments: []
+                    rhs:
+                      Float: "3."
+                rhs:
+                  Float: "2."
