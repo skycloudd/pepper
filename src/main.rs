@@ -57,7 +57,7 @@ mod tests {
     use std::{io::Write as _, process::ExitCode};
 
     #[test]
-    fn parser_tests() {
+    fn run_tests() {
         insta::glob!("../tests/parser", "**/*.pr", |path| {
             let filename = Utf8PathBuf::from_path_buf(path.to_path_buf()).unwrap();
 
