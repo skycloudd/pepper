@@ -1,0 +1,97 @@
+---
+source: src/lib.rs
+description: "func map[T, U] (v Option[T], f func(T) U) Option[U] =\n    match v\n    | Some(x) => Some(f(x))\n    | None => None"
+expression: ast.unwrap()
+input_file: tests/parser/function_signatures/function_generics.pr
+snapshot_kind: text
+---
+- Function:
+    name: map
+    generics:
+      - T
+      - U
+    params:
+      - name: v
+        ty:
+          Primitive:
+            name:
+              base: Option
+              segments: []
+            generics:
+              - Primitive:
+                  name:
+                    base: T
+                    segments: []
+                  generics: ~
+      - name: f
+        ty:
+          Function:
+            params:
+              - Primitive:
+                  name:
+                    base: T
+                    segments: []
+                  generics: ~
+            return_ty:
+              Primitive:
+                name:
+                  base: U
+                  segments: []
+                generics: ~
+    return_ty:
+      Primitive:
+        name:
+          base: Option
+          segments: []
+        generics:
+          - Primitive:
+              name:
+                base: U
+                segments: []
+              generics: ~
+    body:
+      Match:
+        expr:
+          Name:
+            base: v
+            segments: []
+        arms:
+          - pattern:
+              pattern_type:
+                TupleType:
+                  name:
+                    base: Some
+                    segments: []
+                  fields:
+                    - pattern_type:
+                        Name:
+                          base: x
+                          segments: []
+                      condition: ~
+              condition: ~
+            body:
+              Call:
+                callee:
+                  Name:
+                    base: Some
+                    segments: []
+                args:
+                  - Call:
+                      callee:
+                        Name:
+                          base: f
+                          segments: []
+                      args:
+                        - Name:
+                            base: x
+                            segments: []
+          - pattern:
+              pattern_type:
+                Name:
+                  base: None
+                  segments: []
+              condition: ~
+            body:
+              Name:
+                base: None
+                segments: []

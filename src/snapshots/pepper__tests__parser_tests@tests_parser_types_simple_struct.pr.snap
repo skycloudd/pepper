@@ -12,15 +12,21 @@ snapshot_kind: text
       - name: aa
         ty:
           Primitive:
-            base: Int32
-            segments: []
+            name:
+              base: Int32
+              segments: []
+            generics: ~
       - name: bb
         ty:
           Primitive:
-            base: Float64
-            segments: []
+            name:
+              base: Float64
+              segments: []
+            generics: ~
       - name: cc
         ty:
           Primitive:
-            base: String
-            segments: []
+            name:
+              base: String
+              segments: []
+            generics: ~

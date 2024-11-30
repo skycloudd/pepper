@@ -7,16 +7,21 @@ snapshot_kind: text
 ---
 - Function:
     name: simple_float
+    generics: ~
     params:
       - name: n
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
     return_ty:
       Primitive:
-        base: Float32
-        segments: []
+        name:
+          base: Float32
+          segments: []
+        generics: ~
     body:
       Match:
         expr:

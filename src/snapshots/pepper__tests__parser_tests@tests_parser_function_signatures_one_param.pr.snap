@@ -7,12 +7,15 @@ snapshot_kind: text
 ---
 - Function:
     name: one_param
+    generics: ~
     params:
       - name: a
         ty:
           Primitive:
-            base: Int32
-            segments: []
+            name:
+              base: Int32
+              segments: []
+            generics: ~
     return_ty: ~
     body:
       Tuple: []

@@ -13,20 +13,26 @@ snapshot_kind: text
           ast:
             - Function:
                 name: aaa
+                generics: ~
                 params: []
                 return_ty:
                   Primitive:
-                    base: Int32
-                    segments: []
+                    name:
+                      base: Int32
+                      segments: []
+                    generics: ~
                 body:
                   Int: "123"
       - Function:
           name: outer
+          generics: ~
           params: []
           return_ty:
             Primitive:
-              base: Int32
-              segments: []
+              name:
+                base: Int32
+                segments: []
+              generics: ~
           body:
             Call:
               callee:
@@ -43,6 +49,7 @@ snapshot_kind: text
           ast:
             - Function:
                 name: function_in_other_submod
+                generics: ~
                 params: []
                 return_ty: ~
                 body:
@@ -52,12 +59,14 @@ snapshot_kind: text
           ast:
             - Function:
                 name: testytest
+                generics: ~
                 params: []
                 return_ty: ~
                 body:
                   Tuple: []
       - Function:
           name: aa
+          generics: ~
           params: []
           return_ty: ~
           body:

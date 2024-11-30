@@ -7,34 +7,44 @@ snapshot_kind: text
 ---
 - Function:
     name: multiple_params
+    generics: ~
     params:
       - name: a
         ty:
           Primitive:
-            base: Int32
-            segments: []
+            name:
+              base: Int32
+              segments: []
+            generics: ~
       - name: bb
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
       - name: ccc
         ty:
           Primitive:
-            base: Bool
-            segments: []
+            name:
+              base: Bool
+              segments: []
+            generics: ~
     return_ty: ~
     body:
       Tuple: []
 - Function:
     name: return_type_path
+    generics: ~
     params: []
     return_ty:
       Primitive:
-        base: aa
-        segments:
-          - b
-          - Ccc
+        name:
+          base: aa
+          segments:
+            - b
+            - Ccc
+        generics: ~
     body:
       Name:
         base: aa

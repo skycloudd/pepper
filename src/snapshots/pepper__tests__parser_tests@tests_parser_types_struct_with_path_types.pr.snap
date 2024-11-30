@@ -12,21 +12,27 @@ snapshot_kind: text
       - name: a
         ty:
           Primitive:
-            base: aa
-            segments:
-              - bb
-              - C
+            name:
+              base: aa
+              segments:
+                - bb
+                - C
+            generics: ~
       - name: b
         ty:
           Primitive:
-            base: bb
-            segments:
-              - cc
-              - A
+            name:
+              base: bb
+              segments:
+                - cc
+                - A
+            generics: ~
       - name: c
         ty:
           Primitive:
-            base: cc
-            segments:
-              - aa
-              - B
+            name:
+              base: cc
+              segments:
+                - aa
+                - B
+            generics: ~

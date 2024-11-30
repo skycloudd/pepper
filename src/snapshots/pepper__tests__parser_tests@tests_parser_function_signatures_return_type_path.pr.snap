@@ -7,12 +7,15 @@ snapshot_kind: text
 ---
 - Function:
     name: return_type_path
+    generics: ~
     params: []
     return_ty:
       Primitive:
-        base: aa
-        segments:
-          - b
-          - Ccc
+        name:
+          base: aa
+          segments:
+            - b
+            - Ccc
+        generics: ~
     body:
       Tuple: []

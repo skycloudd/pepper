@@ -7,28 +7,37 @@ snapshot_kind: text
 ---
 - Function:
     name: type_patterns
+    generics: ~
     params:
       - name: aaaa
         ty:
           Primitive:
-            base: Aaaa
-            segments: []
+            name:
+              base: Aaaa
+              segments: []
+            generics: ~
       - name: bbbb
         ty:
           Primitive:
-            base: Bbbb
-            segments: []
+            name:
+              base: Bbbb
+              segments: []
+            generics: ~
     return_ty:
       Primitive:
-        base: Float32
-        segments: []
+        name:
+          base: Float32
+          segments: []
+        generics: ~
     body:
       Binding:
         name: _
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
         value:
           Match:
             expr:
@@ -161,13 +170,17 @@ snapshot_kind: text
       - name: aa
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
       - name: bb
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
 - Enum:
     name: Bbbb
     generics: ~
@@ -176,6 +189,8 @@ snapshot_kind: text
           name: Cccc
           fields:
             - Primitive:
-                base: int32
-                segments: []
+                name:
+                  base: int32
+                  segments: []
+                generics: ~
       - Unit: Dddd

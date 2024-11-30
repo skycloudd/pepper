@@ -14,21 +14,29 @@ snapshot_kind: text
           name: TupleVariant
           fields:
             - Primitive:
-                base: Int32
-                segments: []
+                name:
+                  base: Int32
+                  segments: []
+                generics: ~
             - Primitive:
-                base: String
-                segments: []
+                name:
+                  base: String
+                  segments: []
+                generics: ~
       - Struct:
           name: StructVariant
           fields:
             - name: x
               ty:
                 Primitive:
-                  base: Float64
-                  segments: []
+                  name:
+                    base: Float64
+                    segments: []
+                  generics: ~
             - name: y
               ty:
                 Primitive:
-                  base: Float64
-                  segments: []
+                  name:
+                    base: Float64
+                    segments: []
+                  generics: ~

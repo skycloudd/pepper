@@ -10,20 +10,26 @@ snapshot_kind: text
     ast:
       - Function:
           name: aaa
+          generics: ~
           params: []
           return_ty:
             Primitive:
-              base: Int32
-              segments: []
+              name:
+                base: Int32
+                segments: []
+              generics: ~
           body:
             Int: "123"
 - Function:
     name: outer
+    generics: ~
     params: []
     return_ty:
       Primitive:
-        base: Int32
-        segments: []
+        name:
+          base: Int32
+          segments: []
+        generics: ~
     body:
       Call:
         callee:

@@ -7,6 +7,7 @@ snapshot_kind: text
 ---
 - Function:
     name: function_in_other_submod
+    generics: ~
     params: []
     return_ty: ~
     body:

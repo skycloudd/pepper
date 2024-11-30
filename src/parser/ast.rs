@@ -35,6 +35,7 @@ pub struct Module {
 #[cfg_attr(test, derive(serde::Serialize))]
 pub struct Function {
     pub name: Spanned<Interned>,
+    pub generics: Option<Spanned<Vec<Spanned<Interned>>>>,
     pub params: Spanned<Vec<Spanned<FunctionParam>>>,
     pub return_ty: Option<Spanned<AstType>>,
     pub body: Spanned<Expression>,
@@ -218,7 +219,10 @@ impl core::fmt::Display for UnaryOp {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(serde::Serialize))]
 pub enum Type<P> {
-    Primitive(Spanned<P>),
+    Primitive {
+        name: Spanned<P>,
+        generics: Option<Spanned<Vec<Spanned<Self>>>>,
+    },
     Tuple(Spanned<Vec<Spanned<Self>>>),
     Never,
     Function {
@@ -230,7 +234,22 @@ pub enum Type<P> {
 impl<P: core::fmt::Display> core::fmt::Display for Type<P> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Primitive(primitive) => write!(f, "{}", primitive.0),
+            Self::Primitive { name, generics } => {
+                write!(f, "{}", name.0)?;
+
+                if let Some(generics) = generics {
+                    write!(f, "[")?;
+                    for (i, ty) in generics.iter().enumerate() {
+                        if i != 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", ty.0)?;
+                    }
+                    write!(f, "]")?;
+                }
+
+                Ok(())
+            }
             Self::Tuple(inner) => {
                 write!(f, "(")?;
                 for (i, ty) in inner.iter().enumerate() {

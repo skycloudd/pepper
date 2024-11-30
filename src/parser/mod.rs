@@ -75,6 +75,12 @@ fn function_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Function, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span().boxed();
 
+    let generics = comma_separated(ident_parser())
+        .delim(Delim::Bracket)
+        .with_span()
+        .or_not()
+        .boxed();
+
     let params = comma_separated(function_param_parser())
         .delim(Delim::Paren)
         .with_span()
@@ -86,12 +92,14 @@ fn function_parser<'src: 'tok, 'tok>(
 
     just(TokenTree::Token(Token::Kw(Kw::Func)))
         .ignore_then(name)
+        .then(generics)
         .then(params)
         .then(return_ty)
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
         .then(body)
-        .map(|(((name, params), return_ty), body)| Function {
+        .map(|((((name, generics), params), return_ty), body)| Function {
             name,
+            generics,
             params,
             return_ty,
             body,
@@ -112,6 +120,12 @@ fn struct_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Struct, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span().boxed();
 
+    let generics = comma_separated(ident_parser())
+        .delim(Delim::Bracket)
+        .with_span()
+        .or_not()
+        .boxed();
+
     let fields = comma_separated(struct_field_parser())
         .delim(Delim::Brace)
         .with_span()
@@ -119,7 +133,7 @@ fn struct_parser<'src: 'tok, 'tok>(
 
     just(TokenTree::Token(Token::Kw(Kw::Struct)))
         .ignore_then(name)
-        .then(generics_parser())
+        .then(generics)
         .then(fields)
         .map(|((name, generics), fields)| Struct {
             name,
@@ -138,19 +152,15 @@ fn struct_field_parser<'src: 'tok, 'tok>(
         .boxed()
 }
 
-fn generics_parser<'src: 'tok, 'tok>(
-) -> impl Parser<'tok, ParserInput<'tok>, Option<Spanned<Vec<Spanned<Interned>>>>, ParserExtra<'src, 'tok>>
-{
-    comma_separated(ident_parser())
-        .delim(Delim::Bracket)
-        .with_span()
-        .or_not()
-        .boxed()
-}
-
 fn enum_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Enum, ParserExtra<'src, 'tok>> {
     let name = ident_parser().with_span().boxed();
+
+    let generics = comma_separated(ident_parser())
+        .delim(Delim::Bracket)
+        .with_span()
+        .or_not()
+        .boxed();
 
     let variants = enum_variant_parser()
         .with_span()
@@ -162,7 +172,7 @@ fn enum_parser<'src: 'tok, 'tok>(
 
     just(TokenTree::Token(Token::Kw(Kw::Enum)))
         .ignore_then(name)
-        .then(generics_parser())
+        .then(generics)
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
         .then(variants)
         .map(|((name, generics), variants)| Enum {
@@ -538,7 +548,19 @@ fn path_parser<'src: 'tok, 'tok>(
 fn type_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, AstType, ParserExtra<'src, 'tok>> {
     recursive(|type_| {
-        let prim = path_parser().with_span().map(Type::Primitive).boxed();
+        let prim = {
+            let generics = comma_separated(type_.clone())
+                .delim(Delim::Bracket)
+                .with_span()
+                .or_not()
+                .boxed();
+
+            path_parser()
+                .with_span()
+                .then(generics)
+                .map(|(name, generics)| Type::Primitive { name, generics })
+                .boxed()
+        };
 
         let tuple = comma_separated(type_.clone())
             .delim(Delim::Paren)

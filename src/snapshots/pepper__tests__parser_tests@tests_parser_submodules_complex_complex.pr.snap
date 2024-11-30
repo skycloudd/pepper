@@ -10,6 +10,7 @@ snapshot_kind: text
     ast:
       - Function:
           name: function_in_other_submod
+          generics: ~
           params: []
           return_ty: ~
           body:
@@ -19,12 +20,14 @@ snapshot_kind: text
     ast:
       - Function:
           name: testytest
+          generics: ~
           params: []
           return_ty: ~
           body:
             Tuple: []
 - Function:
     name: aa
+    generics: ~
     params: []
     return_ty: ~
     body:

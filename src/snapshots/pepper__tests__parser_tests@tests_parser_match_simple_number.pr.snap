@@ -7,16 +7,21 @@ snapshot_kind: text
 ---
 - Function:
     name: simple_number
+    generics: ~
     params:
       - name: n
         ty:
           Primitive:
-            base: Int32
-            segments: []
+            name:
+              base: Int32
+              segments: []
+            generics: ~
     return_ty:
       Primitive:
-        base: Int32
-        segments: []
+        name:
+          base: Int32
+          segments: []
+        generics: ~
     body:
       Match:
         expr:

@@ -7,21 +7,28 @@ snapshot_kind: text
 ---
 - Function:
     name: params_and_return
+    generics: ~
     params:
       - name: float_var
         ty:
           Primitive:
-            base: Float32
-            segments: []
+            name:
+              base: Float32
+              segments: []
+            generics: ~
       - name: path
         ty:
           Primitive:
-            base: abcd
-            segments:
-              - Efgh
+            name:
+              base: abcd
+              segments:
+                - Efgh
+            generics: ~
     return_ty:
       Primitive:
-        base: Int32
-        segments: []
+        name:
+          base: Int32
+          segments: []
+        generics: ~
     body:
       Tuple: []
