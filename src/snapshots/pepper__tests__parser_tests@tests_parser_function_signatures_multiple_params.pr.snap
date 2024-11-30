@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func multiple_params(a: Int32, bb: Float32, ccc: Bool) = ()"
+description: "func multiple_params(a Int32, bb Float32, ccc Bool) = ()"
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/multiple_params.pr
 snapshot_kind: text

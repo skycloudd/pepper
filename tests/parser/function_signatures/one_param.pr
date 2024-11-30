@@ -1,1 +1,1 @@
-func one_param(a: Int32) = ()
+func one_param(a Int32) = ()

@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: func return_type_simple() -> Int32 = ()
+description: func return_type_simple() Int32 = ()
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/return_type_simple.pr
 snapshot_kind: text

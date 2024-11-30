@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func multiple_params(a: Int32, bb: Float32, ccc: Bool) = ()\n\nfunc return_type_path() -> aa.b.Ccc = aa.b.Ccc"
+description: "func multiple_params(a Int32, bb Float32, ccc Bool) = ()\n\nfunc return_type_path() aa.b.Ccc = aa.b.Ccc"
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/multiple_functions.pr
 snapshot_kind: text

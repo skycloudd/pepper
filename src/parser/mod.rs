@@ -80,10 +80,7 @@ fn function_parser<'src: 'tok, 'tok>(
         .with_span()
         .boxed();
 
-    let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
-        .ignore_then(type_parser().with_span())
-        .or_not()
-        .boxed();
+    let return_ty = type_parser().with_span().or_not().boxed();
 
     let body = expression_parser().with_span().boxed();
 
@@ -106,7 +103,6 @@ fn function_param_parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, FunctionParam, ParserExtra<'src, 'tok>> {
     ident_parser()
         .with_span()
-        .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Colon))))
         .then(type_parser().with_span())
         .map(|(name, ty)| FunctionParam { name, ty })
         .boxed()
@@ -288,10 +284,7 @@ fn expression_parser<'src: 'tok, 'tok>(
         let binding = {
             let name = ident_parser().with_span().boxed();
 
-            let ty = just(TokenTree::Token(Token::Punc(Punc::Colon)))
-                .ignore_then(type_parser().with_span())
-                .or_not()
-                .boxed();
+            let ty = type_parser().with_span().or_not().boxed();
 
             let value = just(TokenTree::Token(Token::Punc(Punc::Equals)))
                 .ignore_then(expression.clone().map(Box::new).with_span())
@@ -455,11 +448,7 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
     let struct_type_pattern = {
         let struct_pattern_field = ident_parser()
             .with_span()
-            .then(
-                just(TokenTree::Token(Token::Punc(Punc::Colon)))
-                    .ignore_then(pattern.with_span())
-                    .or_not(),
-            )
+            .then(pattern.with_span().or_not())
             .map(|(name, pattern)| StructPatternField { name, pattern })
             .boxed();
 
@@ -546,9 +535,7 @@ fn type_parser<'src: 'tok, 'tok>(
                 .with_span()
                 .boxed();
 
-            let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
-                .ignore_then(type_.map(Box::new).with_span())
-                .boxed();
+            let return_ty = type_.map(Box::new).with_span().boxed();
 
             just(TokenTree::Token(Token::Kw(Kw::Func)))
                 .ignore_then(params)

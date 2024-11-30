@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func type_patterns(aaaa: Aaaa, bbbb: Bbbb) -> Float32 =\n    var _: Float32 = match aaaa {\n        Aaaa { aa: 2.5, bb: 1.5 } => 1.5,\n        Aaaa { aa, bb } => n * m,\n    } in\n\n    match bbbb {\n        Bbbb.Cccc(2) => 1.5,\n        Bbbb.Cccc(n) => n * 3. / 2.,\n        Bbbb.Dddd => n * 4. / 2. + 1.,\n    }\n\nstruct Aaaa {\n    aa: Float32,\n    bb: Float32,\n}\n\nenum Bbbb {\n    Cccc(int32),\n    Dddd,\n}"
+description: "func type_patterns(aaaa Aaaa, bbbb Bbbb) Float32 =\n    var _ Float32 = match aaaa\n    | Aaaa { aa 2.5, bb 1.5 } => 1.5\n    | Aaaa { aa, bb } => n * m\n    in\n\n    match bbbb\n    | Bbbb.Cccc(2) => 1.5\n    | Bbbb.Cccc(n) => n * 3. / 2.\n    | Bbbb.Dddd => n * 4. / 2. + 1.\n\nstruct Aaaa {\n    aa Float32,\n    bb Float32,\n}\n\nenum Bbbb = Cccc(int32) | Dddd"
 expression: ast.unwrap()
 input_file: tests/parser/match/type_patterns.pr
 snapshot_kind: text

@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "module submod {\n    func aaa() -> Int32 = 123\n}\n\nfunc outer() -> Int32 = submod.aaa()"
+description: "module submod {\n    func aaa() Int32 = 123\n}\n\nfunc outer() Int32 = submod.aaa()"
 expression: ast.unwrap()
 input_file: tests/parser/submodules/simple.pr
 snapshot_kind: text

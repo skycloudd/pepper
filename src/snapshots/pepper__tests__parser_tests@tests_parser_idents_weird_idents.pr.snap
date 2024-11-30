@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func __a_A123_1Aa__abhxjjid() =\n    var _a = 3 in\n\n    match _a {\n        3 =>\n            var _______ = 3 in\n            var _______aaaa = 3 in\n            var _ = 3 in\n            (),\n        _ =>\n            var _ = __123 in\n            ()\n    }"
+description: "func __a_A123_1Aa__abhxjjid() =\n    var _a = 3 in\n\n    match _a\n    | 3 => (\n        var _______ = 3 in\n        var _______aaaa = 3 in\n        var _ = 3 in\n        ()\n    )\n    | _ => (\n        var _ = __123 in\n        ()\n    )"
 expression: ast.unwrap()
 input_file: tests/parser/idents/weird_idents.pr
 snapshot_kind: text

@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "struct StructWithPathTypes {\n    a: aa.bb.C,\n    b: bb.cc.A,\n    c: cc.aa.B\n}"
+description: "struct StructWithPathTypes {\n    a aa.bb.C,\n    b bb.cc.A,\n    c cc.aa.B\n}"
 expression: ast.unwrap()
 input_file: tests/parser/types/struct_with_path_types.pr
 snapshot_kind: text

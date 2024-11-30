@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func simple_number(n: Int32) -> Int32 =\n    match n {\n        2 => 2,\n        n => n / 2,\n    }"
+description: "func simple_number(n Int32) Int32 =\n    match n\n    | 2 => 2\n    | n => n / 2"
 expression: ast.unwrap()
 input_file: tests/parser/match/simple_number.pr
 snapshot_kind: text

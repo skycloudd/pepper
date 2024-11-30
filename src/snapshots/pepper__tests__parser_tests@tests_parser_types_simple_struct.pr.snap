@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "struct SimpleStruct {\n    aa: Int32,\n    bb: Float64,\n    cc: String,\n}"
+description: "struct SimpleStruct {\n    aa Int32,\n    bb Float64,\n    cc String,\n}"
 expression: ast.unwrap()
 input_file: tests/parser/types/simple_struct.pr
 snapshot_kind: text

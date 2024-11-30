@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "enum AllEnumVariants {\n    Unit,\n    TupleVariant(Int32, String),\n    StructVariant { x: Float64, y: Float64 },\n}"
+description: "enum AllEnumVariants =\n    | Unit\n    | TupleVariant(Int32, String)\n    | StructVariant { x Float64, y Float64 }"
 expression: ast.unwrap()
 input_file: tests/parser/types/all_enum_variants.pr
 snapshot_kind: text

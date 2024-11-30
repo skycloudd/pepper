@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-description: "func one_param(a: Int32) = ()"
+description: func one_param(a Int32) = ()
 expression: ast.unwrap()
 input_file: tests/parser/function_signatures/one_param.pr
 snapshot_kind: text
