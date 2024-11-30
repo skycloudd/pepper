@@ -79,6 +79,7 @@ pub fn lexer<'src>(
             just(">").to(Punc::Greater),
             just(";").to(Punc::Semicolon),
             just("|").to(Punc::Pipe),
+            just("#").to(Punc::Hash),
         ))
         .map(Token::Punc)
         .boxed();

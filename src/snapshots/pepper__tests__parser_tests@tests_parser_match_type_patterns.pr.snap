@@ -156,6 +156,7 @@ snapshot_kind: text
                       Float: "1."
 - Struct:
     name: Aaaa
+    generics: ~
     fields:
       - name: aa
         ty:
@@ -169,6 +170,7 @@ snapshot_kind: text
             segments: []
 - Enum:
     name: Bbbb
+    generics: ~
     variants:
       - Tuple:
           name: Cccc

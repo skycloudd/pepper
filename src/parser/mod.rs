@@ -119,8 +119,13 @@ fn struct_parser<'src: 'tok, 'tok>(
 
     just(TokenTree::Token(Token::Kw(Kw::Struct)))
         .ignore_then(name)
+        .then(generics_parser())
         .then(fields)
-        .map(|(name, fields)| Struct { name, fields })
+        .map(|((name, generics), fields)| Struct {
+            name,
+            generics,
+            fields,
+        })
         .boxed()
 }
 
@@ -130,6 +135,16 @@ fn struct_field_parser<'src: 'tok, 'tok>(
         .with_span()
         .then(type_parser().with_span())
         .map(|(name, ty)| StructField { name, ty })
+        .boxed()
+}
+
+fn generics_parser<'src: 'tok, 'tok>(
+) -> impl Parser<'tok, ParserInput<'tok>, Option<Spanned<Vec<Spanned<Interned>>>>, ParserExtra<'src, 'tok>>
+{
+    comma_separated(ident_parser())
+        .delim(Delim::Bracket)
+        .with_span()
+        .or_not()
         .boxed()
 }
 
@@ -147,9 +162,14 @@ fn enum_parser<'src: 'tok, 'tok>(
 
     just(TokenTree::Token(Token::Kw(Kw::Enum)))
         .ignore_then(name)
+        .then(generics_parser())
         .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Equals))))
         .then(variants)
-        .map(|(name, variants)| Enum { name, variants })
+        .map(|((name, generics), variants)| Enum {
+            name,
+            generics,
+            variants,
+        })
         .boxed()
 }
 
@@ -257,7 +277,8 @@ fn expression_parser<'src: 'tok, 'tok>(
             .map(Expression::Tuple)
             .boxed();
 
-        let list = comma_separated(expression.clone())
+        let list = just(TokenTree::Token(Token::Punc(Punc::Hash)))
+            .ignore_then(comma_separated(expression.clone()))
             .delim(Delim::Bracket)
             .with_span()
             .map(Expression::List)

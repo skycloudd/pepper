@@ -1,0 +1,19 @@
+---
+source: src/lib.rs
+description: "enum Option[T] = Some(T) | None"
+expression: ast.unwrap()
+input_file: tests/parser/types/enum_generic.pr
+snapshot_kind: text
+---
+- Enum:
+    name: Option
+    generics:
+      - T
+    variants:
+      - Tuple:
+          name: Some
+          fields:
+            - Primitive:
+                base: T
+                segments: []
+      - Unit: None

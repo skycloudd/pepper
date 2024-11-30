@@ -7,6 +7,7 @@ snapshot_kind: text
 ---
 - Enum:
     name: SimpleEnum
+    generics: ~
     variants:
       - Unit: A
       - Unit: B

@@ -51,6 +51,7 @@ pub struct FunctionParam {
 #[cfg_attr(test, derive(serde::Serialize))]
 pub struct Struct {
     pub name: Spanned<Interned>,
+    pub generics: Option<Spanned<Vec<Spanned<Interned>>>>,
     pub fields: Spanned<Vec<Spanned<StructField>>>,
 }
 
@@ -65,6 +66,7 @@ pub struct StructField {
 #[cfg_attr(test, derive(serde::Serialize))]
 pub struct Enum {
     pub name: Spanned<Interned>,
+    pub generics: Option<Spanned<Vec<Spanned<Interned>>>>,
     pub variants: Spanned<Vec<Spanned<EnumVariant>>>,
 }
 
