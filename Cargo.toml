@@ -27,6 +27,8 @@ alloc_instead_of_core = "warn"
 std_instead_of_core = "warn"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
 too_many_lines = "allow"
 
 [profile.dev.package]

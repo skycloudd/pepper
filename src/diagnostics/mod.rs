@@ -20,7 +20,6 @@ pub struct ErrorSpan {
 }
 
 impl ErrorSpan {
-    #[must_use]
     pub const fn primary(span: Span) -> Self {
         Self {
             message: None,
@@ -29,7 +28,6 @@ impl ErrorSpan {
         }
     }
 
-    #[must_use]
     pub fn primary_message(message: impl Into<String>, span: Span) -> Self {
         Self {
             message: Some(message.into()),
@@ -38,7 +36,6 @@ impl ErrorSpan {
         }
     }
 
-    #[must_use]
     pub const fn secondary(span: Span) -> Self {
         Self {
             message: None,
@@ -47,7 +44,6 @@ impl ErrorSpan {
         }
     }
 
-    #[must_use]
     pub fn secondary_message(message: impl Into<String>, span: Span) -> Self {
         Self {
             message: Some(message.into()),

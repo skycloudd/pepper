@@ -15,7 +15,6 @@ type ParserInput<'tok> = SpannedInput<TokenTree, Span, &'tok [(TokenTree, Span)]
 
 type ParserExtra<'src, 'tok> = extra::Err<Rich<'tok, TokenTree, Span, &'src str>>;
 
-#[must_use]
 pub fn parser<'src: 'tok, 'tok>(
 ) -> impl Parser<'tok, ParserInput<'tok>, Ast, ParserExtra<'src, 'tok>> {
     recursive(|ast| {

@@ -15,7 +15,6 @@ pub mod span;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
-#[must_use]
 pub fn parse_file(
     filename: &Utf8Path,
     files: &mut SimpleFiles<Utf8PathBuf, String>,
@@ -58,49 +57,52 @@ pub fn insert_explicit_submodules(
     files: &mut SimpleFiles<Utf8PathBuf, String>,
     errors: &mut Vec<Error>,
 ) {
-    ast.0
+    let empty_modules = ast
+        .0
         .iter_mut()
         .filter_map(|item| match &mut item.0 {
             Item::Module(submodule) => Some(submodule),
             _ => None,
         })
-        .filter(|submodule| submodule.ast.is_none())
-        .for_each(|submodule| {
-            let filenames = {
-                let directory = ast_filename
-                    .parent()
-                    .unwrap()
-                    .join(submodule.name.resolve());
+        .filter(|submodule| submodule.ast.is_none());
 
-                let submodule_filename = format!("{}.pr", submodule.name.resolve());
+    for submodule in empty_modules {
+        let filenames = {
+            let directory = ast_filename
+                .parent()
+                .unwrap()
+                .join(submodule.name.resolve());
 
-                [
-                    ast_filename.with_file_name(&submodule_filename),
-                    directory.join("mod.pr"),
-                    directory.join(submodule_filename),
-                ]
-            };
+            let submodule_filename = format!("{}.pr", submodule.name.resolve());
 
-            let mut existing = filenames.iter().filter(|filename| filename.exists());
+            [
+                ast_filename.with_file_name(&submodule_filename),
+                directory.join("mod.pr"),
+                directory.join(submodule_filename),
+            ]
+        };
 
-            let existing_cloned = existing.clone();
+        let existing = filenames
+            .iter()
+            .filter(|filename| filename.try_exists().unwrap())
+            .collect::<Vec<_>>();
 
-            let filename = existing.next().unwrap_or_else(|| todo!());
+        let filename = existing.first().unwrap_or_else(|| todo!());
 
-            if existing.next().is_some() {
-                errors.push(Error::AmbiguousModule {
-                    module_name: submodule.name.resolve(),
-                    module_name_span: submodule.name.span(),
-                    filenames: existing_cloned.map(ToString::to_string).collect(),
-                });
+        if existing.len() > 1 {
+            errors.push(Error::AmbiguousModule {
+                module_name: submodule.name.resolve(),
+                module_name_span: submodule.name.span(),
+                filenames: existing.into_iter().map(ToString::to_string).collect(),
+            });
 
-                return;
-            }
+            continue;
+        }
 
-            let ast = parse_file(filename, files, errors);
+        let ast = parse_file(filename, files, errors);
 
-            submodule.ast = ast;
-        });
+        submodule.ast = ast;
+    }
 }
 
 #[cfg(test)]

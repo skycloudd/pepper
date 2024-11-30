@@ -8,7 +8,6 @@ type ParserInput<'src> = WithContext<Span, &'src str>;
 
 type ParserExtra<'src> = extra::Err<Rich<'src, char, Span, &'src str>>;
 
-#[must_use]
 pub fn lexer<'src>(
 ) -> impl Parser<'src, ParserInput<'src>, Vec<tokens::Spanned<TokenTree>>, ParserExtra<'src>> {
     recursive(|tokens| {

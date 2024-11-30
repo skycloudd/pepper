@@ -9,12 +9,10 @@ pub struct Span {
 }
 
 impl Span {
-    #[must_use]
     pub fn zero(file_id: FileId) -> Self {
         chumsky::span::Span::new(file_id, 0..0)
     }
 
-    #[must_use]
     pub const fn range(&self) -> core::ops::Range<usize> {
         self.start..self.end
     }
@@ -51,12 +49,10 @@ impl chumsky::span::Span for Span {
 pub struct FileId(NonZeroUsize);
 
 impl FileId {
-    #[must_use]
     pub fn new(id: usize) -> Option<Self> {
         Some(Self(NonZeroUsize::new(id.checked_add(1)?)?))
     }
 
-    #[must_use]
     pub fn get(self) -> usize {
         usize::from(self.0) - 1
     }
@@ -86,7 +82,6 @@ impl<T> Spanned<T> {
         Spanned::new(f(self.0, self.1), self.1)
     }
 
-    #[must_use]
     pub fn map_span(self, f: impl FnOnce(Span) -> Span) -> Self {
         Self(self.0, f(self.1))
     }
@@ -103,7 +98,6 @@ impl<T, E> Spanned<Result<T, E>> {
 }
 
 impl<T> Spanned<Box<T>> {
-    #[must_use]
     pub fn unbox(self) -> Spanned<T> {
         Spanned::new(*self.0, self.1)
     }
