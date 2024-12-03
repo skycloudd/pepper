@@ -25,9 +25,7 @@ snapshot_kind: text
     body:
       Match:
         expr:
-          Name:
-            base: n
-            segments: []
+          Name: n
         arms:
           - pattern:
               pattern_type:
@@ -48,9 +46,7 @@ snapshot_kind: text
                   BinaryOp:
                     op: Mul
                     lhs:
-                      Name:
-                        base: n
-                        segments: []
+                      Name: n
                     rhs:
                       Float: "3."
                 rhs:

@@ -19,9 +19,7 @@ snapshot_kind: text
         body:
           Match:
             expr:
-              Name:
-                base: _a
-                segments: []
+              Name: _a
             arms:
               - pattern:
                   pattern_type:
@@ -58,8 +56,6 @@ snapshot_kind: text
                     name: _
                     ty: ~
                     value:
-                      Name:
-                        base: __123
-                        segments: []
+                      Name: __123
                     body:
                       Tuple: []

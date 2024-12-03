@@ -25,9 +25,7 @@ snapshot_kind: text
     body:
       Match:
         expr:
-          Name:
-            base: n
-            segments: []
+          Name: n
         arms:
           - pattern:
               pattern_type:
@@ -38,15 +36,11 @@ snapshot_kind: text
                 BinaryOp:
                   op: LessEquals
                   lhs:
-                    Name:
-                      base: n
-                      segments: []
+                    Name: n
                   rhs:
                     Int: "1"
             body:
-              Name:
-                base: n
-                segments: []
+              Name: n
           - pattern:
               pattern_type:
                 Name:
@@ -59,30 +53,22 @@ snapshot_kind: text
                 lhs:
                   Call:
                     callee:
-                      Name:
-                        base: fibonacci
-                        segments: []
+                      Name: fibonacci
                     args:
                       - BinaryOp:
                           op: Sub
                           lhs:
-                            Name:
-                              base: n
-                              segments: []
+                            Name: n
                           rhs:
                             Int: "1"
                 rhs:
                   Call:
                     callee:
-                      Name:
-                        base: fibonacci
-                        segments: []
+                      Name: fibonacci
                     args:
                       - BinaryOp:
                           op: Sub
                           lhs:
-                            Name:
-                              base: n
-                              segments: []
+                            Name: n
                           rhs:
                             Int: "2"

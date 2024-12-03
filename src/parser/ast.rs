@@ -92,7 +92,7 @@ pub enum Expression {
     Float(Spanned<Interned>),
     Bool(Spanned<Interned>),
     String(Spanned<Interned>),
-    Name(Spanned<Path>),
+    Name(Spanned<Interned>),
     Tuple(Spanned<Vec<Spanned<Self>>>),
     List(Spanned<Vec<Spanned<Self>>>),
     BinaryOp {
@@ -103,6 +103,10 @@ pub enum Expression {
     UnaryOp {
         op: Spanned<UnaryOp>,
         expr: Spanned<Box<Self>>,
+    },
+    Dot {
+        expr: Spanned<Box<Self>>,
+        field: Spanned<Interned>,
     },
     Call {
         callee: Spanned<Box<Self>>,
@@ -143,7 +147,6 @@ pub enum PatternType {
     Bool(Spanned<Interned>),
     String(Spanned<Interned>),
     Tuple(Spanned<Vec<Spanned<Pattern>>>),
-    List(Spanned<Vec<Spanned<ListPattern>>>),
     TupleType {
         name: Spanned<Path>,
         fields: Spanned<Vec<Spanned<Pattern>>>,
@@ -159,13 +162,6 @@ pub enum PatternType {
 pub struct StructPatternField {
     pub name: Spanned<Interned>,
     pub pattern: Option<Spanned<Pattern>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(test, derive(serde::Serialize))]
-pub enum ListPattern {
-    Pattern(Spanned<Pattern>),
-    Rest,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -203,6 +199,7 @@ impl core::fmt::Display for BinaryOp {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(serde::Serialize))]
 pub enum UnaryOp {
+    Pos,
     Neg,
     Not,
 }
@@ -210,6 +207,7 @@ pub enum UnaryOp {
 impl core::fmt::Display for UnaryOp {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::Pos => write!(f, "+"),
             Self::Neg => write!(f, "-"),
             Self::Not => write!(f, "!"),
         }

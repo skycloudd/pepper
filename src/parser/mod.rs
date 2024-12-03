@@ -3,9 +3,8 @@ use crate::{
     span::{Span, Spanned},
 };
 use ast::{
-    Ast, AstType, BinaryOp, Enum, EnumVariant, Expression, Function, FunctionParam, Item,
-    ListPattern, MatchArm, Module, Path, Pattern, PatternType, Struct, StructField,
-    StructPatternField, Type, UnaryOp,
+    Ast, AstType, BinaryOp, Enum, EnumVariant, Expression, Function, FunctionParam, Item, MatchArm,
+    Module, Path, Pattern, PatternType, Struct, StructField, StructPatternField, Type, UnaryOp,
 };
 use chumsky::{extra, input::SpannedInput, prelude::*};
 
@@ -263,7 +262,6 @@ macro_rules! binary_op {
                 )
             })
             .map(|expr| expr.0)
-            .boxed()
     }};
 }
 
@@ -278,7 +276,7 @@ fn expression_parser<'src: 'tok, 'tok>(
 
         let string = string_parser().with_span().map(Expression::String).boxed();
 
-        let name = path_parser().with_span().map(Expression::Name).boxed();
+        let name = ident_parser().with_span().map(Expression::Name).boxed();
 
         let tuple = comma_separated(expression.clone())
             .delim(Delim::Paren)
@@ -359,31 +357,55 @@ fn expression_parser<'src: 'tok, 'tok>(
         ))
         .boxed();
 
-        let call = {
+        let basic = {
+            enum BasicOperator {
+                Call(Spanned<Vec<Spanned<Expression>>>),
+                Dot(Spanned<Interned>),
+            }
+
             let call_args = comma_separated(expression.clone())
                 .delim(Delim::Paren)
                 .with_span()
+                .map(BasicOperator::Call)
+                .boxed();
+
+            let dot = just(TokenTree::Token(Token::Punc(Punc::Period)))
+                .ignore_then(ident_parser().with_span())
+                .map(BasicOperator::Dot)
                 .boxed();
 
             atom.with_span()
-                .foldl(call_args.repeated(), |callee, args| {
-                    let span = callee.span().union(args.span());
+                .foldl(choice((call_args, dot)).repeated(), |expr, op| match op {
+                    BasicOperator::Call(args) => {
+                        let span = expr.span().union(args.span());
 
-                    Spanned::new(
-                        Expression::Call {
-                            callee: callee.boxed(),
-                            args,
-                        },
-                        span,
-                    )
+                        Spanned::new(
+                            Expression::Call {
+                                callee: expr.boxed(),
+                                args,
+                            },
+                            span,
+                        )
+                    }
+                    BasicOperator::Dot(field) => {
+                        let span = expr.span().union(field.span());
+
+                        Spanned::new(
+                            Expression::Dot {
+                                expr: expr.boxed(),
+                                field,
+                            },
+                            span,
+                        )
+                    }
                 })
                 .map(|expr| expr.0)
                 .boxed()
-        }
-        .boxed();
+        };
 
         let unary = unary_op!(
-            call,
+            basic,
+            Punc::Plus => UnaryOp::Pos,
             Punc::Minus => UnaryOp::Neg,
             Punc::Bang => UnaryOp::Not,
         )
@@ -450,21 +472,6 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         .map(PatternType::Tuple)
         .boxed();
 
-    let list_pattern = {
-        let list_pattern = choice((
-            pattern.clone().with_span().map(ListPattern::Pattern),
-            just(TokenTree::Token(Token::Punc(Punc::DoublePeriod))).to(ListPattern::Rest),
-        ))
-        .boxed();
-
-        comma_separated(list_pattern)
-            .delim(Delim::Bracket)
-            .with_span()
-            .map(PatternType::List)
-            .boxed()
-    }
-    .boxed();
-
     let tuple_type_pattern = path_parser()
         .with_span()
         .then(
@@ -500,7 +507,6 @@ fn pattern_type_parser<'src: 'tok, 'tok>(
         bool_parser().with_span().map(PatternType::Bool),
         string_parser().with_span().map(PatternType::String),
         tuple_pattern,
-        list_pattern,
         tuple_type_pattern,
         struct_type_pattern,
         path_parser().with_span().map(PatternType::Name),

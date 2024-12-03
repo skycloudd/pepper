@@ -1,0 +1,23 @@
+---
+source: src/lib.rs
+description: func main() = Aa.Bb.aa.bb
+expression: ast.unwrap()
+input_file: tests/parser/dot_expr/simple.pr
+snapshot_kind: text
+---
+- Function:
+    name: main
+    generics: ~
+    params: []
+    return_ty: ~
+    body:
+      Dot:
+        expr:
+          Dot:
+            expr:
+              Dot:
+                expr:
+                  Name: Aa
+                field: Bb
+            field: aa
+        field: bb

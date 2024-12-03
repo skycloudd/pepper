@@ -33,8 +33,8 @@ snapshot_kind: text
     body:
       Call:
         callee:
-          Name:
-            base: submod
-            segments:
-              - aaa
+          Dot:
+            expr:
+              Name: submod
+            field: aaa
         args: []

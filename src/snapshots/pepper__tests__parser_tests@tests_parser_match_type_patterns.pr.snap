@@ -41,9 +41,7 @@ snapshot_kind: text
         value:
           Match:
             expr:
-              Name:
-                base: aaaa
-                segments: []
+              Name: aaaa
             arms:
               - pattern:
                   pattern_type:
@@ -81,19 +79,13 @@ snapshot_kind: text
                   BinaryOp:
                     op: Mul
                     lhs:
-                      Name:
-                        base: n
-                        segments: []
+                      Name: n
                     rhs:
-                      Name:
-                        base: m
-                        segments: []
+                      Name: m
         body:
           Match:
             expr:
-              Name:
-                base: bbbb
-                segments: []
+              Name: bbbb
             arms:
               - pattern:
                   pattern_type:
@@ -130,9 +122,7 @@ snapshot_kind: text
                       BinaryOp:
                         op: Mul
                         lhs:
-                          Name:
-                            base: n
-                            segments: []
+                          Name: n
                         rhs:
                           Float: "3."
                     rhs:
@@ -154,9 +144,7 @@ snapshot_kind: text
                           BinaryOp:
                             op: Mul
                             lhs:
-                              Name:
-                                base: n
-                                segments: []
+                              Name: n
                             rhs:
                               Float: "4."
                         rhs:

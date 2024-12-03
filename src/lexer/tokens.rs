@@ -31,7 +31,6 @@ pub enum Token {
 pub enum Kw {
     Func,
     Var,
-    For,
     In,
     Match,
     Where,
@@ -43,18 +42,15 @@ pub enum Kw {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Punc {
-    Arrow,
     DoubleArrow,
     DoubleEquals,
     NotEquals,
     LessEquals,
     GreaterEquals,
-    DoublePeriod,
     Plus,
     Minus,
     Star,
     Slash,
-    Colon,
     Comma,
     Period,
     Equals,
@@ -140,7 +136,6 @@ impl core::fmt::Display for Kw {
             match self {
                 Self::Func => "func",
                 Self::Var => "var",
-                Self::For => "for",
                 Self::In => "in",
                 Self::Match => "match",
                 Self::Where => "where",
@@ -159,18 +154,15 @@ impl core::fmt::Display for Punc {
             f,
             "{}",
             match self {
-                Self::Arrow => "->",
                 Self::DoubleArrow => "=>",
                 Self::DoubleEquals => "==",
                 Self::NotEquals => "!=",
                 Self::LessEquals => "<=",
                 Self::GreaterEquals => ">=",
-                Self::DoublePeriod => "..",
                 Self::Plus => "+",
                 Self::Minus => "-",
                 Self::Star => "*",
                 Self::Slash => "/",
-                Self::Colon => ":",
                 Self::Comma => ",",
                 Self::Period => ".",
                 Self::Equals => "=",

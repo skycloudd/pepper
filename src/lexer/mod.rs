@@ -45,7 +45,6 @@ pub fn lexer<'src>(
         let keyword = choice((
             text::keyword("func").to(Kw::Func),
             text::keyword("var").to(Kw::Var),
-            text::keyword("for").to(Kw::For),
             text::keyword("in").to(Kw::In),
             text::keyword("match").to(Kw::Match),
             text::keyword("where").to(Kw::Where),
@@ -58,18 +57,15 @@ pub fn lexer<'src>(
         .boxed();
 
         let punctuation = choice((
-            just("->").to(Punc::Arrow),
             just("=>").to(Punc::DoubleArrow),
             just("==").to(Punc::DoubleEquals),
             just("!=").to(Punc::NotEquals),
             just("<=").to(Punc::LessEquals),
             just(">=").to(Punc::GreaterEquals),
-            just("..").to(Punc::DoublePeriod),
             just("+").to(Punc::Plus),
             just("-").to(Punc::Minus),
             just("*").to(Punc::Star),
             just("/").to(Punc::Slash),
-            just(":").to(Punc::Colon),
             just(",").to(Punc::Comma),
             just(".").to(Punc::Period),
             just("=").to(Punc::Equals),

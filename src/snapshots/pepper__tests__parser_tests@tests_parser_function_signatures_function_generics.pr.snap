@@ -52,9 +52,7 @@ snapshot_kind: text
     body:
       Match:
         expr:
-          Name:
-            base: v
-            segments: []
+          Name: v
         arms:
           - pattern:
               pattern_type:
@@ -72,19 +70,13 @@ snapshot_kind: text
             body:
               Call:
                 callee:
-                  Name:
-                    base: Some
-                    segments: []
+                  Name: Some
                 args:
                   - Call:
                       callee:
-                        Name:
-                          base: f
-                          segments: []
+                        Name: f
                       args:
-                        - Name:
-                            base: x
-                            segments: []
+                        - Name: x
           - pattern:
               pattern_type:
                 Name:
@@ -92,6 +84,4 @@ snapshot_kind: text
                   segments: []
               condition: ~
             body:
-              Name:
-                base: None
-                segments: []
+              Name: None

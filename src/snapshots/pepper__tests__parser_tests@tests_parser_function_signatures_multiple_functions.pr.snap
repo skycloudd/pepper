@@ -46,8 +46,10 @@ snapshot_kind: text
             - Ccc
         generics: ~
     body:
-      Name:
-        base: aa
-        segments:
-          - b
-          - Ccc
+      Dot:
+        expr:
+          Dot:
+            expr:
+              Name: aa
+            field: b
+        field: Ccc
