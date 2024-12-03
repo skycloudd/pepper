@@ -1,6 +1,6 @@
 enum Option[T] = Some(T) | None
 
-func map[T, U] (v Option[T], f func(T) U) Option[U] =
+func map[T, U] (v Option[T], f func(T) -> U) -> Option[U] =
     match v
     | Some(x) => Some(f(x))
     | None => None

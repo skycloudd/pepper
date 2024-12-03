@@ -84,7 +84,10 @@ fn function_parser<'src: 'tok, 'tok>(
         .with_span()
         .boxed();
 
-    let return_ty = type_parser().with_span().or_not().boxed();
+    let return_ty = just(TokenTree::Token(Token::Punc(Punc::Arrow)))
+        .ignore_then(type_parser().with_span())
+        .or_not()
+        .boxed();
 
     let body = expression_parser().with_span().boxed();
 
@@ -587,6 +590,7 @@ fn type_parser<'src: 'tok, 'tok>(
 
             just(TokenTree::Token(Token::Kw(Kw::Func)))
                 .ignore_then(params)
+                .then_ignore(just(TokenTree::Token(Token::Punc(Punc::Arrow))))
                 .then(return_ty)
                 .map(|(params, return_ty)| Type::Function { params, return_ty })
                 .boxed()

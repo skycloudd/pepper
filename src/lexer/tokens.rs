@@ -42,6 +42,7 @@ pub enum Kw {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Punc {
+    Arrow,
     DoubleArrow,
     DoubleEquals,
     NotEquals,
@@ -154,6 +155,7 @@ impl core::fmt::Display for Punc {
             f,
             "{}",
             match self {
+                Self::Arrow => "->",
                 Self::DoubleArrow => "=>",
                 Self::DoubleEquals => "==",
                 Self::NotEquals => "!=",

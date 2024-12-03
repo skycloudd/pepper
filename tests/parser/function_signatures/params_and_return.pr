@@ -1,1 +1,1 @@
-func params_and_return(float_var Float32, path abcd.Efgh) Int32 = ()
+func params_and_return(float_var Float32, path abcd.Efgh) -> Int32 = ()

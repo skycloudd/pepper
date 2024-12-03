@@ -57,6 +57,7 @@ pub fn lexer<'src>(
         .boxed();
 
         let punctuation = choice((
+            just("->").to(Punc::Arrow),
             just("=>").to(Punc::DoubleArrow),
             just("==").to(Punc::DoubleEquals),
             just("!=").to(Punc::NotEquals),
