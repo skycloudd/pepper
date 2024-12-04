@@ -12,6 +12,7 @@ pub mod lexer;
 pub mod parser;
 pub mod scopes;
 pub mod span;
+pub mod typechecker;
 
 static RODEO: LazyLock<ThreadedRodeo> = LazyLock::new(ThreadedRodeo::new);
 
@@ -87,7 +88,18 @@ pub fn insert_explicit_submodules(
             .filter(|filename| filename.try_exists().unwrap())
             .collect::<Vec<_>>();
 
-        let filename = existing.first().unwrap_or_else(|| todo!());
+        let filename = existing.first().or_else(|| {
+            errors.push(Error::MissingModule {
+                module_name: submodule.name.resolve(),
+                module_name_span: submodule.name.span(),
+                filenames: filenames.iter().map(ToString::to_string).collect(),
+            });
+            None
+        });
+
+        let Some(filename) = filename else {
+            continue;
+        };
 
         if existing.len() > 1 {
             errors.push(Error::AmbiguousModule {

@@ -22,6 +22,11 @@ pub enum Error {
         module_name_span: Span,
         filenames: Vec<String>,
     },
+    MissingModule {
+        module_name: &'static str,
+        module_name_span: Span,
+        filenames: Vec<String>,
+    },
 }
 
 impl Diag for Error {
@@ -57,6 +62,11 @@ impl Diag for Error {
                 module_name_span: _,
                 filenames: _,
             } => "Ambiguous module name".into(),
+            Self::MissingModule {
+                module_name: _,
+                module_name_span: _,
+                filenames: _,
+            } => "Missing module".into(),
         }
     }
 
@@ -75,6 +85,11 @@ impl Diag for Error {
                 module_name: _,
                 module_name_span,
                 filenames: _,
+            }
+            | Self::MissingModule {
+                module_name: _,
+                module_name_span,
+                filenames: _,
             } => vec![ErrorSpan::primary_message(
                 "Declared here",
                 *module_name_span,
@@ -88,21 +103,23 @@ impl Diag for Error {
                 module_name,
                 module_name_span: _,
                 filenames,
-            } => {
-                let mut notes = vec![
-                    format!(""),
-                    format!(
-                        "There exist multiple possible files for the module `{}`:",
-                        module_name
-                    ),
-                ];
-
-                for filename in filenames {
-                    notes.push(format!("  - {filename}"));
-                }
-
-                notes
-            }
+            } => core::iter::once(format!(
+                "There exist multiple possible files for the module `{module_name}`:"
+            ))
+            .chain(filenames.iter().map(|filename| format!("  - {filename}")))
+            .collect(),
+            Self::MissingModule {
+                module_name,
+                module_name_span: _,
+                filenames,
+            } => core::iter::once(format!(
+                "Could not find a file for the module `{module_name}`"
+            ))
+            .chain(core::iter::once(
+                "These are the possible files for this module:".into(),
+            ))
+            .chain(filenames.iter().map(|filename| format!("  - {filename}")))
+            .collect(),
             Self::ExpectedFound { .. } | Self::Custom { .. } => {
                 vec![]
             }

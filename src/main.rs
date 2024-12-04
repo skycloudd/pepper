@@ -7,7 +7,10 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use pepper::diagnostics::{error::Error, report::report};
+use pepper::{
+    diagnostics::{error::Error, report::report},
+    typechecker,
+};
 use std::process::ExitCode;
 
 #[derive(Debug, Parser)]
@@ -30,11 +33,17 @@ fn run(args: &Args) -> ExitCode {
     let mut errors = vec![];
     let ast = pepper::parse_file(&args.filename, &mut files, &mut errors);
 
-    if errors.is_empty() {
-        if args.print.contains(&"ast".into()) {
-            println!("{ast:#?}");
-        }
+    if args.print.contains(&"ast".into()) {
+        println!("ast: {ast:#?}");
+    }
 
+    let typed_ast = ast.map(|ast| typechecker::typecheck(ast, &mut errors));
+
+    if args.print.contains(&"typed_ast".into()) {
+        println!("typed_ast: {typed_ast:#?}");
+    }
+
+    if errors.is_empty() {
         ExitCode::SUCCESS
     } else {
         emit_errors(&errors, &files);
