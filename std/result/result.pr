@@ -1,0 +1,11 @@
+enum Result[T, E] = Ok(T) | Err(E)
+
+func map[T, E, U] (v Result[T, E], f func(T) -> U) -> Result[U, E] =
+    match v
+    | Ok(x) => Ok(f(x))
+    | Err(e) => Err(e)
+
+func map_err[T, E, U] (v Result[T, E], f func(E) -> U) -> Result[T, U] =
+    match v
+    | Ok(x) => Ok(x)
+    | Err(e) => Err(f(e))
