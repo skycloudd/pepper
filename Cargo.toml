@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 camino = "1.1.9"
 chumsky = "1.0.0-alpha.7"
-clap = { version = "4.5.23", features = ["derive"] }
+clap = { version = "4.5.24", features = ["derive"] }
 codespan-reporting = "0.11.1"
 lasso = { version = "0.7.3", features = ["multi-threaded"] }
 owo-colors = "4.1.0"
